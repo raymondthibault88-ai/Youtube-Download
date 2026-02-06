@@ -26,6 +26,11 @@ npm run dev
 npm run build
 ```
 
+## Vérification qualité
+```bash
+npm run verify
+```
+
 ## Packaging desktop
 ```bash
 npm run dist
@@ -37,6 +42,7 @@ Sorties:
 
 ## Notes techniques
 - `yt-dlp` est téléchargé automatiquement au premier lancement dans le dossier utilisateur de l'application.
+- Le binaire `yt-dlp` est versionné (pin) et vérifié par SHA256 avant exécution.
 - `ffmpeg` est embarqué via `ffmpeg-static`.
 
 ## Remarques légales

@@ -11,6 +11,9 @@
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:5173 && node electron/dev-runner.cjs",
     "build": "vite build",
+    "lint": "eslint .",
+    "test:smoke": "node scripts/smoke-test.cjs",
+    "verify": "npm run lint && npm run test:smoke && npm run build",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder"
   },
@@ -20,12 +23,16 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.21.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "vite": "^6.2.0",

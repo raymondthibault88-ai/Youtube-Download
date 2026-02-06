@@ -181,10 +181,12 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
     '--ffmpeg-location',
     ffmpegPath,
     '-f',
-    formatSelector,
-    '--merge-output-format',
-    'mp4'
+    formatSelector
   ];
+
+  if (shouldRecodeToMp4 || formatSelector.includes('+')) {
+    args.push('--merge-output-format', 'mp4');
+  }
 
   if (shouldRecodeToMp4) {
     // Guarantee MP4 output even when source streams are WebM-only.
@@ -218,6 +220,55 @@ function emitProgressFromChunk(event, chunk, stdoutBuffer) {
   }
 
   return remainingBuffer;
+}
+
+function runYtDlpDownload(event, ytDlpArgs) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ytDlpPath, ytDlpArgs, {
+      windowsHide: true,
+      env: getYtDlpEnv()
+    });
+
+    let stderr = '';
+    let stdoutBuffer = '';
+
+    child.stdout.on('data', (chunk) => {
+      stdoutBuffer = emitProgressFromChunk(event, chunk, stdoutBuffer);
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', reject);
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `Téléchargement échoué (code ${code})`));
+        return;
+      }
+
+      resolve({ ok: true });
+    });
+  });
+}
+
+function shouldRetryWithRecode(error) {
+  const message = String(error?.message || '').toLowerCase();
+
+  const retryableMarkers = [
+    'could not write header',
+    'incompatible with output codec',
+    'could not find tag for codec',
+    'not currently supported in container',
+    'error while opening encoder',
+    'conversion failed',
+    'invalid audio stream',
+    'invalid video stream',
+    'cannot mux'
+  ];
+
+  return retryableMarkers.some((marker) => message.includes(marker));
 }
 
 ipcMain.handle('deps:check', async () => {
@@ -281,6 +332,9 @@ ipcMain.handle('download:start', async (event, payload) => {
   }
 
   const ffmpegPath = resolveFfmpegPath();
+  if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
+    throw new Error('FFmpeg introuvable. Vérifie l\'installation de ffmpeg-static.');
+  }
 
   if (!payload || !payload.url || !payload.formatId || !payload.outputDir) {
     throw new Error('Paramètres de téléchargement invalides.');
@@ -293,37 +347,33 @@ ipcMain.handle('download:start', async (event, payload) => {
     formatSelector,
     outputDir: payload.outputDir,
     url: payload.url,
-    shouldRecodeToMp4: isVideoDownload
+    shouldRecodeToMp4: false
   });
 
-  return new Promise((resolve, reject) => {
-    const child = spawn(ytDlpPath, args, {
-      windowsHide: true,
-      env: getYtDlpEnv()
+  try {
+    await runYtDlpDownload(event, args);
+  } catch (error) {
+    if (!isVideoDownload || !shouldRetryWithRecode(error)) {
+      throw error;
+    }
+
+    event.sender.send('download:progress', {
+      ...downloadConfig.initialProgress,
+      raw: 'Remux MP4 impossible, tentative de réencodage...'
     });
 
-    let stderr = '';
-    let stdoutBuffer = '';
-
-    child.stdout.on('data', (chunk) => {
-      stdoutBuffer = emitProgressFromChunk(event, chunk, stdoutBuffer);
+    const fallbackArgs = buildDownloadArgs({
+      ffmpegPath,
+      formatSelector,
+      outputDir: payload.outputDir,
+      url: payload.url,
+      shouldRecodeToMp4: true
     });
 
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
+    await runYtDlpDownload(event, fallbackArgs);
+  }
 
-    child.on('error', reject);
-
-    child.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(stderr.trim() || `Téléchargement échoué (code ${code})`));
-        return;
-      }
-
-      resolve({ ok: true });
-    });
-  });
+  return { ok: true };
 });
 
 app.whenReady().then(createMainWindow);
