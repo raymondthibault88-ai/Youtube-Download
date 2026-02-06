@@ -1,0 +1,12 @@
+{
+  "invoke": {
+    "depsCheck": "deps:check",
+    "videoAnalyze": "video:analyze",
+    "dialogSelectOutput": "dialog:selectOutput",
+    "downloadStart": "download:start",
+    "openPath": "dialog:openPath"
+  },
+  "events": {
+    "downloadProgress": "download:progress"
+  }
+}

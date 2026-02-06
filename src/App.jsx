@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import downloadConfig from '../shared/download-config.json';
-import { formatDuration, formatSize } from './utils/formatters';
+import { formatDuration, formatSize } from '../shared/formatters.js';
+import logo from './assets/logo.png';
 
 const FormatRow = memo(function FormatRow({ format, isSelected, onSelect }) {
   const mediaType = format.hasVideo && format.hasAudio
@@ -39,12 +40,26 @@ export default function App() {
   const [error, setError] = useState('');
   const [dependencyInfo, setDependencyInfo] = useState(null);
   const lastAnalyzeRef = useRef({ url: '', data: null });
+  const hasOpenedFolderRef = useRef(false);
+  const urlInputRef = useRef(null);
 
   const handleSelectFormat = useCallback((format) => {
     setSelectedFormat(format);
   }, []);
 
   useEffect(() => {
+    const savedOutput = window.localStorage.getItem('outputDir');
+    if (savedOutput) {
+      setOutputDir(savedOutput);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!window.desktopAPI) {
+      setError('Le bridge Electron (preload) est indisponible.');
+      return undefined;
+    }
+
     const unsubscribe = window.desktopAPI.onDownloadProgress((payload) => {
       setProgress((previous) => ({ ...previous, ...payload }));
     });
@@ -53,6 +68,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!window.desktopAPI) {
+      return undefined;
+    }
+
     let cancelled = false;
     let idleId = null;
     let timeoutId = null;
@@ -106,7 +125,12 @@ export default function App() {
 
     try {
       if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
-        setVideo(lastAnalyzeRef.current.data);
+        const cachedData = lastAnalyzeRef.current.data;
+        setVideo(cachedData);
+        const cachedBest = cachedData?.formats?.[0];
+        if (cachedBest) {
+          setSelectedFormat(cachedBest);
+        }
         setLoadingVideo(false);
         return;
       }
@@ -114,6 +138,10 @@ export default function App() {
       const data = await window.desktopAPI.analyzeVideo(normalizedUrl);
       lastAnalyzeRef.current = { url: normalizedUrl, data };
       setVideo(data);
+      const bestFormat = data?.formats?.[0];
+      if (bestFormat) {
+        setSelectedFormat(bestFormat);
+      }
     } catch (analyzeError) {
       setError(analyzeError.message || 'Erreur pendant l\'analyse de la vidéo.');
     } finally {
@@ -126,9 +154,22 @@ export default function App() {
       const folder = await window.desktopAPI.selectOutputDir();
       if (folder) {
         setOutputDir(folder);
+        window.localStorage.setItem('outputDir', folder);
       }
     } catch (folderError) {
       setError(folderError.message || 'Impossible de sélectionner le dossier de sortie.');
+    }
+  }
+
+  async function handlePasteUrl() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setUrl(text.trim());
+        urlInputRef.current?.focus();
+      }
+    } catch (pasteError) {
+      setError(pasteError.message || 'Impossible de lire le presse-papier.');
     }
   }
 
@@ -140,6 +181,7 @@ export default function App() {
       }
 
       setOutputDir(pickedFolder);
+      window.localStorage.setItem('outputDir', pickedFolder);
       return pickedFolder;
     }
 
@@ -154,6 +196,7 @@ export default function App() {
     }
 
     setOutputDir(pickedFolder);
+    window.localStorage.setItem('outputDir', pickedFolder);
     return pickedFolder;
   }
 
@@ -180,6 +223,7 @@ export default function App() {
       });
 
       setProgress((previous) => ({ ...previous, percent: 100, raw: 'Téléchargement terminé.' }));
+      hasOpenedFolderRef.current = false;
     } catch (downloadError) {
       setError(downloadError.message || 'Le téléchargement a échoué.');
     } finally {
@@ -229,6 +273,36 @@ export default function App() {
       ? 'Analyse en cours'
       : 'Prêt';
 
+  const selectedFormatSummary = useMemo(() => {
+    if (!selectedFormat) return null;
+    const mediaType = selectedFormat.hasVideo && selectedFormat.hasAudio
+      ? 'Vidéo + Audio'
+      : selectedFormat.hasVideo
+        ? 'Vidéo seule'
+        : 'Audio seul';
+    const details = [
+      selectedFormat.resolution,
+      mediaType,
+      selectedFormat.ext?.toUpperCase()
+    ].filter(Boolean);
+    const size = formatSize(selectedFormat.fileSizeText);
+    return `${details.join(' · ')}${size ? ` · ${size}` : ''}`;
+  }, [selectedFormat]);
+
+  useEffect(() => {
+    if (!progress?.raw || hasOpenedFolderRef.current) return;
+    if (progress.percent >= 100) {
+      const targetDir = outputDir || dependencyInfo?.downloadsPath;
+      if (targetDir) {
+        hasOpenedFolderRef.current = true;
+        window.desktopAPI.openPath(targetDir);
+      }
+    }
+  }, [progress, outputDir, dependencyInfo]);
+
+  const actionLabel = loadingVideo ? 'Analyse...' : 'Analyser les formats';
+  const progressMarker = Math.max(6, Math.min(progressPercent, 100));
+
   return (
     <main className="app-shell">
       <div className="app-glow" aria-hidden="true" />
@@ -237,7 +311,7 @@ export default function App() {
         <section className="panel hero-panel reveal-up">
           <div className="hero-header">
             <div className="brand-block">
-              <img src="/favicon.png" alt="Logo YouTube Downloader" className="brand-logo" />
+              <img src={logo} alt="Logo YouTube Downloader" className="brand-logo" />
               <div>
                 <h1>YouTube Downloader</h1>
                 <p>Interface desktop simple pour Windows et macOS</p>
@@ -248,41 +322,57 @@ export default function App() {
 
           <form className="tool-form" onSubmit={handleAnalyze}>
             <label className="field-label" htmlFor="url-input">URL vidéo</label>
-            <input
-              id="url-input"
-              type="url"
-              required
-              placeholder="https://www.youtube.com/watch?v=..."
-              className="url-input"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-            />
+            <div className="control-row">
+              <div className="input-stack">
+                <input
+                  id="url-input"
+                  type="url"
+                  required
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="url-input"
+                  value={url}
+                  ref={urlInputRef}
+                  onChange={(event) => setUrl(event.target.value)}
+                />
+                <div className="action-row">
+                  <button
+                    type="submit"
+                    disabled={loadingVideo || downloading || !url.trim()}
+                    className={`btn btn-strong ${loadingVideo ? 'is-loading' : ''}`}
+                  >
+                    {loadingVideo && <span className="btn-spinner" aria-hidden="true" />}
+                    {actionLabel}
+                  </button>
 
-            <div className="action-row">
-              <button
-                type="submit"
-                disabled={loadingVideo || downloading || !url.trim()}
-                className="btn btn-strong"
-              >
-                {loadingVideo ? 'Analyse...' : 'Analyser les formats'}
-              </button>
+                  <button
+                    type="button"
+                    onClick={handlePasteUrl}
+                    className="btn btn-subtle"
+                  >
+                    Coller
+                  </button>
 
-              <button
-                type="button"
-                onClick={handlePickFolder}
-                className="btn btn-subtle"
-              >
-                Choisir dossier
-              </button>
+                  <button
+                    type="button"
+                    onClick={handlePickFolder}
+                    className="btn btn-subtle"
+                  >
+                    Choisir dossier
+                  </button>
+                </div>
+              </div>
+
+              <div className="path-box compact" title={outputDir || 'Aucun dossier sélectionné'}>
+                <span className="meta-label">Destination</span>
+                <span className="path-value">{outputDir || 'Aucun dossier sélectionné'}</span>
+                <button type="button" className="link-btn" onClick={handlePickFolder}>
+                  Modifier
+                </button>
+              </div>
             </div>
           </form>
 
           <div className="meta-row">
-            <div className="path-box" title={outputDir || 'Aucun dossier sélectionné'}>
-              <span className="meta-label">Destination</span>
-              <span className="path-value">{outputDir || 'Aucun dossier sélectionné'}</span>
-            </div>
-
             {dependencyInfo && (
               <div className="dep-box">
                 <span>yt-dlp {dependencyInfo.ytDlpVersion}</span>
@@ -298,6 +388,7 @@ export default function App() {
             </div>
             <div className="progress-track">
               <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+              <span className="progress-marker" style={{ left: `${progressMarker}%` }} />
             </div>
             {progressDetails && <p className="progress-details">{progressDetails}</p>}
           </div>
@@ -320,7 +411,12 @@ export default function App() {
                     height={180}
                   />
                 )}
-                <h2>{video.title}</h2>
+                <h2>
+                  {video.title}
+                  {selectedFormatSummary && (
+                    <span className="badge">{selectedFormatSummary}</span>
+                  )}
+                </h2>
                 <p>{video.uploader || 'Chaîne inconnue'} · {formatDuration(video.duration)}</p>
               </aside>
 
@@ -356,6 +452,9 @@ export default function App() {
                 </div>
 
                 <div className="formats-actions">
+                  {selectedFormatSummary && (
+                    <p className="format-summary">{selectedFormatSummary}</p>
+                  )}
                   <button
                     type="button"
                     onClick={handleManualDownload}
@@ -366,6 +465,15 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            </div>
+          </section>
+        )}
+
+        {!video && (
+          <section className="panel reveal-up delay-1 empty-panel">
+            <div className="empty-state">
+              <h3>Prêt à analyser une vidéo</h3>
+              <p>Colle une URL YouTube, lance l'analyse et choisis le format idéal.</p>
             </div>
           </section>
         )}

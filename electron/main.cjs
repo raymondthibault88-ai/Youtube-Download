@@ -1,10 +1,12 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const ffmpegStatic = require('ffmpeg-static');
 const { ensureYtDlp } = require('./ytDlp.cjs');
 const downloadConfig = require('../shared/download-config.json');
+const ipcChannels = require('../shared/ipc.json');
+const { formatBytes } = require('../shared/formatters.js');
 
 let ytDlpPath = null;
 
@@ -36,6 +38,7 @@ function resolveFfmpegPath() {
 }
 
 function createMainWindow() {
+  Menu.setApplicationMenu(null);
   const windowIconPath = process.platform === 'win32'
     ? path.join(__dirname, 'assets', 'icon.ico')
     : path.join(__dirname, 'assets', 'icon.png');
@@ -112,7 +115,6 @@ function runCommand(commandPath, args, options = {}) {
     child.on('error', reject);
 
     child.on('close', (code) => {
-      flushProgress();
       if (code !== 0) {
         reject(new Error(stderr.trim() || `Commande échouée avec code ${code}`));
         return;
@@ -121,23 +123,6 @@ function runCommand(commandPath, args, options = {}) {
       resolve({ stdout, stderr });
     });
   });
-}
-
-function formatBytes(bytes) {
-  if (!bytes || Number.isNaN(bytes)) {
-    return null;
-  }
-
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let index = 0;
-  let value = bytes;
-
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-
-  return `${value.toFixed(1)} ${units[index]}`;
 }
 
 function toFormats(info) {
@@ -279,7 +264,7 @@ function runYtDlpDownload(event, ytDlpArgs) {
 
     const flushProgress = () => {
       if (pendingPayload) {
-        event.sender.send('download:progress', pendingPayload);
+        event.sender.send(ipcChannels.events.downloadProgress, pendingPayload);
         pendingPayload = null;
         lastEmit = Date.now();
       }
@@ -311,7 +296,6 @@ function runYtDlpDownload(event, ytDlpArgs) {
     child.on('error', reject);
 
     child.on('close', (code) => {
-      flushProgress();
       if (code !== 0) {
         reject(new Error(stderr.trim() || `Téléchargement échoué (code ${code})`));
         return;
@@ -340,7 +324,7 @@ function shouldRetryWithRecode(error) {
   return retryableMarkers.some((marker) => message.includes(marker));
 }
 
-ipcMain.handle('deps:check', async () => {
+ipcMain.handle(ipcChannels.invoke.depsCheck, async () => {
   ytDlpPath = await ensureYtDlp(app.getPath('userData'));
 
   const ffmpegPath = resolveFfmpegPath();
@@ -364,7 +348,7 @@ ipcMain.handle('deps:check', async () => {
   };
 });
 
-ipcMain.handle('video:analyze', async (_, url) => {
+ipcMain.handle(ipcChannels.invoke.videoAnalyze, async (_, url) => {
   if (!ytDlpPath) {
     ytDlpPath = await ensureYtDlp(app.getPath('userData'));
   }
@@ -383,7 +367,7 @@ ipcMain.handle('video:analyze', async (_, url) => {
   };
 });
 
-ipcMain.handle('dialog:selectOutput', async () => {
+ipcMain.handle(ipcChannels.invoke.dialogSelectOutput, async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ['openDirectory', 'createDirectory']
   });
@@ -395,7 +379,7 @@ ipcMain.handle('dialog:selectOutput', async () => {
   return filePaths[0];
 });
 
-ipcMain.handle('download:start', async (event, payload) => {
+ipcMain.handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
   if (!ytDlpPath) {
     ytDlpPath = await ensureYtDlp(app.getPath('userData'));
   }
@@ -426,7 +410,7 @@ ipcMain.handle('download:start', async (event, payload) => {
       throw error;
     }
 
-    event.sender.send('download:progress', {
+    event.sender.send(ipcChannels.events.downloadProgress, {
       ...downloadConfig.initialProgress,
       raw: 'Remux MP4 impossible, tentative de réencodage...'
     });
@@ -445,6 +429,15 @@ ipcMain.handle('download:start', async (event, payload) => {
   return { ok: true };
 });
 
+ipcMain.handle(ipcChannels.invoke.openPath, async (_, targetPath) => {
+  if (!targetPath) {
+    return { ok: false };
+  }
+
+  const result = await shell.openPath(targetPath);
+  return { ok: result === '', error: result || null };
+});
+
 app.whenReady().then(createMainWindow);
 
 app.on('window-all-closed', () => {
@@ -458,4 +451,5 @@ app.on('activate', () => {
     createMainWindow();
   }
 });
+
 

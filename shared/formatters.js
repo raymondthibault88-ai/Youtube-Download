@@ -1,4 +1,4 @@
-export function formatDuration(value) {
+﻿export function formatDuration(value) {
   if (!value) return '-';
   const total = Number(value);
   const hours = Math.floor(total / 3600);
@@ -14,4 +14,21 @@ export function formatDuration(value) {
 
 export function formatSize(sizeText) {
   return sizeText || '-';
+}
+
+export function formatBytes(bytes) {
+  if (!bytes || Number.isNaN(bytes)) {
+    return null;
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let index = 0;
+  let value = bytes;
+
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+
+  return `${value.toFixed(1)} ${units[index]}`;
 }

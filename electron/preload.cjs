@@ -1,13 +1,27 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const ipcChannels = {
+  invoke: {
+    depsCheck: 'deps:check',
+    videoAnalyze: 'video:analyze',
+    dialogSelectOutput: 'dialog:selectOutput',
+    downloadStart: 'download:start',
+    openPath: 'dialog:openPath'
+  },
+  events: {
+    downloadProgress: 'download:progress'
+  }
+};
+
 contextBridge.exposeInMainWorld('desktopAPI', {
-  checkDependencies: () => ipcRenderer.invoke('deps:check'),
-  analyzeVideo: (url) => ipcRenderer.invoke('video:analyze', url),
-  selectOutputDir: () => ipcRenderer.invoke('dialog:selectOutput'),
-  startDownload: (payload) => ipcRenderer.invoke('download:start', payload),
+  checkDependencies: () => ipcRenderer.invoke(ipcChannels.invoke.depsCheck),
+  analyzeVideo: (url) => ipcRenderer.invoke(ipcChannels.invoke.videoAnalyze, url),
+  selectOutputDir: () => ipcRenderer.invoke(ipcChannels.invoke.dialogSelectOutput),
+  startDownload: (payload) => ipcRenderer.invoke(ipcChannels.invoke.downloadStart, payload),
+  openPath: (targetPath) => ipcRenderer.invoke(ipcChannels.invoke.openPath, targetPath),
   onDownloadProgress: (handler) => {
     const listener = (_, payload) => handler(payload);
-    ipcRenderer.on('download:progress', listener);
-    return () => ipcRenderer.removeListener('download:progress', listener);
+    ipcRenderer.on(ipcChannels.events.downloadProgress, listener);
+    return () => ipcRenderer.removeListener(ipcChannels.events.downloadProgress, listener);
   }
 });
