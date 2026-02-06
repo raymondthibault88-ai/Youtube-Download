@@ -1,0 +1,10 @@
+{
+  "quickDownloadFormatSelector": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[acodec!=none]",
+  "outputTemplate": "%(title).200B [%(id)s].%(ext)s",
+  "initialProgress": {
+    "percent": 0,
+    "speed": null,
+    "eta": null,
+    "raw": ""
+  }
+}
