@@ -1,5 +1,6 @@
 {
   "invoke": {
+    "startupInfo": "app:startupInfo",
     "depsCheck": "deps:check",
     "videoAnalyze": "video:analyze",
     "dialogSelectOutput": "dialog:selectOutput",

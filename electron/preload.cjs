@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const ipcChannels = {
   invoke: {
+    startupInfo: 'app:startupInfo',
     depsCheck: 'deps:check',
     videoAnalyze: 'video:analyze',
     dialogSelectOutput: 'dialog:selectOutput',
@@ -14,6 +15,7 @@ const ipcChannels = {
 };
 
 contextBridge.exposeInMainWorld('desktopAPI', {
+  getStartupInfo: () => ipcRenderer.invoke(ipcChannels.invoke.startupInfo),
   checkDependencies: () => ipcRenderer.invoke(ipcChannels.invoke.depsCheck),
   analyzeVideo: (url) => ipcRenderer.invoke(ipcChannels.invoke.videoAnalyze, url),
   selectOutputDir: () => ipcRenderer.invoke(ipcChannels.invoke.dialogSelectOutput),

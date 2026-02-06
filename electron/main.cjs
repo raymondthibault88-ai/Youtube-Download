@@ -48,7 +48,7 @@ function createMainWindow() {
     minWidth: 1024,
     minHeight: 680,
     backgroundColor: '#020617',
-    show: false,
+    show: true,
     ...(process.platform === 'darwin' ? {} : { icon: windowIconPath }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -62,10 +62,6 @@ function createMainWindow() {
   } else {
     window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
-
-  window.once('ready-to-show', () => {
-    window.show();
-  });
 
   window.webContents.on('context-menu', (_, params) => {
     const hasSelection = Boolean(params.selectionText && params.selectionText.trim());
@@ -323,6 +319,12 @@ function shouldRetryWithRecode(error) {
 
   return retryableMarkers.some((marker) => message.includes(marker));
 }
+
+ipcMain.handle(ipcChannels.invoke.startupInfo, () => {
+  return {
+    downloadsPath: app.getPath('downloads')
+  };
+});
 
 ipcMain.handle(ipcChannels.invoke.depsCheck, async () => {
   ytDlpPath = await ensureYtDlp(app.getPath('userData'));
