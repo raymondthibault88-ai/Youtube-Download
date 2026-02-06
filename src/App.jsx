@@ -12,7 +12,6 @@ export default function App() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
   const [dependencyInfo, setDependencyInfo] = useState(null);
-  const [showVideoOnly, setShowVideoOnly] = useState(true);
 
   useEffect(() => {
     const unsubscribe = window.desktopAPI.onDownloadProgress((payload) => {
@@ -38,13 +37,8 @@ export default function App() {
 
   const availableFormats = useMemo(() => {
     const formats = video?.formats || [];
-
-    if (!showVideoOnly) {
-      return formats;
-    }
-
     return formats.filter((format) => format.hasVideo);
-  }, [video, showVideoOnly]);
+  }, [video]);
 
   async function handleAnalyze(event) {
     event.preventDefault();
@@ -99,7 +93,7 @@ export default function App() {
     return pickedFolder;
   }
 
-  async function runDownload(formatId, mergeAudioIfNeeded, forceAskOutput = false, hasVideo = true) {
+  async function runDownload(formatId, mergeAudioIfNeeded, forceAskOutput = false, hasVideo = true, hasAudio = true) {
     if (!url.trim()) {
       setError('Colle une URL YouTube valide.');
       return;
@@ -117,7 +111,8 @@ export default function App() {
         outputDir: targetDir,
         formatId,
         mergeAudioIfNeeded,
-        hasVideo
+        hasVideo,
+        hasAudio
       });
 
       setProgress((previous) => ({ ...previous, percent: 100, raw: 'Téléchargement terminé.' }));
@@ -126,10 +121,6 @@ export default function App() {
     } finally {
       setDownloading(false);
     }
-  }
-
-  async function handleQuickDownload() {
-    await runDownload(downloadConfig.quickDownloadFormatSelector, false, false, true);
   }
 
   async function handleManualDownload() {
@@ -143,45 +134,62 @@ export default function App() {
       return;
     }
 
-    await runDownload(selectedFormat.id, selectedFormat.hasVideo && !selectedFormat.hasAudio, true, selectedFormat.hasVideo);
+    await runDownload(
+      selectedFormat.id,
+      selectedFormat.hasVideo && !selectedFormat.hasAudio,
+      true,
+      selectedFormat.hasVideo,
+      selectedFormat.hasAudio
+    );
   }
 
+  const progressPercent = Math.max(0, Math.min(progress.percent || 0, 100));
+  const progressLabel = progress.raw || 'Aucun téléchargement en cours';
+  const progressDetails = [
+    progress.speed ? `Vitesse: ${progress.speed}` : null,
+    progress.eta ? `ETA: ${progress.eta}` : null
+  ].filter(Boolean).join(' · ');
+
+  const appStatus = downloading
+    ? 'Téléchargement en cours'
+    : loadingVideo
+      ? 'Analyse en cours'
+      : 'Prêt';
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#0f172a_0%,#020617_55%,#000_100%)] px-6 py-8 text-slate-100">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <section className="rounded-2xl border border-cyan-500/20 bg-slate-900/60 p-6 shadow-[0_0_80px_-45px_rgba(34,211,238,0.85)] backdrop-blur-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <img src="/favicon.png" alt="Logo YouTube Downloader" className="h-10 w-10 rounded-full object-cover" />
-              <h1 className="text-3xl font-black tracking-tight text-cyan-300">YouTube Downloader</h1>
+    <main className="app-shell">
+      <div className="app-glow" aria-hidden="true" />
+
+      <div className="layout">
+        <section className="panel hero-panel reveal-up">
+          <div className="hero-header">
+            <div className="brand-block">
+              <img src="/favicon.png" alt="Logo YouTube Downloader" className="brand-logo" />
+              <div>
+                <h1>YouTube Downloader</h1>
+                <p>Interface desktop simple pour Windows et macOS</p>
+              </div>
             </div>
-            <p className="text-xs text-slate-400">Desktop portable pour Windows et macOS</p>
+            <span className="status-chip">{appStatus}</span>
           </div>
 
-          <form className="grid gap-3" onSubmit={handleAnalyze}>
+          <form className="tool-form" onSubmit={handleAnalyze}>
+            <label className="field-label" htmlFor="url-input">URL vidéo</label>
             <input
+              id="url-input"
               type="url"
               required
-              placeholder="Colle l'URL YouTube ici"
-              className="w-full rounded-xl border border-cyan-500/25 bg-slate-950/80 px-4 py-3 text-sm outline-none transition focus:border-cyan-300"
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="url-input"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
             />
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleQuickDownload}
-                disabled={downloading || !url.trim()}
-                className="rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {downloading ? 'Téléchargement...' : 'Téléchargement direct'}
-              </button>
-
+            <div className="action-row">
               <button
                 type="submit"
                 disabled={loadingVideo || downloading || !url.trim()}
-                className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn btn-strong"
               >
                 {loadingVideo ? 'Analyse...' : 'Analyser les formats'}
               </button>
@@ -189,119 +197,117 @@ export default function App() {
               <button
                 type="button"
                 onClick={handlePickFolder}
-                className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-500/20"
+                className="btn btn-subtle"
               >
                 Choisir dossier
               </button>
-
-              <span className="text-xs text-slate-400">{outputDir || 'Aucun dossier sélectionné'}</span>
             </div>
           </form>
 
-          {dependencyInfo && (
-            <p className="mt-3 text-xs text-slate-400">
-              yt-dlp {dependencyInfo.ytDlpVersion} | {dependencyInfo.ffmpegVersion}
-            </p>
-          )}
-
-          <div className="mt-4">
-            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800">
-              <div
-                className="h-full bg-cyan-400 transition-all"
-                style={{ width: `${Math.max(0, Math.min(progress.percent || 0, 100))}%` }}
-              />
+          <div className="meta-row">
+            <div className="path-box" title={outputDir || 'Aucun dossier sélectionné'}>
+              <span className="meta-label">Destination</span>
+              <span className="path-value">{outputDir || 'Aucun dossier sélectionné'}</span>
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              {progress.raw || 'Aucun téléchargement en cours'}
-              {progress.speed ? ` | Vitesse: ${progress.speed}` : ''}
-              {progress.eta ? ` | ETA: ${progress.eta}` : ''}
-            </p>
+
+            {dependencyInfo && (
+              <div className="dep-box">
+                <span>yt-dlp {dependencyInfo.ytDlpVersion}</span>
+                <span>ffmpeg {dependencyInfo.ffmpegVersion}</span>
+              </div>
+            )}
           </div>
 
-          {error && <p className="mt-4 rounded-xl border border-rose-400/40 bg-rose-400/10 px-3 py-2 text-sm text-rose-200">{error}</p>}
+          <div className="progress-block" aria-live="polite">
+            <div className="progress-head">
+              <span>{progressLabel}</span>
+              <strong>{progressPercent}%</strong>
+            </div>
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+            {progressDetails && <p className="progress-details">{progressDetails}</p>}
+          </div>
+
+          {error && <p className="error-box">{error}</p>}
         </section>
 
         {video && (
-          <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start">
-              {video.thumbnail && (
-                <img
-                  src={video.thumbnail}
-                  alt={video.title}
-                  className="h-40 w-full max-w-sm rounded-xl object-cover md:h-36"
-                />
-              )}
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-white">{video.title}</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  {video.uploader || 'Chaîne inconnue'} | Durée: {formatDuration(video.duration)}
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={showVideoOnly}
-                      onChange={(event) => setShowVideoOnly(event.target.checked)}
-                    />
-                    Formats vidéo uniquement
-                  </label>
+          <section className="panel reveal-up delay-1">
+            <div className="video-grid">
+              <aside className="video-summary">
+                {video.thumbnail && (
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="video-thumb"
+                  />
+                )}
+                <h2>{video.title}</h2>
+                <p>{video.uploader || 'Chaîne inconnue'} · {formatDuration(video.duration)}</p>
+              </aside>
+
+              <div className="formats-box">
+                <div className="formats-head">
+                  <h3>Formats disponibles</h3>
+                  <span>{availableFormats.length} résultat{availableFormats.length > 1 ? 's' : ''}</span>
+                </div>
+
+                <div className="table-wrap">
+                  <table className="formats-table">
+                    <thead>
+                      <tr>
+                        <th>Choix</th>
+                        <th>Résolution</th>
+                        <th>Type</th>
+                        <th>Conteneur</th>
+                        <th>FPS</th>
+                        <th>Taille</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {availableFormats.map((format) => {
+                        const mediaType = format.hasVideo && format.hasAudio
+                          ? 'Vidéo + Audio'
+                          : format.hasVideo
+                            ? 'Vidéo seule'
+                            : 'Audio seul';
+
+                        const isSelected = selectedFormat?.id === format.id;
+
+                        return (
+                          <tr key={format.id} className={isSelected ? 'is-active' : ''}>
+                            <td>
+                              <input
+                                type="radio"
+                                name="format"
+                                checked={isSelected}
+                                onChange={() => setSelectedFormat(format)}
+                              />
+                            </td>
+                            <td>{format.resolution}</td>
+                            <td>{mediaType}</td>
+                            <td className="uppercase">{format.ext}</td>
+                            <td>{format.fps || '-'}</td>
+                            <td>{formatSize(format.fileSizeText)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="formats-actions">
+                  <button
+                    type="button"
+                    onClick={handleManualDownload}
+                    disabled={downloading || !selectedFormat}
+                    className="btn btn-strong"
+                  >
+                    {downloading ? 'Téléchargement...' : 'Télécharger ce format'}
+                  </button>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-5 overflow-hidden rounded-xl border border-slate-800">
-              <div className="max-h-80 overflow-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="sticky top-0 bg-slate-950 text-xs uppercase text-slate-400">
-                    <tr>
-                      <th className="px-3 py-2">Choix</th>
-                      <th className="px-3 py-2">Résolution</th>
-                      <th className="px-3 py-2">Type</th>
-                      <th className="px-3 py-2">Conteneur</th>
-                      <th className="px-3 py-2">FPS</th>
-                      <th className="px-3 py-2">Taille</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {availableFormats.map((format) => {
-                      const mediaType = format.hasVideo && format.hasAudio
-                        ? 'Vidéo + Audio'
-                        : format.hasVideo
-                          ? 'Vidéo seule (audio fusionné au téléchargement)'
-                          : 'Audio seul';
-
-                      return (
-                        <tr key={format.id} className="border-t border-slate-800/70 text-slate-200">
-                          <td className="px-3 py-2">
-                            <input
-                              type="radio"
-                              name="format"
-                              checked={selectedFormat?.id === format.id}
-                              onChange={() => setSelectedFormat(format)}
-                            />
-                          </td>
-                          <td className="px-3 py-2">{format.resolution}</td>
-                          <td className="px-3 py-2 text-xs text-slate-300">{mediaType}</td>
-                          <td className="px-3 py-2 uppercase">{format.ext}</td>
-                          <td className="px-3 py-2">{format.fps || '-'}</td>
-                          <td className="px-3 py-2">{formatSize(format.fileSizeText)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={handleManualDownload}
-                disabled={downloading || !selectedFormat}
-                className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {downloading ? 'Téléchargement...' : 'Télécharger ce format'}
-              </button>
             </div>
           </section>
         )}

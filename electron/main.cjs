@@ -1,7 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const ffmpegStatic = require('ffmpeg-static');
 const { ensureYtDlp } = require('./ytDlp.cjs');
 const downloadConfig = require('../shared/download-config.json');
@@ -52,6 +52,32 @@ function createMainWindow() {
   } else {
     window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+
+  window.webContents.on('context-menu', (_, params) => {
+    const hasSelection = Boolean(params.selectionText && params.selectionText.trim());
+    const template = [];
+
+    if (params.isEditable) {
+      template.push(
+        { role: 'undo', label: 'Annuler' },
+        { role: 'redo', label: 'Rétablir' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Couper' },
+        { role: 'copy', label: 'Copier' },
+        { role: 'paste', label: 'Coller' },
+        { role: 'selectAll', label: 'Tout sélectionner' }
+      );
+    } else if (hasSelection) {
+      template.push(
+        { role: 'copy', label: 'Copier' },
+        { role: 'selectAll', label: 'Tout sélectionner' }
+      );
+    }
+
+    if (template.length > 0) {
+      Menu.buildFromTemplate(template).popup({ window });
+    }
+  });
 }
 
 function runCommand(commandPath, args, options = {}) {
@@ -151,8 +177,11 @@ function parseProgress(line) {
 
 function buildFormatSelector(payload) {
   const requestedFormat = String(payload.formatId || '').trim();
+  const isVideoDownload = payload.hasVideo !== false;
+  const selectedHasAudio = payload.hasAudio !== false;
+  const shouldMergeAudio = payload.mergeAudioIfNeeded || (isVideoDownload && !selectedHasAudio);
 
-  if (!payload.mergeAudioIfNeeded) {
+  if (!shouldMergeAudio) {
     return requestedFormat;
   }
 
