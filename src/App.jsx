@@ -1,6 +1,32 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import downloadConfig from '../shared/download-config.json';
 import { formatDuration, formatSize } from './utils/formatters';
+
+const FormatRow = memo(function FormatRow({ format, isSelected, onSelect }) {
+  const mediaType = format.hasVideo && format.hasAudio
+    ? 'Vidéo + Audio'
+    : format.hasVideo
+      ? 'Vidéo seule'
+      : 'Audio seul';
+
+  return (
+    <tr className={isSelected ? 'is-active' : ''}>
+      <td>
+        <input
+          type="radio"
+          name="format"
+          checked={isSelected}
+          onChange={() => onSelect(format)}
+        />
+      </td>
+      <td>{format.resolution}</td>
+      <td>{mediaType}</td>
+      <td className="uppercase">{format.ext}</td>
+      <td>{format.fps || '-'}</td>
+      <td>{formatSize(format.fileSizeText)}</td>
+    </tr>
+  );
+});
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -12,6 +38,11 @@ export default function App() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
   const [dependencyInfo, setDependencyInfo] = useState(null);
+  const lastAnalyzeRef = useRef({ url: '', data: null });
+
+  const handleSelectFormat = useCallback((format) => {
+    setSelectedFormat(format);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = window.desktopAPI.onDownloadProgress((payload) => {
@@ -22,17 +53,37 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    let idleId = null;
+    let timeoutId = null;
+
     async function init() {
       try {
         const deps = await window.desktopAPI.checkDependencies();
+        if (cancelled) return;
         setDependencyInfo(deps);
         setOutputDir((current) => current || deps.downloadsPath || '');
       } catch (initError) {
+        if (cancelled) return;
         setError(initError.message || 'Impossible d\'initialiser les dépendances.');
       }
     }
 
-    init();
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(init, { timeout: 2000 });
+    } else {
+      timeoutId = setTimeout(init, 300);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== null) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   const availableFormats = useMemo(() => {
@@ -42,13 +93,26 @@ export default function App() {
 
   async function handleAnalyze(event) {
     event.preventDefault();
+    const normalizedUrl = url.trim();
+    if (!normalizedUrl) {
+      setError('Colle une URL YouTube valide.');
+      return;
+    }
+
     setLoadingVideo(true);
     setError('');
     setVideo(null);
     setSelectedFormat(null);
 
     try {
-      const data = await window.desktopAPI.analyzeVideo(url.trim());
+      if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
+        setVideo(lastAnalyzeRef.current.data);
+        setLoadingVideo(false);
+        return;
+      }
+
+      const data = await window.desktopAPI.analyzeVideo(normalizedUrl);
+      lastAnalyzeRef.current = { url: normalizedUrl, data };
       setVideo(data);
     } catch (analyzeError) {
       setError(analyzeError.message || 'Erreur pendant l\'analyse de la vidéo.');
@@ -143,12 +207,21 @@ export default function App() {
     );
   }
 
-  const progressPercent = Math.max(0, Math.min(progress.percent || 0, 100));
-  const progressLabel = progress.raw || 'Aucun téléchargement en cours';
-  const progressDetails = [
-    progress.speed ? `Vitesse: ${progress.speed}` : null,
-    progress.eta ? `ETA: ${progress.eta}` : null
-  ].filter(Boolean).join(' · ');
+  const progressPercent = useMemo(
+    () => Math.max(0, Math.min(progress.percent || 0, 100)),
+    [progress.percent]
+  );
+  const progressLabel = useMemo(
+    () => progress.raw || 'Aucun téléchargement en cours',
+    [progress.raw]
+  );
+  const progressDetails = useMemo(
+    () => [
+      progress.speed ? `Vitesse: ${progress.speed}` : null,
+      progress.eta ? `ETA: ${progress.eta}` : null
+    ].filter(Boolean).join(' · '),
+    [progress.speed, progress.eta]
+  );
 
   const appStatus = downloading
     ? 'Téléchargement en cours'
@@ -241,6 +314,10 @@ export default function App() {
                     src={video.thumbnail}
                     alt={video.title}
                     className="video-thumb"
+                    loading="lazy"
+                    decoding="async"
+                    width={320}
+                    height={180}
                   />
                 )}
                 <h2>{video.title}</h2>
@@ -266,33 +343,14 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {availableFormats.map((format) => {
-                        const mediaType = format.hasVideo && format.hasAudio
-                          ? 'Vidéo + Audio'
-                          : format.hasVideo
-                            ? 'Vidéo seule'
-                            : 'Audio seul';
-
-                        const isSelected = selectedFormat?.id === format.id;
-
-                        return (
-                          <tr key={format.id} className={isSelected ? 'is-active' : ''}>
-                            <td>
-                              <input
-                                type="radio"
-                                name="format"
-                                checked={isSelected}
-                                onChange={() => setSelectedFormat(format)}
-                              />
-                            </td>
-                            <td>{format.resolution}</td>
-                            <td>{mediaType}</td>
-                            <td className="uppercase">{format.ext}</td>
-                            <td>{format.fps || '-'}</td>
-                            <td>{formatSize(format.fileSizeText)}</td>
-                          </tr>
-                        );
-                      })}
+                      {availableFormats.map((format) => (
+                        <FormatRow
+                          key={format.id}
+                          format={format}
+                          isSelected={selectedFormat?.id === format.id}
+                          onSelect={handleSelectFormat}
+                        />
+                      ))}
                     </tbody>
                   </table>
                 </div>

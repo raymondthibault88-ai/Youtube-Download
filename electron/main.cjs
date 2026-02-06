@@ -8,6 +8,10 @@ const downloadConfig = require('../shared/download-config.json');
 
 let ytDlpPath = null;
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.thibs.youtubedownloader');
+}
+
 function getYtDlpJsRuntimeArg() {
   return `node:${process.execPath}`;
 }
@@ -32,13 +36,16 @@ function resolveFfmpegPath() {
 }
 
 function createMainWindow() {
-  const windowIconPath = path.join(__dirname, 'assets', 'icon.png');
+  const windowIconPath = process.platform === 'win32'
+    ? path.join(__dirname, 'assets', 'icon.ico')
+    : path.join(__dirname, 'assets', 'icon.png');
   const window = new BrowserWindow({
     width: 1200,
     height: 820,
     minWidth: 1024,
     minHeight: 680,
     backgroundColor: '#020617',
+    show: false,
     ...(process.platform === 'darwin' ? {} : { icon: windowIconPath }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -52,6 +59,10 @@ function createMainWindow() {
   } else {
     window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+
+  window.once('ready-to-show', () => {
+    window.show();
+  });
 
   window.webContents.on('context-menu', (_, params) => {
     const hasSelection = Boolean(params.selectionText && params.selectionText.trim());
@@ -101,6 +112,7 @@ function runCommand(commandPath, args, options = {}) {
     child.on('error', reject);
 
     child.on('close', (code) => {
+      flushProgress();
       if (code !== 0) {
         reject(new Error(stderr.trim() || `Commande échouée avec code ${code}`));
         return;
@@ -233,7 +245,7 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
   return args;
 }
 
-function emitProgressFromChunk(event, chunk, stdoutBuffer) {
+function emitProgressFromChunk(onProgress, chunk, stdoutBuffer) {
   const nextBuffer = `${stdoutBuffer}${chunk.toString()}`;
   const lines = nextBuffer.split('\n').map((line) => line.trim());
   const remainingBuffer = lines.pop() || '';
@@ -244,7 +256,7 @@ function emitProgressFromChunk(event, chunk, stdoutBuffer) {
     }
 
     if (line.includes('[download]')) {
-      event.sender.send('download:progress', parseProgress(line));
+      onProgress(parseProgress(line));
     }
   }
 
@@ -260,9 +272,36 @@ function runYtDlpDownload(event, ytDlpArgs) {
 
     let stderr = '';
     let stdoutBuffer = '';
+    let lastEmit = 0;
+    let pendingPayload = null;
+    let flushTimer = null;
+    const emitIntervalMs = 200;
+
+    const flushProgress = () => {
+      if (pendingPayload) {
+        event.sender.send('download:progress', pendingPayload);
+        pendingPayload = null;
+        lastEmit = Date.now();
+      }
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+    };
+
+    const onProgress = (payload) => {
+      pendingPayload = payload;
+      const now = Date.now();
+      const elapsed = now - lastEmit;
+      if (elapsed >= emitIntervalMs) {
+        flushProgress();
+      } else if (!flushTimer) {
+        flushTimer = setTimeout(flushProgress, emitIntervalMs - elapsed);
+      }
+    };
 
     child.stdout.on('data', (chunk) => {
-      stdoutBuffer = emitProgressFromChunk(event, chunk, stdoutBuffer);
+      stdoutBuffer = emitProgressFromChunk(onProgress, chunk, stdoutBuffer);
     });
 
     child.stderr.on('data', (chunk) => {
@@ -272,6 +311,7 @@ function runYtDlpDownload(event, ytDlpArgs) {
     child.on('error', reject);
 
     child.on('close', (code) => {
+      flushProgress();
       if (code !== 0) {
         reject(new Error(stderr.trim() || `Téléchargement échoué (code ${code})`));
         return;
@@ -418,3 +458,4 @@ app.on('activate', () => {
     createMainWindow();
   }
 });
+
