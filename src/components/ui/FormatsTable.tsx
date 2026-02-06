@@ -1,4 +1,4 @@
-import type { VideoFormat } from "../../types/app";
+import type { VideoFormat } from "../../types/video";
 import FormatRow from "./FormatRow";
 
 interface FormatsTableProps {

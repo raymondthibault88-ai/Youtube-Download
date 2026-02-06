@@ -1,4 +1,4 @@
-import type { VideoFormat, VideoInfo } from "../types/app";
+import type { VideoFormat, VideoInfo } from "../types/video";
 import { formatDuration } from "../../shared/formatters.js";
 import FormatsTable from "./ui/FormatsTable";
 

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { VideoFormat } from "../../types/app";
+import type { VideoFormat } from "../../types/video";
 import { formatSize } from "../../../shared/formatters.js";
 
 interface FormatRowProps {

@@ -7,25 +7,23 @@ import EmptyPanel from "./components/EmptyPanel";
 import HeroPanel from "./components/HeroPanel";
 import VideoPanel from "./components/VideoPanel";
 import useDependencyInfo from "./hooks/useDependencyInfo";
+import useDownloadFlow from "./hooks/useDownloadFlow";
 import useDownloadProgress from "./hooks/useDownloadProgress";
 import useOutputDirStorage from "./hooks/useOutputDirStorage";
 import useSplash from "./hooks/useSplash";
 import useStartupInfo from "./hooks/useStartupInfo";
-import type { ProgressState, VideoFormat, VideoInfo } from "./types/app";
+import useVideoAnalyze from "./hooks/useVideoAnalyze";
+import { selectOutputDir } from "./services/desktopApi";
+import { getErrorMessage } from "./utils/errors";
+import type { ProgressState, VideoFormat } from "./types";
 
 export default function App() {
   const [url, setUrl] = useState("");
-  const [video, setVideo] = useState<VideoInfo | null>(null);
-  const [loadingVideo, setLoadingVideo] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<VideoFormat | null>(null);
   const [outputDir, setOutputDir] = useState("");
   const [progress, setProgress] = useState<ProgressState>({
     ...(downloadConfig.initialProgress as ProgressState)
   });
-  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
-  const lastAnalyzeRef = useRef<{ url: string; data: VideoInfo | null }>({ url: "", data: null });
-  const hasOpenedFolderRef = useRef(false);
   const urlInputRef = useRef<HTMLInputElement | null>(null);
 
   useOutputDirStorage(setOutputDir);
@@ -38,179 +36,67 @@ export default function App() {
     setError
   });
 
+  const {
+    video,
+    loadingVideo,
+    selectedFormat,
+    setSelectedFormat,
+    analyze
+  } = useVideoAnalyze({ url, setError });
+
+  const { downloading, handleManualDownload } = useDownloadFlow({
+    url,
+    outputDir,
+    setOutputDir,
+    progress,
+    initialProgress: downloadConfig.initialProgress as ProgressState,
+    setProgress,
+    setError,
+    dependencyInfo,
+    requestDependencyInfo
+  });
+
   const handleSelectFormat = useCallback((format: VideoFormat) => {
     setSelectedFormat(format);
-  }, []);
+  }, [setSelectedFormat]);
 
   const handleUrlChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setUrl(event.target.value);
   }, []);
 
-  async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedUrl = url.trim();
-    if (!normalizedUrl) {
-      setError("Colle une URL YouTube valide.");
-      return;
-    }
+  const handleAnalyze = useCallback((event: FormEvent<HTMLFormElement>) => {
+    analyze(event);
+  }, [analyze]);
 
-    setLoadingVideo(true);
-    setError("");
-    setVideo(null);
-    setSelectedFormat(null);
-
+  const handlePickFolder = useCallback(async () => {
     try {
-      if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
-        const cachedData = lastAnalyzeRef.current.data;
-        setVideo(cachedData);
-        const cachedBest = cachedData?.formats?.[0];
-        if (cachedBest) {
-          setSelectedFormat(cachedBest);
-        }
-        setLoadingVideo(false);
-        return;
-      }
-
-      const data = await window.desktopAPI!.analyzeVideo(normalizedUrl);
-      lastAnalyzeRef.current = { url: normalizedUrl, data };
-      setVideo(data);
-      const bestFormat = data?.formats?.[0];
-      if (bestFormat) {
-        setSelectedFormat(bestFormat);
-      }
-    } catch (analyzeError) {
-      const message = analyzeError instanceof Error
-        ? analyzeError.message
-        : "Erreur pendant l'analyse de la vidéo.";
-      setError(message || "Erreur pendant l'analyse de la vidéo.");
-    } finally {
-      setLoadingVideo(false);
-    }
-  }
-
-  async function handlePickFolder() {
-    try {
-      const folder = await window.desktopAPI!.selectOutputDir();
+      const folder = await selectOutputDir();
       if (folder) {
         setOutputDir(folder);
         window.localStorage.setItem("outputDir", folder);
       }
-    } catch (folderError) {
-      const message = folderError instanceof Error
-        ? folderError.message
-        : "Impossible de sélectionner le dossier de sortie.";
-      setError(message || "Impossible de sélectionner le dossier de sortie.");
+    } catch (errorCaught) {
+      setError(getErrorMessage(errorCaught, "Impossible de sélectionner le dossier de sortie."));
     }
-  }
+  }, [setOutputDir, setError]);
 
-  async function handlePasteUrl() {
+  const handlePasteUrl = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
         setUrl(text.trim());
         urlInputRef.current?.focus();
       }
-    } catch (pasteError) {
-      const message = pasteError instanceof Error
-        ? pasteError.message
-        : "Impossible de lire le presse-papier.";
-      setError(message || "Impossible de lire le presse-papier.");
+    } catch (errorCaught) {
+      setError(getErrorMessage(errorCaught, "Impossible de lire le presse-papier."));
     }
-  }
-
-  async function resolveTargetDirectory(forceAskOutput: boolean) {
-    if (forceAskOutput) {
-      const pickedFolder = await window.desktopAPI!.selectOutputDir();
-      if (!pickedFolder) {
-        throw new Error("Téléchargement annulé: aucun dossier sélectionné.");
-      }
-
-      setOutputDir(pickedFolder);
-      window.localStorage.setItem("outputDir", pickedFolder);
-      return pickedFolder;
-    }
-
-    const current = outputDir || dependencyInfo?.downloadsPath;
-    if (current) {
-      return current;
-    }
-
-    const pickedFolder = await window.desktopAPI!.selectOutputDir();
-    if (!pickedFolder) {
-      throw new Error("Sélectionne un dossier de sortie.");
-    }
-
-    setOutputDir(pickedFolder);
-    window.localStorage.setItem("outputDir", pickedFolder);
-    return pickedFolder;
-  }
-
-  async function runDownload(
-    formatId: string,
-    mergeAudioIfNeeded: boolean,
-    forceAskOutput = false,
-    hasVideo = true,
-    hasAudio = true
-  ) {
-    if (!url.trim()) {
-      setError("Colle une URL YouTube valide.");
-      return;
-    }
-
-    setError("");
-    setDownloading(true);
-    setProgress({ ...downloadConfig.initialProgress } as ProgressState);
-
-    try {
-      requestDependencyInfo();
-      const targetDir = await resolveTargetDirectory(forceAskOutput);
-
-      await window.desktopAPI!.startDownload({
-        url: url.trim(),
-        outputDir: targetDir,
-        formatId,
-        mergeAudioIfNeeded,
-        hasVideo,
-        hasAudio
-      });
-
-      setProgress((previous) => ({ ...previous, percent: 100, raw: "Téléchargement terminé." }));
-      hasOpenedFolderRef.current = false;
-    } catch (downloadError) {
-      const message = downloadError instanceof Error
-        ? downloadError.message
-        : "Le téléchargement a échoué.";
-      setError(message || "Le téléchargement a échoué.");
-    } finally {
-      setDownloading(false);
-    }
-  }
+  }, [setError]);
 
   useEffect(() => {
     if (video && !dependencyInfo) {
       requestDependencyInfo();
     }
   }, [video, dependencyInfo, requestDependencyInfo]);
-
-  async function handleManualDownload() {
-    if (!selectedFormat) {
-      setError("Sélectionne un format.");
-      return;
-    }
-
-    if (!selectedFormat.hasVideo) {
-      setError("Mode MP4 uniquement: sélectionne un format vidéo.");
-      return;
-    }
-
-    await runDownload(
-      selectedFormat.id,
-      selectedFormat.hasVideo && !selectedFormat.hasAudio,
-      true,
-      selectedFormat.hasVideo,
-      selectedFormat.hasAudio
-    );
-  }
 
   const availableFormats = useMemo(() => {
     const formats = video?.formats || [];
@@ -255,17 +141,6 @@ export default function App() {
     return `${details.join(" · ")}${size ? ` · ${size}` : ""}`;
   }, [selectedFormat]);
 
-  useEffect(() => {
-    if (!progress?.raw || hasOpenedFolderRef.current) return;
-    if (progress.percent && progress.percent >= 100) {
-      const targetDir = outputDir || dependencyInfo?.downloadsPath;
-      if (targetDir) {
-        hasOpenedFolderRef.current = true;
-        window.desktopAPI!.openPath(targetDir);
-      }
-    }
-  }, [progress, outputDir, dependencyInfo]);
-
   const actionLabel = loadingVideo ? "Analyse..." : "Analyser les formats";
   const progressMarker = Math.max(6, Math.min(progressPercent, 100));
 
@@ -302,7 +177,7 @@ export default function App() {
             availableFormats={availableFormats}
             selectedFormatId={selectedFormat?.id || null}
             onSelectFormat={handleSelectFormat}
-            onDownload={handleManualDownload}
+            onDownload={() => handleManualDownload(selectedFormat)}
             downloading={downloading}
           />
         ) : (

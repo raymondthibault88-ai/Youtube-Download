@@ -1,11 +1,11 @@
-import type { DependencyInfo } from '../types/deps';
-import type { StartDownloadPayload } from '../types/download';
-import type { ProgressState } from '../types/progress';
-import type { VideoInfo } from '../types/video';
+import type { DependencyInfo } from "../types/deps";
+import type { StartDownloadPayload } from "../types/download";
+import type { ProgressState } from "../types/progress";
+import type { VideoInfo } from "../types/video";
 
 function getApi() {
   if (!window.desktopAPI) {
-    throw new Error('Le bridge Electron (preload) est indisponible.');
+    throw new Error("Le bridge Electron (preload) est indisponible.");
   }
 
   return window.desktopAPI;
@@ -15,7 +15,7 @@ export function getStartupInfo() {
   return getApi().getStartupInfo();
 }
 
-export function checkDependencies() {
+export function checkDependencies(): Promise<DependencyInfo> {
   return getApi().checkDependencies();
 }
 

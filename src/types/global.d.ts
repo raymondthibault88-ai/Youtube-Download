@@ -1,7 +1,7 @@
-import type { DependencyInfo } from './deps';
-import type { StartDownloadPayload } from './download';
-import type { ProgressState } from './progress';
-import type { VideoInfo } from './video';
+import type { DependencyInfo } from "./deps";
+import type { StartDownloadPayload } from "./download";
+import type { ProgressState } from "./progress";
+import type { VideoInfo } from "./video";
 
 interface DesktopAPI {
   getStartupInfo: () => Promise<{ downloadsPath?: string }>;

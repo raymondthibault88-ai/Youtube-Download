@@ -1,9 +1,8 @@
-import { useRef, useState } from 'react';
-import type { FormEvent } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import type { VideoFormat, VideoInfo } from '../types/video';
-import { analyzeVideo } from '../services/desktopApi';
-import { getErrorMessage } from '../utils/errors';
+import { useRef, useState } from "react";
+import type { Dispatch, SetStateAction, FormEvent } from "react";
+import type { VideoFormat, VideoInfo } from "../types/video";
+import { analyzeVideo } from "../services/desktopApi";
+import { getErrorMessage } from "../utils/errors";
 
 interface UseVideoAnalyzeParams {
   url: string;
@@ -14,18 +13,18 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<VideoFormat | null>(null);
-  const lastAnalyzeRef = useRef<{ url: string; data: VideoInfo | null }>({ url: '', data: null });
+  const lastAnalyzeRef = useRef<{ url: string; data: VideoInfo | null }>({ url: "", data: null });
 
   async function analyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedUrl = url.trim();
     if (!normalizedUrl) {
-      setError('Colle une URL YouTube valide.');
+      setError("Colle une URL YouTube valide.");
       return;
     }
 
     setLoadingVideo(true);
-    setError('');
+    setError("");
     setVideo(null);
     setSelectedFormat(null);
 
@@ -48,9 +47,8 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
       if (bestFormat) {
         setSelectedFormat(bestFormat);
       }
-    } catch (analyzeError) {
-      const message = getErrorMessage(analyzeError, "Erreur pendant l'analyse de la vidéo.");
-      setError(message);
+    } catch (error) {
+      setError(getErrorMessage(error, "Erreur pendant l'analyse de la vidéo."));
     } finally {
       setLoadingVideo(false);
     }

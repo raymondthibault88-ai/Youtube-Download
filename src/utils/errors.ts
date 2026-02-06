@@ -3,7 +3,7 @@ export function getErrorMessage(error: unknown, fallback: string) {
     return error.message || fallback;
   }
 
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error || fallback;
   }
 

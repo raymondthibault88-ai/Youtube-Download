@@ -11,6 +11,7 @@ interface UseDownloadFlowParams {
   outputDir: string;
   setOutputDir: Dispatch<SetStateAction<string>>;
   progress: ProgressState;
+  initialProgress: ProgressState;
   setProgress: Dispatch<SetStateAction<ProgressState>>;
   setError: Dispatch<SetStateAction<string>>;
   dependencyInfo: DependencyInfo | null;
@@ -22,6 +23,7 @@ export default function useDownloadFlow({
   outputDir,
   setOutputDir,
   progress,
+  initialProgress,
   setProgress,
   setError,
   dependencyInfo,
@@ -34,7 +36,7 @@ export default function useDownloadFlow({
     if (forceAskOutput) {
       const pickedFolder = await selectOutputDir();
       if (!pickedFolder) {
-        throw new Error("Téléchargement annul?: aucun dossier sélectionné.");
+        throw new Error("Téléchargement annulé: aucun dossier sélectionné.");
       }
 
       setOutputDir(pickedFolder);
@@ -71,7 +73,7 @@ export default function useDownloadFlow({
 
     setError("");
     setDownloading(true);
-    setProgress((previous) => ({ ...previous, ...progress, percent: 0 }));
+    setProgress({ ...initialProgress });
 
     try {
       requestDependencyInfo();
@@ -88,9 +90,8 @@ export default function useDownloadFlow({
 
       setProgress((previous) => ({ ...previous, percent: 100, raw: "Téléchargement terminé." }));
       hasOpenedFolderRef.current = false;
-    } catch (downloadError) {
-      const message = getErrorMessage(downloadError, "Le téléchargement a échoué.");
-      setError(message);
+    } catch (error) {
+      setError(getErrorMessage(error, "Le téléchargement a échoué."));
     } finally {
       setDownloading(false);
     }

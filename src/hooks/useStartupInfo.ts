@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { getStartupInfo } from "../services/desktopApi";
+import { getErrorMessage } from "../utils/errors";
 
 interface UseStartupInfoParams {
   setOutputDir: Dispatch<SetStateAction<string>>;
@@ -12,20 +14,14 @@ export default function useStartupInfo({ setOutputDir, setError }: UseStartupInf
 
     async function init() {
       try {
-        if (!window.desktopAPI?.getStartupInfo) {
-          return;
-        }
-        const info = await window.desktopAPI.getStartupInfo();
+        const info = await getStartupInfo();
         if (cancelled) return;
         if (info?.downloadsPath) {
           setOutputDir((current) => current || info.downloadsPath || "");
         }
-      } catch (initError) {
+      } catch (error) {
         if (cancelled) return;
-        const message = initError instanceof Error
-          ? initError.message
-          : "Impossible d'initialiser l'application.";
-        setError(message || "Impossible d'initialiser l'application.");
+        setError(getErrorMessage(error, "Impossible d'initialiser l'application."));
       }
     }
 

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { DependencyInfo } from "../types/app";
+import type { DependencyInfo } from "../types/deps";
+import { checkDependencies } from "../services/desktopApi";
+import { getErrorMessage } from "../utils/errors";
 
 interface UseDependencyInfoParams {
   setOutputDir: Dispatch<SetStateAction<string>>;
@@ -12,21 +14,18 @@ export default function useDependencyInfo({ setOutputDir, setError }: UseDepende
   const depsInfoRequestedRef = useRef(false);
 
   const requestDependencyInfo = useCallback(async (): Promise<void> => {
-    if (!window.desktopAPI?.checkDependencies || depsInfoRequestedRef.current) {
+    if (depsInfoRequestedRef.current) {
       return;
     }
 
     depsInfoRequestedRef.current = true;
 
     try {
-      const deps = await window.desktopAPI.checkDependencies();
+      const deps = await checkDependencies();
       setDependencyInfo(deps);
       setOutputDir((current) => current || deps.downloadsPath || "");
-    } catch (initError) {
-      const message = initError instanceof Error
-        ? initError.message
-        : "Impossible d'initialiser les dépendances.";
-      setError(message || "Impossible d'initialiser les dépendances.");
+    } catch (error) {
+      setError(getErrorMessage(error, "Impossible d'initialiser les dépendances."));
     }
   }, [setError, setOutputDir]);
 

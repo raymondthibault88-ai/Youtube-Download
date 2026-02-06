@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import type { ProgressState } from '../types/app';
+import { useEffect } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import type { ProgressState } from "../types/progress";
+import { onDownloadProgress } from "../services/desktopApi";
+import { getErrorMessage } from "../utils/errors";
 
 interface UseDownloadProgressParams {
   setProgress: Dispatch<SetStateAction<ProgressState>>;
@@ -9,15 +11,20 @@ interface UseDownloadProgressParams {
 
 export default function useDownloadProgress({ setProgress, setError }: UseDownloadProgressParams) {
   useEffect(() => {
-    if (!window.desktopAPI) {
-      setError('Le bridge Electron (preload) est indisponible.');
-      return undefined;
+    let unsubscribe: (() => void) | null = null;
+
+    try {
+      unsubscribe = onDownloadProgress((payload) => {
+        setProgress((previous) => ({ ...previous, ...payload }));
+      });
+    } catch (error) {
+      setError(getErrorMessage(error, "Le bridge Electron (preload) est indisponible."));
     }
 
-    const unsubscribe = window.desktopAPI.onDownloadProgress((payload) => {
-      setProgress((previous) => ({ ...previous, ...payload }));
-    });
-
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [setError, setProgress]);
 }

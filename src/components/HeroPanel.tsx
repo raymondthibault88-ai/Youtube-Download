@@ -1,5 +1,5 @@
 import type { ChangeEvent, FormEvent, RefObject } from "react";
-import type { DependencyInfo } from "../types/app";
+import type { DependencyInfo } from "../types/deps";
 import ProgressBlock from "./ui/ProgressBlock";
 
 interface HeroPanelProps {
