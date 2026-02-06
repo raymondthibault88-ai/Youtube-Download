@@ -6,6 +6,7 @@ const { pipeline } = require('node:stream');
 const { promisify } = require('node:util');
 
 const streamPipeline = promisify(pipeline);
+const ensureBinaryPromises = new Map();
 
 const RELEASE_VERSION = '2026.02.04';
 const RELEASE_BASE = `https://github.com/yt-dlp/yt-dlp/releases/download/${RELEASE_VERSION}`;
@@ -102,8 +103,7 @@ async function downloadFile(url, destination, redirectCount = 0) {
 }
 
 async function downloadAndVerifyBinary(binaryInfo, targetPath) {
-  const tempPath = `${targetPath}.download`;
-  await removeIfExists(tempPath);
+  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${nodeCrypto.randomBytes(6).toString('hex')}.download`;
 
   try {
     await downloadFile(getDownloadUrl(binaryInfo.name), tempPath);
@@ -121,19 +121,35 @@ async function downloadAndVerifyBinary(binaryInfo, targetPath) {
 async function ensureYtDlp(userDataPath) {
   const binaryInfo = getBinaryInfo();
   const targetPath = path.join(userDataPath, 'bin', binaryInfo.name);
-
-  if (fs.existsSync(targetPath)) {
-    try {
-      await verifyFileHash(targetPath, binaryInfo.sha256);
-      return targetPath;
-    } catch {
-      await removeIfExists(targetPath);
-    }
+  const existingEnsurePromise = ensureBinaryPromises.get(targetPath);
+  if (existingEnsurePromise) {
+    return existingEnsurePromise;
   }
 
-  await downloadAndVerifyBinary(binaryInfo, targetPath);
+  const ensurePromise = (async () => {
+    if (fs.existsSync(targetPath)) {
+      try {
+        await verifyFileHash(targetPath, binaryInfo.sha256);
+        return targetPath;
+      } catch {
+        await removeIfExists(targetPath);
+      }
+    }
 
-  return targetPath;
+    await downloadAndVerifyBinary(binaryInfo, targetPath);
+
+    return targetPath;
+  })();
+
+  ensureBinaryPromises.set(targetPath, ensurePromise);
+
+  try {
+    return await ensurePromise;
+  } finally {
+    if (ensureBinaryPromises.get(targetPath) === ensurePromise) {
+      ensureBinaryPromises.delete(targetPath);
+    }
+  }
 }
 
 module.exports = {
