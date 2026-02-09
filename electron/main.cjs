@@ -2,13 +2,14 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
-const ffmpegStatic = require('ffmpeg-static');
-const { ensureYtDlp } = require('./ytDlp.cjs');
 const downloadConfig = require('../shared/download-config.json');
 const ipcChannels = require('../shared/ipc.json');
 const { formatBytes } = require('../shared/formatters.js');
 
 let ytDlpPath = null;
+let mainWindow = null;
+const analyzeCache = new Map();
+const ANALYZE_CACHE_TTL_MS = 10 * 60 * 1000;
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.thibs.youtubedownloader');
@@ -25,7 +26,19 @@ function getYtDlpEnv() {
   };
 }
 
+async function ensureYtDlpPath() {
+  if (ytDlpPath) {
+    return ytDlpPath;
+  }
+
+  const { ensureYtDlp } = require('./ytDlp.cjs');
+  ytDlpPath = await ensureYtDlp(app.getPath('userData'));
+  return ytDlpPath;
+}
+
 function resolveFfmpegPath() {
+  // Lazy load to reduce main-process startup work.
+  const ffmpegStatic = require('ffmpeg-static');
   if (!ffmpegStatic) {
     return null;
   }
@@ -48,13 +61,18 @@ function createMainWindow() {
     minWidth: 1024,
     minHeight: 680,
     backgroundColor: '#020617',
-    show: true,
+    show: false,
     ...(process.platform === 'darwin' ? {} : { icon: windowIconPath }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+
+  window.once('ready-to-show', () => {
+    window.show();
+    window.focus();
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -88,7 +106,17 @@ function createMainWindow() {
       Menu.buildFromTemplate(template).popup({ window });
     }
   });
+
+  window.on('closed', () => {
+    if (mainWindow === window) {
+      mainWindow = null;
+    }
+  });
+
+  mainWindow = window;
+  return window;
 }
+
 
 function runCommand(commandPath, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -183,11 +211,12 @@ function buildFormatSelector(payload) {
 }
 
 function buildAnalyzeArgs(url) {
+  const jsRuntime = getYtDlpJsRuntimeArg();
   return [
     '--no-playlist',
     '--no-warnings',
     '--js-runtimes',
-    getYtDlpJsRuntimeArg(),
+    jsRuntime,
     '--skip-download',
     '-J',
     url
@@ -195,16 +224,22 @@ function buildAnalyzeArgs(url) {
 }
 
 function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldRecodeToMp4 }) {
+  const jsRuntime = getYtDlpJsRuntimeArg();
   const args = [
     '--newline',
     '--no-playlist',
     '--js-runtimes',
-    getYtDlpJsRuntimeArg(),
+    jsRuntime,
     '--ffmpeg-location',
     ffmpegPath,
     '-f',
     formatSelector
   ];
+
+  const concurrentFragments = Number(downloadConfig.concurrentFragments || 0);
+  if (Number.isFinite(concurrentFragments) && concurrentFragments > 1) {
+    args.push('-N', String(Math.floor(concurrentFragments)));
+  }
 
   if (shouldRecodeToMp4 || formatSelector.includes('+')) {
     args.push('--merge-output-format', 'mp4');
@@ -327,7 +362,7 @@ ipcMain.handle(ipcChannels.invoke.startupInfo, () => {
 });
 
 ipcMain.handle(ipcChannels.invoke.depsCheck, async () => {
-  ytDlpPath = await ensureYtDlp(app.getPath('userData'));
+  const ensuredYtDlpPath = await ensureYtDlpPath();
 
   const ffmpegPath = resolveFfmpegPath();
   if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
@@ -335,7 +370,7 @@ ipcMain.handle(ipcChannels.invoke.depsCheck, async () => {
   }
 
   const [{ stdout: ytDlpVersion }, { stdout: ffmpegVersionRaw }] = await Promise.all([
-    runCommand(ytDlpPath, ['--version']),
+    runCommand(ensuredYtDlpPath, ['--version']),
     runCommand(ffmpegPath, ['-version'])
   ]);
 
@@ -351,15 +386,23 @@ ipcMain.handle(ipcChannels.invoke.depsCheck, async () => {
 });
 
 ipcMain.handle(ipcChannels.invoke.videoAnalyze, async (_, url) => {
-  if (!ytDlpPath) {
-    ytDlpPath = await ensureYtDlp(app.getPath('userData'));
+  const normalizedUrl = String(url || '').trim();
+  if (!normalizedUrl) {
+    throw new Error('URL invalide.');
   }
 
-  const { stdout } = await runCommand(ytDlpPath, buildAnalyzeArgs(url), { env: getYtDlpEnv() });
+  const cached = analyzeCache.get(normalizedUrl);
+  if (cached && Date.now() - cached.at < ANALYZE_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const ensuredYtDlpPath = await ensureYtDlpPath();
+
+  const { stdout } = await runCommand(ensuredYtDlpPath, buildAnalyzeArgs(normalizedUrl), { env: getYtDlpEnv() });
 
   const info = JSON.parse(stdout);
 
-  return {
+  const payload = {
     id: info.id,
     title: info.title,
     thumbnail: info.thumbnail,
@@ -367,6 +410,16 @@ ipcMain.handle(ipcChannels.invoke.videoAnalyze, async (_, url) => {
     uploader: info.uploader,
     formats: toFormats(info)
   };
+
+  analyzeCache.set(normalizedUrl, { at: Date.now(), data: payload });
+  if (analyzeCache.size > 20) {
+    const oldestKey = analyzeCache.keys().next().value;
+    if (oldestKey) {
+      analyzeCache.delete(oldestKey);
+    }
+  }
+
+  return payload;
 });
 
 ipcMain.handle(ipcChannels.invoke.dialogSelectOutput, async () => {
@@ -382,9 +435,7 @@ ipcMain.handle(ipcChannels.invoke.dialogSelectOutput, async () => {
 });
 
 ipcMain.handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
-  if (!ytDlpPath) {
-    ytDlpPath = await ensureYtDlp(app.getPath('userData'));
-  }
+  await ensureYtDlpPath();
 
   const ffmpegPath = resolveFfmpegPath();
   if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
@@ -440,7 +491,24 @@ ipcMain.handle(ipcChannels.invoke.openPath, async (_, targetPath) => {
   return { ok: result === '', error: result || null };
 });
 
-app.whenReady().then(createMainWindow);
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(createMainWindow);
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

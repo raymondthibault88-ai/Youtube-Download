@@ -31,7 +31,7 @@ export default function App() {
   useSplash();
   useStartupInfo({ setOutputDir, setError });
 
-  const { dependencyInfo, requestDependencyInfo } = useDependencyInfo({
+  const { dependencyInfo, requestDependencyInfo, isChecking: isPreparingTools } = useDependencyInfo({
     setOutputDir,
     setError
   });
@@ -65,8 +65,11 @@ export default function App() {
   }, []);
 
   const handleAnalyze = useCallback((event: FormEvent<HTMLFormElement>) => {
+    if (!dependencyInfo && !isPreparingTools) {
+      requestDependencyInfo();
+    }
     analyze(event);
-  }, [analyze]);
+  }, [analyze, dependencyInfo, isPreparingTools, requestDependencyInfo]);
 
   const handlePickFolder = useCallback(async () => {
     try {
@@ -80,6 +83,7 @@ export default function App() {
     }
   }, [setOutputDir, setError]);
 
+
   const handlePasteUrl = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -91,6 +95,10 @@ export default function App() {
       setError(getErrorMessage(errorCaught, "Impossible de lire le presse-papier."));
     }
   }, [setError]);
+
+  const handleDownload = useCallback(() => {
+    handleManualDownload(selectedFormat);
+  }, [handleManualDownload, selectedFormat]);
 
   useEffect(() => {
     if (video && !dependencyInfo) {
@@ -166,6 +174,7 @@ export default function App() {
           progressPercent={progressPercent}
           progressMarker={progressMarker}
           progressDetails={progressDetails}
+          isPreparingTools={isPreparingTools && !dependencyInfo}
           error={error}
           logoSrc={logo}
         />
@@ -177,7 +186,7 @@ export default function App() {
             availableFormats={availableFormats}
             selectedFormatId={selectedFormat?.id || null}
             onSelectFormat={handleSelectFormat}
-            onDownload={() => handleManualDownload(selectedFormat)}
+            onDownload={handleDownload}
             downloading={downloading}
           />
         ) : (

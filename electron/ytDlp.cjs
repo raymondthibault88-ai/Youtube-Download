@@ -27,11 +27,8 @@ const BINARIES_BY_PLATFORM = {
   }
 };
 
-function getBinaryInfo() {
-  if (BINARIES_BY_PLATFORM[process.platform]) {
-    return BINARIES_BY_PLATFORM[process.platform];
-  }
-
+const BINARY_INFO = BINARIES_BY_PLATFORM[process.platform];
+if (!BINARY_INFO) {
   throw new Error(`Plateforme non supportée pour yt-dlp: ${process.platform}`);
 }
 
@@ -119,8 +116,7 @@ async function downloadAndVerifyBinary(binaryInfo, targetPath) {
 }
 
 async function ensureYtDlp(userDataPath) {
-  const binaryInfo = getBinaryInfo();
-  const targetPath = path.join(userDataPath, 'bin', binaryInfo.name);
+  const targetPath = path.join(userDataPath, 'bin', BINARY_INFO.name);
   const existingEnsurePromise = ensureBinaryPromises.get(targetPath);
   if (existingEnsurePromise) {
     return existingEnsurePromise;
@@ -129,14 +125,14 @@ async function ensureYtDlp(userDataPath) {
   const ensurePromise = (async () => {
     if (fs.existsSync(targetPath)) {
       try {
-        await verifyFileHash(targetPath, binaryInfo.sha256);
+        await verifyFileHash(targetPath, BINARY_INFO.sha256);
         return targetPath;
       } catch {
         await removeIfExists(targetPath);
       }
     }
 
-    await downloadAndVerifyBinary(binaryInfo, targetPath);
+    await downloadAndVerifyBinary(BINARY_INFO, targetPath);
 
     return targetPath;
   })();

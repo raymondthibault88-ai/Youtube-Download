@@ -19,6 +19,7 @@ interface HeroPanelProps {
   progressPercent: number;
   progressMarker: number;
   progressDetails: string;
+  isPreparingTools: boolean;
   error: string;
   logoSrc: string;
 }
@@ -40,6 +41,7 @@ export default function HeroPanel({
   progressPercent,
   progressMarker,
   progressDetails,
+  isPreparingTools,
   error,
   logoSrc
 }: HeroPanelProps) {
@@ -113,6 +115,11 @@ export default function HeroPanel({
           <div className="dep-box">
             <span>yt-dlp {dependencyInfo.ytDlpVersion}</span>
             <span>ffmpeg {dependencyInfo.ffmpegVersion}</span>
+          </div>
+        )}
+        {isPreparingTools && !dependencyInfo && (
+          <div className="dep-box">
+            <span>Préparation des outils...</span>
           </div>
         )}
       </div>

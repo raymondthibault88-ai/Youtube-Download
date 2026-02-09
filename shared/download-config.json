@@ -1,5 +1,6 @@
 {
   "quickDownloadFormatSelector": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[acodec!=none]",
+  "concurrentFragments": 4,
   "outputTemplate": "%(title).200B [%(id)s].%(ext)s",
   "initialProgress": {
     "percent": 0,

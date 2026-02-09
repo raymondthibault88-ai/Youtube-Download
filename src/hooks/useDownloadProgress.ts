@@ -15,7 +15,18 @@ export default function useDownloadProgress({ setProgress, setError }: UseDownlo
 
     try {
       unsubscribe = onDownloadProgress((payload) => {
-        setProgress((previous) => ({ ...previous, ...payload }));
+        setProgress((previous) => {
+          const next = { ...previous, ...payload };
+          if (
+            previous.percent === next.percent
+            && previous.speed === next.speed
+            && previous.eta === next.eta
+            && previous.raw === next.raw
+          ) {
+            return previous;
+          }
+          return next;
+        });
       });
     } catch (error) {
       setError(getErrorMessage(error, "Le bridge Electron (preload) est indisponible."));

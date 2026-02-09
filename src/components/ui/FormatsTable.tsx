@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { VideoFormat } from "../../types/video";
 import FormatRow from "./FormatRow";
 
@@ -10,7 +11,7 @@ interface FormatsTableProps {
   downloading: boolean;
 }
 
-export default function FormatsTable({
+const FormatsTable = memo(function FormatsTable({
   formats,
   selectedFormatId,
   onSelectFormat,
@@ -67,4 +68,6 @@ export default function FormatsTable({
       </div>
     </div>
   );
-}
+});
+
+export default FormatsTable;

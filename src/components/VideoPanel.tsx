@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { VideoFormat, VideoInfo } from "../types/video";
 import { formatDuration } from "../../shared/formatters.js";
 import FormatsTable from "./ui/FormatsTable";
@@ -12,7 +13,7 @@ interface VideoPanelProps {
   downloading: boolean;
 }
 
-export default function VideoPanel({
+const VideoPanel = memo(function VideoPanel({
   video,
   selectedFormatSummary,
   availableFormats,
@@ -56,4 +57,6 @@ export default function VideoPanel({
       </div>
     </section>
   );
-}
+});
+
+export default VideoPanel;
