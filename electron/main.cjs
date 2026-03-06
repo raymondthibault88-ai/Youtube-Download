@@ -10,6 +10,9 @@ let ytDlpPath = null;
 let mainWindow = null;
 const analyzeCache = new Map();
 const ANALYZE_CACHE_TTL_MS = 10 * 60 * 1000;
+let dependencyInfoCache = null;
+let dependencyInfoPromise = null;
+const DEPENDENCY_CACHE_TTL_MS = 5 * 60 * 1000;
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.thibs.youtubedownloader');
@@ -48,6 +51,49 @@ function resolveFfmpegPath() {
   }
 
   return ffmpegStatic;
+}
+
+async function getDependencyInfo() {
+  if (dependencyInfoCache && Date.now() - dependencyInfoCache.at < DEPENDENCY_CACHE_TTL_MS) {
+    return dependencyInfoCache.data;
+  }
+
+  if (dependencyInfoPromise) {
+    return dependencyInfoPromise;
+  }
+
+  dependencyInfoPromise = (async () => {
+    const ensuredYtDlpPath = await ensureYtDlpPath();
+
+    const ffmpegPath = resolveFfmpegPath();
+    if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
+      throw new Error('FFmpeg introuvable. Vérifie l\'installation de ffmpeg-static.');
+    }
+
+    const [{ stdout: ytDlpVersion }, { stdout: ffmpegVersionRaw }] = await Promise.all([
+      runCommand(ensuredYtDlpPath, ['--version']),
+      runCommand(ffmpegPath, ['-version'])
+    ]);
+
+    const ffmpegVersion = ffmpegVersionRaw.split('\n')[0] || ffmpegVersionRaw.trim();
+
+    const payload = {
+      ytDlpPath,
+      ytDlpVersion: ytDlpVersion.trim(),
+      ffmpegPath,
+      ffmpegVersion: ffmpegVersion.trim(),
+      downloadsPath: app.getPath('downloads')
+    };
+
+    dependencyInfoCache = { at: Date.now(), data: payload };
+    return payload;
+  })();
+
+  try {
+    return await dependencyInfoPromise;
+  } finally {
+    dependencyInfoPromise = null;
+  }
 }
 
 function createMainWindow() {
@@ -152,35 +198,33 @@ function runCommand(commandPath, args, options = {}) {
 function toFormats(info) {
   const safeFormats = Array.isArray(info.formats) ? info.formats : [];
 
-  return safeFormats
-    .map((format) => {
-      const hasVideo = format.vcodec && format.vcodec !== 'none';
-      const hasAudio = format.acodec && format.acodec !== 'none';
+  const mapped = safeFormats.map((format) => {
+    const hasVideo = format.vcodec && format.vcodec !== 'none';
+    const hasAudio = format.acodec && format.acodec !== 'none';
+    const height = format.height || 0;
 
-      return {
-        id: format.format_id,
-        ext: format.ext,
-        protocol: format.protocol,
-        resolution: format.resolution || (format.height ? `${format.height}p` : 'audio only'),
-        height: format.height || 0,
-        fps: format.fps || null,
-        hasVideo,
-        hasAudio,
-        dynamicRange: format.dynamic_range || null,
-        note: format.format_note || null,
-        fileSize: format.filesize || format.filesize_approx || null,
-        fileSizeText: formatBytes(format.filesize || format.filesize_approx),
-        vcodec: format.vcodec,
-        acodec: format.acodec
-      };
-    })
+    return {
+      id: format.format_id,
+      ext: format.ext,
+      resolution: format.resolution || (height ? `${height}p` : 'audio only'),
+      height,
+      fps: format.fps || null,
+      hasVideo,
+      hasAudio,
+      fileSizeText: formatBytes(format.filesize || format.filesize_approx)
+    };
+  });
+
+  return mapped
+    .filter((format) => format.hasVideo)
     .sort((a, b) => {
       if (b.height !== a.height) {
         return b.height - a.height;
       }
 
       return (b.fps || 0) - (a.fps || 0);
-    });
+    })
+    .map(({ height, ...rest }) => rest);
 }
 
 function parseProgress(line) {
@@ -362,27 +406,7 @@ ipcMain.handle(ipcChannels.invoke.startupInfo, () => {
 });
 
 ipcMain.handle(ipcChannels.invoke.depsCheck, async () => {
-  const ensuredYtDlpPath = await ensureYtDlpPath();
-
-  const ffmpegPath = resolveFfmpegPath();
-  if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
-    throw new Error('FFmpeg introuvable. Vérifie l\'installation de ffmpeg-static.');
-  }
-
-  const [{ stdout: ytDlpVersion }, { stdout: ffmpegVersionRaw }] = await Promise.all([
-    runCommand(ensuredYtDlpPath, ['--version']),
-    runCommand(ffmpegPath, ['-version'])
-  ]);
-
-  const ffmpegVersion = ffmpegVersionRaw.split('\n')[0] || ffmpegVersionRaw.trim();
-
-  return {
-    ytDlpPath,
-    ytDlpVersion: ytDlpVersion.trim(),
-    ffmpegPath,
-    ffmpegVersion: ffmpegVersion.trim(),
-    downloadsPath: app.getPath('downloads')
-  };
+  return getDependencyInfo();
 });
 
 ipcMain.handle(ipcChannels.invoke.videoAnalyze, async (_, url) => {

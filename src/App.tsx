@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import downloadConfig from "../shared/download-config.json";
 import { formatSize } from "../shared/formatters.js";
@@ -65,11 +65,8 @@ export default function App() {
   }, []);
 
   const handleAnalyze = useCallback((event: FormEvent<HTMLFormElement>) => {
-    if (!dependencyInfo && !isPreparingTools) {
-      requestDependencyInfo();
-    }
     analyze(event);
-  }, [analyze, dependencyInfo, isPreparingTools, requestDependencyInfo]);
+  }, [analyze]);
 
   const handlePickFolder = useCallback(async () => {
     try {
@@ -99,12 +96,6 @@ export default function App() {
   const handleDownload = useCallback(() => {
     handleManualDownload(selectedFormat);
   }, [handleManualDownload, selectedFormat]);
-
-  useEffect(() => {
-    if (video && !dependencyInfo) {
-      requestDependencyInfo();
-    }
-  }, [video, dependencyInfo, requestDependencyInfo]);
 
   const availableFormats = useMemo(() => {
     const formats = video?.formats || [];
