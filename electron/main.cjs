@@ -224,7 +224,15 @@ function toFormats(info) {
 
       return (b.fps || 0) - (a.fps || 0);
     })
-    .map(({ height, ...rest }) => rest);
+    .map((format) => ({
+      id: format.id,
+      label: format.label,
+      extension: format.extension,
+      fps: format.fps,
+      hasVideo: format.hasVideo,
+      hasAudio: format.hasAudio,
+      fileSizeText: format.fileSizeText,
+    }));
 }
 
 function parseProgress(line) {
@@ -545,5 +553,4 @@ app.on('activate', () => {
     createMainWindow();
   }
 });
-
 
