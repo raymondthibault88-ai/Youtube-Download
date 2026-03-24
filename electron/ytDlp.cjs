@@ -8,22 +8,22 @@ const { promisify } = require('node:util');
 const streamPipeline = promisify(pipeline);
 const ensureBinaryPromises = new Map();
 
-const RELEASE_VERSION = '2026.02.04';
+const RELEASE_VERSION = '2026.03.17';
 const RELEASE_BASE = `https://github.com/yt-dlp/yt-dlp/releases/download/${RELEASE_VERSION}`;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 const MAX_REDIRECTS = 5;
 const BINARIES_BY_PLATFORM = {
   win32: {
     name: 'yt-dlp.exe',
-    sha256: '78a3ac4cd1eeb681d65e55fc1761ee14c87de8d8699afb09140d1049c15ae006'
+    sha256: '3db811b366b2da47337d2fcfdfe5bbd9a258dad3f350c54974f005df115a1545'
   },
   darwin: {
     name: 'yt-dlp_macos',
-    sha256: 'e833b5aa657b2f2b8608442e9afac91374f147cb641301e8fb39a339e2fe3f71'
+    sha256: 'e80c47b3ce712acee51d5e3d4eace2d181b44d38f1942c3a32e3c7ff53cd9ed5'
   },
   linux: {
     name: 'yt-dlp',
-    sha256: 'f244941f771c922ffb63d64e17b8762d364b067f38a3caad60386496b3d226f7'
+    sha256: '3bda0968a01cde70d26720653003b28553c71be14dcb2e5f4c24e9921fdad745'
   }
 };
 

@@ -7,13 +7,9 @@ export default defineConfig({
   build: {
     target: 'es2020',
     sourcemap: false,
-    minify: 'esbuild',
-    cssMinify: 'esbuild',
+    minify: 'oxc',
     cssCodeSplit: false,
     reportCompressedSize: false
-  },
-  esbuild: {
-    drop: ['console', 'debugger']
   },
   server: {
     port: 5173,

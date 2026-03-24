@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import downloadConfig from "../shared/download-config.json";
 import { formatSize } from "../shared/formatters.js";
@@ -9,24 +9,22 @@ import VideoPanel from "./components/VideoPanel";
 import useDependencyInfo from "./hooks/useDependencyInfo";
 import useDownloadFlow from "./hooks/useDownloadFlow";
 import useDownloadProgress from "./hooks/useDownloadProgress";
-import useOutputDirStorage from "./hooks/useOutputDirStorage";
 import useSplash from "./hooks/useSplash";
 import useStartupInfo from "./hooks/useStartupInfo";
 import useVideoAnalyze from "./hooks/useVideoAnalyze";
-import { selectOutputDir } from "./services/desktopApi";
+import { getStoredOutputDir, pickOutputDir } from "./services/outputDirectory";
 import { getErrorMessage } from "./utils/errors";
 import type { ProgressState, VideoFormat } from "./types";
 
 export default function App() {
   const [url, setUrl] = useState("");
-  const [outputDir, setOutputDir] = useState("");
+  const [outputDir, setOutputDir] = useState(() => getStoredOutputDir());
   const [progress, setProgress] = useState<ProgressState>({
     ...(downloadConfig.initialProgress as ProgressState)
   });
   const [error, setError] = useState("");
   const urlInputRef = useRef<HTMLInputElement | null>(null);
 
-  useOutputDirStorage(setOutputDir);
   useDownloadProgress({ setProgress, setError });
   useSplash();
   useStartupInfo({ setOutputDir, setError });
@@ -56,6 +54,10 @@ export default function App() {
     requestDependencyInfo
   });
 
+  useEffect(() => {
+    void requestDependencyInfo();
+  }, [requestDependencyInfo]);
+
   const handleSelectFormat = useCallback((format: VideoFormat) => {
     setSelectedFormat(format);
   }, [setSelectedFormat]);
@@ -70,10 +72,9 @@ export default function App() {
 
   const handlePickFolder = useCallback(async () => {
     try {
-      const folder = await selectOutputDir();
+      const folder = await pickOutputDir();
       if (folder) {
         setOutputDir(folder);
-        window.localStorage.setItem("outputDir", folder);
       }
     } catch (errorCaught) {
       setError(getErrorMessage(errorCaught, "Impossible de sélectionner le dossier de sortie."));
@@ -98,8 +99,7 @@ export default function App() {
   }, [handleManualDownload, selectedFormat]);
 
   const availableFormats = useMemo(() => {
-    const formats = video?.formats || [];
-    return formats.filter((format) => format.hasVideo);
+    return video?.formats || [];
   }, [video]);
 
   const progressPercent = useMemo(

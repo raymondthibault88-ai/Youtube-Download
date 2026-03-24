@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { Dispatch, SetStateAction, FormEvent } from "react";
 import type { VideoFormat, VideoInfo } from "../types/video";
 import { analyzeVideo } from "../services/desktopApi";
@@ -15,7 +15,7 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
   const [selectedFormat, setSelectedFormat] = useState<VideoFormat | null>(null);
   const lastAnalyzeRef = useRef<{ url: string; data: VideoInfo | null }>({ url: "", data: null });
 
-  async function analyze(event: FormEvent<HTMLFormElement>) {
+  const analyze = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedUrl = url.trim();
     if (!normalizedUrl) {
@@ -25,8 +25,6 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
 
     setLoadingVideo(true);
     setError("");
-    setVideo(null);
-    setSelectedFormat(null);
 
     try {
       if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
@@ -48,11 +46,13 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
         setSelectedFormat(bestFormat);
       }
     } catch (error) {
+      setVideo(null);
+      setSelectedFormat(null);
       setError(getErrorMessage(error, "Erreur pendant l'analyse de la vidéo."));
     } finally {
       setLoadingVideo(false);
     }
-  }
+  }, [setError, url]);
 
   return {
     video,

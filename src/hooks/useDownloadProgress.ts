@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { startTransition, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { ProgressState } from "../types/progress";
 import { onDownloadProgress } from "../services/desktopApi";
@@ -15,17 +15,19 @@ export default function useDownloadProgress({ setProgress, setError }: UseDownlo
 
     try {
       unsubscribe = onDownloadProgress((payload) => {
-        setProgress((previous) => {
-          const next = { ...previous, ...payload };
-          if (
-            previous.percent === next.percent
-            && previous.speed === next.speed
-            && previous.eta === next.eta
-            && previous.raw === next.raw
-          ) {
-            return previous;
-          }
-          return next;
+        startTransition(() => {
+          setProgress((previous) => {
+            const next = { ...previous, ...payload };
+            if (
+              previous.percent === next.percent
+              && previous.speed === next.speed
+              && previous.eta === next.eta
+              && previous.raw === next.raw
+            ) {
+              return previous;
+            }
+            return next;
+          });
         });
       });
     } catch (error) {

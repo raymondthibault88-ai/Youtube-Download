@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { DependencyInfo } from "../types/deps";
 import type { ProgressState } from "../types/progress";
 import type { VideoFormat } from "../types/video";
-import { openPath, selectOutputDir, startDownload } from "../services/desktopApi";
+import { openPath, startDownload } from "../services/desktopApi";
+import { pickOutputDir } from "../services/outputDirectory";
 import { getErrorMessage } from "../utils/errors";
 
 interface UseDownloadFlowParams {
@@ -32,15 +33,14 @@ export default function useDownloadFlow({
   const [downloading, setDownloading] = useState(false);
   const hasOpenedFolderRef = useRef(false);
 
-  async function resolveTargetDirectory(forceAskOutput: boolean) {
+  const resolveTargetDirectory = useCallback(async (forceAskOutput: boolean) => {
     if (forceAskOutput) {
-      const pickedFolder = await selectOutputDir();
+      const pickedFolder = await pickOutputDir();
       if (!pickedFolder) {
         throw new Error("Téléchargement annulé: aucun dossier sélectionné.");
       }
 
       setOutputDir(pickedFolder);
-      window.localStorage.setItem("outputDir", pickedFolder);
       return pickedFolder;
     }
 
@@ -49,23 +49,22 @@ export default function useDownloadFlow({
       return current;
     }
 
-    const pickedFolder = await selectOutputDir();
+    const pickedFolder = await pickOutputDir();
     if (!pickedFolder) {
       throw new Error("Sélectionne un dossier de sortie.");
     }
 
     setOutputDir(pickedFolder);
-    window.localStorage.setItem("outputDir", pickedFolder);
     return pickedFolder;
-  }
+  }, [dependencyInfo?.downloadsPath, outputDir, setOutputDir]);
 
-  async function runDownload(
+  const runDownload = useCallback(async (
     formatId: string,
     mergeAudioIfNeeded: boolean,
     forceAskOutput = false,
     hasVideo = true,
     hasAudio = true
-  ) {
+  ) => {
     if (!url.trim()) {
       setError("Colle une URL YouTube valide.");
       return;
@@ -76,8 +75,9 @@ export default function useDownloadFlow({
     setProgress({ ...initialProgress });
 
     try {
-      requestDependencyInfo();
+      const dependencyWarmupPromise = requestDependencyInfo();
       const targetDir = await resolveTargetDirectory(forceAskOutput);
+      await dependencyWarmupPromise;
 
       await startDownload({
         url: url.trim(),
@@ -95,9 +95,16 @@ export default function useDownloadFlow({
     } finally {
       setDownloading(false);
     }
-  }
+  }, [
+    initialProgress,
+    requestDependencyInfo,
+    resolveTargetDirectory,
+    setError,
+    setProgress,
+    url
+  ]);
 
-  async function handleManualDownload(selectedFormat: VideoFormat | null) {
+  const handleManualDownload = useCallback(async (selectedFormat: VideoFormat | null) => {
     if (!selectedFormat) {
       setError("Sélectionne un format.");
       return;
@@ -111,11 +118,11 @@ export default function useDownloadFlow({
     await runDownload(
       selectedFormat.id,
       selectedFormat.hasVideo && !selectedFormat.hasAudio,
-      true,
+      false,
       selectedFormat.hasVideo,
       selectedFormat.hasAudio
     );
-  }
+  }, [runDownload, setError]);
 
   useEffect(() => {
     if (!progress?.raw || hasOpenedFolderRef.current) return;
@@ -126,7 +133,7 @@ export default function useDownloadFlow({
         openPath(targetDir);
       }
     }
-  }, [progress, outputDir, dependencyInfo]);
+  }, [dependencyInfo?.downloadsPath, outputDir, progress.percent, progress.raw]);
 
   return {
     downloading,

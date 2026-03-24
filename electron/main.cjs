@@ -12,7 +12,9 @@ const analyzeCache = new Map();
 const ANALYZE_CACHE_TTL_MS = 10 * 60 * 1000;
 let dependencyInfoCache = null;
 let dependencyInfoPromise = null;
+let dependencyWarmupPromise = null;
 const DEPENDENCY_CACHE_TTL_MS = 5 * 60 * 1000;
+const FAST_ANALYZE_EXTRACTOR_ARGS = 'youtube:player_client=web_embedded,web_safari';
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.thibs.youtubedownloader');
@@ -94,6 +96,24 @@ async function getDependencyInfo() {
   } finally {
     dependencyInfoPromise = null;
   }
+}
+
+function prewarmDependencies() {
+  if (dependencyInfoCache || dependencyInfoPromise) {
+    return dependencyInfoPromise || Promise.resolve(dependencyInfoCache?.data);
+  }
+
+  if (dependencyWarmupPromise) {
+    return dependencyWarmupPromise;
+  }
+
+  dependencyWarmupPromise = getDependencyInfo()
+    .catch(() => null)
+    .finally(() => {
+      dependencyWarmupPromise = null;
+    });
+
+  return dependencyWarmupPromise;
 }
 
 function createMainWindow() {
@@ -226,8 +246,8 @@ function toFormats(info) {
     })
     .map((format) => ({
       id: format.id,
-      label: format.label,
-      extension: format.extension,
+      resolution: format.resolution,
+      ext: format.ext,
       fps: format.fps,
       hasVideo: format.hasVideo,
       hasAudio: format.hasAudio,
@@ -262,17 +282,58 @@ function buildFormatSelector(payload) {
   return `${requestedFormat}+bestaudio[ext=m4a]/${requestedFormat}+bestaudio/best[acodec!=none]`;
 }
 
-function buildAnalyzeArgs(url) {
+function buildAnalyzeArgs(url, preferFastClient = true) {
   const jsRuntime = getYtDlpJsRuntimeArg();
-  return [
+  const args = [
     '--no-playlist',
     '--no-warnings',
     '--js-runtimes',
     jsRuntime,
-    '--skip-download',
-    '-J',
-    url
+    '--skip-download'
   ];
+
+  if (preferFastClient) {
+    args.push('--extractor-args', FAST_ANALYZE_EXTRACTOR_ARGS);
+  }
+
+  args.push('-J', url);
+  return args;
+}
+
+function hasAnalyzeFormats(info) {
+  return Boolean(Array.isArray(info?.formats) && info.formats.length > 0);
+}
+
+async function analyzeVideoInfo(normalizedUrl) {
+  let fastAnalyzeError = null;
+
+  try {
+    const { stdout } = await runCommand(
+      ytDlpPath,
+      buildAnalyzeArgs(normalizedUrl, true),
+      { env: getYtDlpEnv() }
+    );
+    const info = JSON.parse(stdout);
+
+    if (hasAnalyzeFormats(info)) {
+      return info;
+    }
+
+    fastAnalyzeError = new Error('Analyse YouTube rapide sans format exploitable.');
+  } catch (error) {
+    fastAnalyzeError = error;
+  }
+
+  try {
+    const { stdout } = await runCommand(
+      ytDlpPath,
+      buildAnalyzeArgs(normalizedUrl, false),
+      { env: getYtDlpEnv() }
+    );
+    return JSON.parse(stdout);
+  } catch (fallbackError) {
+    throw fallbackError || fastAnalyzeError;
+  }
 }
 
 function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldRecodeToMp4 }) {
@@ -428,11 +489,8 @@ ipcMain.handle(ipcChannels.invoke.videoAnalyze, async (_, url) => {
     return cached.data;
   }
 
-  const ensuredYtDlpPath = await ensureYtDlpPath();
-
-  const { stdout } = await runCommand(ensuredYtDlpPath, buildAnalyzeArgs(normalizedUrl), { env: getYtDlpEnv() });
-
-  const info = JSON.parse(stdout);
+  ytDlpPath = await ensureYtDlpPath();
+  const info = await analyzeVideoInfo(normalizedUrl);
 
   const payload = {
     id: info.id,
@@ -539,7 +597,12 @@ if (!gotSingleInstanceLock) {
     }
   });
 
-  app.whenReady().then(createMainWindow);
+  app.whenReady().then(() => {
+    createMainWindow();
+    setImmediate(() => {
+      void prewarmDependencies();
+    });
+  });
 }
 
 app.on('window-all-closed', () => {
@@ -553,4 +616,3 @@ app.on('activate', () => {
     createMainWindow();
   }
 });
-

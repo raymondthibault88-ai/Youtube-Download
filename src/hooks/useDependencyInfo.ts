@@ -3,8 +3,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { DependencyInfo } from "../types/deps";
 import { checkDependencies } from "../services/desktopApi";
 import { getErrorMessage } from "../utils/errors";
+import { readJsonStorage, STORAGE_KEYS, writeJsonStorage } from "../utils/localStorage";
 
-const DEP_CACHE_KEY = "depsCache";
 const DEP_CACHE_TTL_MS = 10 * 60 * 1000;
 
 interface UseDependencyInfoParams {
@@ -19,19 +19,13 @@ export default function useDependencyInfo({ setOutputDir, setError }: UseDepende
   const depsCacheAtRef = useRef<number | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(DEP_CACHE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!parsed?.data || !parsed?.at) return;
-      if (Date.now() - parsed.at > DEP_CACHE_TTL_MS) return;
-      depsCacheAtRef.current = parsed.at;
-      depsInfoRequestedRef.current = true;
-      setDependencyInfo(parsed.data as DependencyInfo);
-      setOutputDir((current) => current || parsed.data.downloadsPath || "");
-    } catch {
-      // Ignore cache errors.
-    }
+    const parsed = readJsonStorage<{ at: number; data: DependencyInfo }>(STORAGE_KEYS.depsCache);
+    if (!parsed?.data || !parsed?.at) return;
+    if (Date.now() - parsed.at > DEP_CACHE_TTL_MS) return;
+    depsCacheAtRef.current = parsed.at;
+    depsInfoRequestedRef.current = true;
+    setDependencyInfo(parsed.data);
+    setOutputDir((current) => current || parsed.data.downloadsPath || "");
   }, [setOutputDir]);
 
   const requestDependencyInfo = useCallback(async (): Promise<void> => {
@@ -54,14 +48,7 @@ export default function useDependencyInfo({ setOutputDir, setError }: UseDepende
       setDependencyInfo(deps);
       setOutputDir((current) => current || deps.downloadsPath || "");
       depsCacheAtRef.current = Date.now();
-      try {
-        window.localStorage.setItem(
-          DEP_CACHE_KEY,
-          JSON.stringify({ at: depsCacheAtRef.current, data: deps })
-        );
-      } catch {
-        // Ignore storage failures.
-      }
+      writeJsonStorage(STORAGE_KEYS.depsCache, { at: depsCacheAtRef.current, data: deps });
     } catch (error) {
       depsInfoRequestedRef.current = false;
       setError(getErrorMessage(error, "Impossible d'initialiser les dependances."));
