@@ -5,6 +5,9 @@ export interface VideoFormat {
   fps?: number | null;
   hasVideo: boolean;
   hasAudio: boolean;
+  videoCodec?: string | null;
+  audioCodec?: string | null;
+  quickTimeCompatible: boolean;
   fileSizeText?: string | null;
 }
 

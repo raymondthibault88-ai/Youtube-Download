@@ -6,6 +6,7 @@ Application desktop (Electron) avec interface React pour:
 - afficher les formats/résolutions disponibles
 - télécharger le format choisi
 - fusionner automatiquement l'audio pour les formats vidéo-only
+- réencoder automatiquement en MP4 H.264/AAC quand un format n'est pas compatible QuickTime
 
 ## Prérequis
 - Node.js 22.12+

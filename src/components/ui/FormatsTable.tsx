@@ -36,6 +36,8 @@ const FormatsTable = memo(function FormatsTable({
               <th>Résolution</th>
               <th>Type</th>
               <th>Conteneur</th>
+              <th>Codecs</th>
+              <th>Compat.</th>
               <th>FPS</th>
               <th>Taille</th>
             </tr>

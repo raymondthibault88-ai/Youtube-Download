@@ -13,6 +13,7 @@ import useSplash from "./hooks/useSplash";
 import useStartupInfo from "./hooks/useStartupInfo";
 import useVideoAnalyze from "./hooks/useVideoAnalyze";
 import { getStoredOutputDir, pickOutputDir } from "./services/outputDirectory";
+import { getCodecLabel } from "./utils/codecs";
 import { getErrorMessage } from "./utils/errors";
 import type { ProgressState, VideoFormat } from "./types";
 
@@ -131,10 +132,19 @@ export default function App() {
       : selectedFormat.hasVideo
         ? "Vidéo seule"
         : "Audio seul";
+    const videoCodecLabel = getCodecLabel(selectedFormat.videoCodec);
+    const audioCodecLabel = selectedFormat.hasAudio
+      ? getCodecLabel(selectedFormat.audioCodec)
+      : selectedFormat.quickTimeCompatible
+        ? "AAC"
+        : null;
+    const codecLabel = [videoCodecLabel, audioCodecLabel].filter(Boolean).join(" + ");
     const details = [
       selectedFormat.resolution,
       mediaType,
-      selectedFormat.ext?.toUpperCase()
+      selectedFormat.ext?.toUpperCase(),
+      codecLabel || null,
+      selectedFormat.quickTimeCompatible ? "QuickTime direct" : "Réencodage H.264/AAC"
     ].filter(Boolean);
     const size = formatSize(selectedFormat.fileSizeText);
     return `${details.join(" · ")}${size ? ` · ${size}` : ""}`;

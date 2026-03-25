@@ -9,6 +9,14 @@ interface UseVideoAnalyzeParams {
   setError: Dispatch<SetStateAction<string>>;
 }
 
+function pickDefaultFormat(formats?: VideoFormat[]) {
+  if (!Array.isArray(formats) || formats.length === 0) {
+    return null;
+  }
+
+  return formats.find((format) => format.quickTimeCompatible) || formats[0];
+}
+
 export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams) {
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -30,7 +38,7 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
       if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
         const cachedData = lastAnalyzeRef.current.data;
         setVideo(cachedData);
-        const cachedBest = cachedData?.formats?.[0];
+        const cachedBest = pickDefaultFormat(cachedData?.formats);
         if (cachedBest) {
           setSelectedFormat(cachedBest);
         }
@@ -41,7 +49,7 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
       const data = await analyzeVideo(normalizedUrl);
       lastAnalyzeRef.current = { url: normalizedUrl, data };
       setVideo(data);
-      const bestFormat = data?.formats?.[0];
+      const bestFormat = pickDefaultFormat(data?.formats);
       if (bestFormat) {
         setSelectedFormat(bestFormat);
       }

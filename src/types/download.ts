@@ -5,4 +5,5 @@ export interface StartDownloadPayload {
   mergeAudioIfNeeded?: boolean;
   hasVideo?: boolean;
   hasAudio?: boolean;
+  shouldRecodeToMp4?: boolean;
 }

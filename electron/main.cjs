@@ -15,6 +15,8 @@ let dependencyInfoPromise = null;
 let dependencyWarmupPromise = null;
 const DEPENDENCY_CACHE_TTL_MS = 5 * 60 * 1000;
 const FAST_ANALYZE_EXTRACTOR_ARGS = 'youtube:player_client=web_embedded,web_safari';
+const QUICKTIME_VIDEO_CODEC_PREFIXES = ['avc1', 'h264'];
+const QUICKTIME_AUDIO_CODEC_PREFIXES = ['mp4a', 'aac'];
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.thibs.youtubedownloader');
@@ -215,13 +217,43 @@ function runCommand(commandPath, args, options = {}) {
   });
 }
 
+function normalizeCodecName(codec) {
+  return String(codec || '').trim().toLowerCase();
+}
+
+function hasCodecPrefix(codec, prefixes) {
+  const normalizedCodec = normalizeCodecName(codec);
+  return Boolean(normalizedCodec && prefixes.some((prefix) => normalizedCodec.startsWith(prefix)));
+}
+
+function isQuickTimeCompatibleVideoCodec(codec) {
+  return hasCodecPrefix(codec, QUICKTIME_VIDEO_CODEC_PREFIXES);
+}
+
+function isQuickTimeCompatibleAudioCodec(codec) {
+  return hasCodecPrefix(codec, QUICKTIME_AUDIO_CODEC_PREFIXES);
+}
+
 function toFormats(info) {
   const safeFormats = Array.isArray(info.formats) ? info.formats : [];
+  const hasQuickTimeCompatibleAudioTrack = safeFormats.some((format) => {
+    const hasVideo = format.vcodec && format.vcodec !== 'none';
+    const hasAudio = format.acodec && format.acodec !== 'none';
+
+    return !hasVideo && hasAudio && isQuickTimeCompatibleAudioCodec(format.acodec);
+  });
 
   const mapped = safeFormats.map((format) => {
     const hasVideo = format.vcodec && format.vcodec !== 'none';
     const hasAudio = format.acodec && format.acodec !== 'none';
     const height = format.height || 0;
+    const videoCodec = hasVideo ? normalizeCodecName(format.vcodec) : null;
+    const audioCodec = hasAudio ? normalizeCodecName(format.acodec) : null;
+    const quickTimeCompatible = hasVideo
+      && isQuickTimeCompatibleVideoCodec(videoCodec)
+      && (hasAudio
+        ? isQuickTimeCompatibleAudioCodec(audioCodec)
+        : hasQuickTimeCompatibleAudioTrack);
 
     return {
       id: format.format_id,
@@ -231,6 +263,9 @@ function toFormats(info) {
       fps: format.fps || null,
       hasVideo,
       hasAudio,
+      videoCodec,
+      audioCodec,
+      quickTimeCompatible,
       fileSizeText: formatBytes(format.filesize || format.filesize_approx)
     };
   });
@@ -251,6 +286,9 @@ function toFormats(info) {
       fps: format.fps,
       hasVideo: format.hasVideo,
       hasAudio: format.hasAudio,
+      videoCodec: format.videoCodec,
+      audioCodec: format.audioCodec,
+      quickTimeCompatible: format.quickTimeCompatible,
       fileSizeText: format.fileSizeText,
     }));
 }
@@ -345,6 +383,8 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
     jsRuntime,
     '--ffmpeg-location',
     ffmpegPath,
+    '--format-sort',
+    'vcodec:h264,acodec:aac',
     '-f',
     formatSelector
   ];
@@ -359,8 +399,13 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
   }
 
   if (shouldRecodeToMp4) {
-    // Guarantee MP4 output even when source streams are WebM-only.
-    args.push('--recode-video', 'mp4');
+    // Produce a QuickTime-friendly MP4 when the selected source format is not.
+    args.push(
+      '--recode-video',
+      'mp4',
+      '--postprocessor-args',
+      'VideoConvertor+ffmpeg_o:-movflags +faststart -c:v libx264 -pix_fmt yuv420p -tag:v avc1 -c:a aac'
+    );
   }
 
   args.push(
@@ -538,18 +583,19 @@ ipcMain.handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
 
   const formatSelector = buildFormatSelector(payload);
   const isVideoDownload = payload.hasVideo !== false;
+  const shouldRecodeToMp4 = payload.shouldRecodeToMp4 === true;
   const args = buildDownloadArgs({
     ffmpegPath,
     formatSelector,
     outputDir: payload.outputDir,
     url: payload.url,
-    shouldRecodeToMp4: false
+    shouldRecodeToMp4
   });
 
   try {
     await runYtDlpDownload(event, args);
   } catch (error) {
-    if (!isVideoDownload || !shouldRetryWithRecode(error)) {
+    if (!isVideoDownload || shouldRecodeToMp4 || !shouldRetryWithRecode(error)) {
       throw error;
     }
 
