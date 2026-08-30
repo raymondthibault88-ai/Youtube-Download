@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const downloadConfig = require('../shared/download-config.json');
+const conversionConfig = require('../shared/conversion-config.json');
 const ipcChannels = require('../shared/ipc.json');
 const { formatBytes } = require('../shared/formatters.js');
 
@@ -13,10 +14,16 @@ const ANALYZE_CACHE_TTL_MS = 10 * 60 * 1000;
 let dependencyInfoCache = null;
 let dependencyInfoPromise = null;
 let dependencyWarmupPromise = null;
+let macHardwareEncoderAvailable = null;
 const DEPENDENCY_CACHE_TTL_MS = 5 * 60 * 1000;
 const FAST_ANALYZE_EXTRACTOR_ARGS = 'youtube:player_client=web_embedded,web_safari';
 const QUICKTIME_VIDEO_CODEC_PREFIXES = ['avc1', 'h264'];
 const QUICKTIME_AUDIO_CODEC_PREFIXES = ['mp4a', 'aac'];
+const PROCESS_LOG_TAIL_LENGTH = 64 * 1024;
+
+function appendLogTail(current, chunk) {
+  return `${current}${chunk.toString()}`.slice(-PROCESS_LOG_TAIL_LENGTH);
+}
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.thibs.youtubedownloader');
@@ -398,17 +405,9 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
     args.push('--merge-output-format', 'mp4');
   }
 
-  if (shouldRecodeToMp4) {
-    // Produce a QuickTime-friendly MP4 when the selected source format is not.
-    args.push(
-      '--recode-video',
-      'mp4',
-      '--postprocessor-args',
-      'VideoConvertor+ffmpeg_o:-movflags +faststart -c:v libx264 -pix_fmt yuv420p -tag:v avc1 -c:a aac'
-    );
-  }
-
   args.push(
+    '--print',
+    'after_move:__YTDLP_FILE__:%(filepath)s',
     '-o',
     downloadConfig.outputTemplate,
     '-P',
@@ -445,6 +444,7 @@ function runYtDlpDownload(event, ytDlpArgs) {
     });
 
     let stderr = '';
+    let stdoutTail = '';
     let stdoutBuffer = '';
     let lastEmit = 0;
     let pendingPayload = null;
@@ -475,11 +475,12 @@ function runYtDlpDownload(event, ytDlpArgs) {
     };
 
     child.stdout.on('data', (chunk) => {
+      stdoutTail = appendLogTail(stdoutTail, chunk);
       stdoutBuffer = emitProgressFromChunk(onProgress, chunk, stdoutBuffer);
     });
 
     child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
+      stderr = appendLogTail(stderr, chunk);
     });
 
     child.on('error', reject);
@@ -490,9 +491,257 @@ function runYtDlpDownload(event, ytDlpArgs) {
         return;
       }
 
-      resolve({ ok: true });
+      const fileMatches = [...stdoutTail.matchAll(/^__YTDLP_FILE__:(.+)$/gm)];
+      const downloadedFilePath = fileMatches.at(-1)?.[1]?.trim() || null;
+      resolve({ ok: true, downloadedFilePath });
     });
   });
+}
+
+async function transcodeForDesktopCompatibility(ffmpegPath, inputPath) {
+  if (!inputPath || !fs.existsSync(inputPath)) {
+    throw new Error('Fichier téléchargé introuvable pour le réencodage.');
+  }
+
+  const parsedPath = path.parse(inputPath);
+  const preferredFinalPath = path.join(parsedPath.dir, `${parsedPath.name}.mp4`);
+  const finalPath = inputPath !== preferredFinalPath && fs.existsSync(preferredFinalPath)
+    ? path.join(parsedPath.dir, `${parsedPath.name}.dartfish.mp4`)
+    : preferredFinalPath;
+  const temporaryPath = path.join(
+    parsedPath.dir,
+    `.${parsedPath.name}.${process.pid}.${Date.now()}.compatible.mp4`
+  );
+
+  try {
+    await runCommand(ffmpegPath, [
+      '-y',
+      '-i', inputPath,
+      '-map', '0:v:0',
+      '-map', '0:a:0?',
+      '-c:v', 'libx264',
+      '-pix_fmt', 'yuv420p',
+      '-tag:v', 'avc1',
+      '-c:a', 'aac',
+      '-b:a', '192k',
+      '-movflags', '+faststart',
+      temporaryPath
+    ]);
+
+    await fs.promises.unlink(inputPath);
+    await fs.promises.rename(temporaryPath, finalPath);
+    return finalPath;
+  } catch (error) {
+    await fs.promises.unlink(temporaryPath).catch(() => {});
+    throw error;
+  }
+}
+
+async function remuxForDesktopCompatibility(ffmpegPath, inputPath) {
+  if (!inputPath || !fs.existsSync(inputPath)) {
+    throw new Error('Fichier téléchargé introuvable pour la finalisation.');
+  }
+
+  const parsedPath = path.parse(inputPath);
+  const finalPath = path.join(parsedPath.dir, `${parsedPath.name}.mp4`);
+  const temporaryPath = path.join(
+    parsedPath.dir,
+    `.${parsedPath.name}.${process.pid}.${Date.now()}.faststart.mp4`
+  );
+
+  try {
+    await runCommand(ffmpegPath, [
+      '-y', '-i', inputPath,
+      '-map', '0:v:0', '-map', '0:a:0?',
+      '-c', 'copy',
+      '-movflags', '+faststart',
+      temporaryPath
+    ]);
+    await fs.promises.unlink(inputPath);
+    await fs.promises.rename(temporaryPath, finalPath);
+    return finalPath;
+  } catch (error) {
+    await fs.promises.unlink(temporaryPath).catch(() => {});
+    throw error;
+  }
+}
+
+function getAvailableOutputPath(inputPath, outputDir) {
+  const parsed = path.parse(inputPath);
+  const destinationDir = outputDir || parsed.dir;
+  const baseName = `${parsed.name} - converti`;
+  let candidate = path.join(destinationDir, `${baseName}.mp4`);
+  let suffix = 2;
+
+  while (fs.existsSync(candidate)) {
+    candidate = path.join(destinationDir, `${baseName} ${suffix}.mp4`);
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+function parseFfmpegTime(value) {
+  const match = String(value || '').match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/);
+  if (!match) return null;
+  return (Number(match[1]) * 3600) + (Number(match[2]) * 60) + Number(match[3]);
+}
+
+function inspectVideoFile(ffmpegPath, inputPath) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpegPath, ['-hide_banner', '-i', inputPath], { windowsHide: true });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.on('error', reject);
+    child.on('close', () => {
+      const duration = parseFfmpegTime(stderr.match(/Duration:\s*(\d+:\d+:\d+(?:\.\d+)?)/)?.[1]) || 0;
+      const videoLine = stderr.split('\n').find((line) => /Video:/.test(line)) || '';
+      const dimensions = videoLine.match(/(?:^|\s)(\d{2,5})x(\d{2,5})(?:[\s,]|$)/);
+      const videoBitrate = Number(videoLine.match(/(\d+)\s*kb\/s/)?.[1] || 0) * 1000;
+      const totalBitrate = Number(stderr.match(/Duration:[^\n]*bitrate:\s*(\d+)\s*kb\/s/)?.[1] || 0) * 1000;
+      resolve({
+        duration,
+        width: Number(dimensions?.[1] || 0),
+        height: Number(dimensions?.[2] || 0),
+        bitrate: videoBitrate || totalBitrate
+      });
+    });
+  });
+}
+
+function getTargetVideoBitrate(height, sourceBitrate) {
+  const profile = conversionConfig.profiles.find((entry) => height >= entry.minHeight)
+    || conversionConfig.profiles.at(-1);
+  const limit = profile.videoBitrate;
+  return sourceBitrate > 0
+    ? Math.max(
+      conversionConfig.minimumVideoBitrate,
+      Math.min(limit, Math.round(sourceBitrate * conversionConfig.sourceBitrateFactor))
+    )
+    : limit;
+}
+
+function runVideoConversion(event, ffmpegPath, inputPath, outputPath, useHardwareEncoder, mediaInfo, targetHeight) {
+  const effectiveHeight = targetHeight && mediaInfo.height
+    ? Math.min(targetHeight, mediaInfo.height)
+    : mediaInfo.height || 1080;
+  const targetBitrate = getTargetVideoBitrate(effectiveHeight, mediaInfo.bitrate);
+  const scaleArgs = targetHeight && mediaInfo.height > targetHeight
+    ? ['-vf', `scale=-2:min(${targetHeight}\\,ih)`]
+    : [];
+  const videoArgs = useHardwareEncoder
+    ? ['-c:v', 'h264_videotoolbox', '-b:v', String(targetBitrate), '-maxrate', String(Math.round(targetBitrate * 1.35)), '-allow_sw', '1', '-pix_fmt', 'yuv420p']
+    : ['-c:v', 'libx264', '-preset', 'veryfast', '-b:v', String(targetBitrate), '-maxrate', String(Math.round(targetBitrate * 1.35)), '-bufsize', String(targetBitrate * 2), '-pix_fmt', 'yuv420p'];
+  const temporaryPath = path.join(
+    path.dirname(outputPath),
+    `.${path.basename(outputPath, '.mp4')}.${process.pid}.${Date.now()}.tmp.mp4`
+  );
+  const args = [
+    '-y',
+    '-i', inputPath,
+    '-map', '0:v:0',
+    '-map', '0:a:0?',
+    ...scaleArgs,
+    ...videoArgs,
+    '-tag:v', 'avc1',
+    '-c:a', 'aac',
+    '-b:a', String(conversionConfig.audioBitrate),
+    '-movflags', '+faststart',
+    '-progress', 'pipe:1',
+    '-nostats',
+    temporaryPath
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpegPath, args, { windowsHide: true });
+    let stderr = '';
+    let stdoutBuffer = '';
+    let progressValues = {};
+    let durationSeconds = null;
+    let lastPercent = -1;
+
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString();
+      stderr = appendLogTail(stderr, text);
+      if (!durationSeconds) {
+        const durationMatch = stderr.match(/Duration:\s*(\d+:\d+:\d+(?:\.\d+)?)/);
+        durationSeconds = parseFfmpegTime(durationMatch?.[1]);
+      }
+    });
+
+    child.stdout.on('data', (chunk) => {
+      stdoutBuffer += chunk.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const separator = line.indexOf('=');
+        if (separator === -1) continue;
+        const key = line.slice(0, separator);
+        progressValues[key] = line.slice(separator + 1);
+        if (key !== 'progress') continue;
+
+        const elapsed = parseFfmpegTime(progressValues.out_time);
+        const percent = durationSeconds && elapsed !== null
+          ? Math.min(99, Math.max(1, Math.round((elapsed / durationSeconds) * 100)))
+          : 1;
+        if (percent !== lastPercent) {
+          lastPercent = percent;
+          event.sender.send(ipcChannels.events.conversionProgress, {
+            percent,
+            speed: progressValues.speed || null,
+            eta: null,
+            raw: useHardwareEncoder
+              ? 'Conversion rapide avec accélération matérielle...'
+              : 'Conversion MP4 optimisée...'
+          });
+        }
+        progressValues = {};
+      }
+    });
+
+    child.on('error', reject);
+    child.on('close', async (code) => {
+      if (code !== 0) {
+        await fs.promises.unlink(temporaryPath).catch(() => {});
+        reject(new Error(stderr.trim() || `Conversion échouée (code ${code})`));
+        return;
+      }
+
+      try {
+        await fs.promises.rename(temporaryPath, outputPath);
+        resolve(outputPath);
+      } catch (error) {
+        await fs.promises.unlink(temporaryPath).catch(() => {});
+        reject(error);
+      }
+    });
+  });
+}
+
+async function convertLocalVideo(event, ffmpegPath, inputPath, outputDir, targetHeight, mediaInfo) {
+  const outputPath = getAvailableOutputPath(inputPath, outputDir);
+  await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
+
+  if (process.platform === 'darwin' && macHardwareEncoderAvailable !== false) {
+    try {
+      const convertedPath = await runVideoConversion(
+        event, ffmpegPath, inputPath, outputPath, true, mediaInfo, targetHeight
+      );
+      macHardwareEncoderAvailable = true;
+      return convertedPath;
+    } catch {
+      macHardwareEncoderAvailable = false;
+      event.sender.send(ipcChannels.events.conversionProgress, {
+        percent: 1,
+        speed: null,
+        eta: null,
+        raw: 'Accélération matérielle indisponible, passage en mode rapide compatible...'
+      });
+    }
+  }
+
+  return runVideoConversion(event, ffmpegPath, inputPath, outputPath, false, mediaInfo, targetHeight);
 }
 
 function shouldRetryWithRecode(error) {
@@ -569,6 +818,70 @@ ipcMain.handle(ipcChannels.invoke.dialogSelectOutput, async () => {
   return filePaths[0];
 });
 
+ipcMain.handle(ipcChannels.invoke.dialogSelectVideo, async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{
+      name: 'Fichiers vidéo',
+      extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm', 'm4v', 'mts', 'm2ts', 'wmv']
+    }]
+  });
+
+  if (canceled || !filePaths[0]) return null;
+  const filePath = filePaths[0];
+  const stats = await fs.promises.stat(filePath);
+  const ffmpegPath = resolveFfmpegPath();
+  const mediaInfo = ffmpegPath ? await inspectVideoFile(ffmpegPath, filePath) : {};
+  return { path: filePath, name: path.basename(filePath), size: stats.size, ...mediaInfo };
+});
+
+ipcMain.handle(ipcChannels.invoke.conversionStart, async (event, payload) => {
+  const inputPath = String(payload?.inputPath || '').trim();
+  if (!inputPath || !fs.existsSync(inputPath)) {
+    throw new Error('Sélectionne un fichier vidéo valide.');
+  }
+
+  const ffmpegPath = resolveFfmpegPath();
+  if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
+    throw new Error('FFmpeg introuvable.');
+  }
+
+  const inputStats = await fs.promises.stat(inputPath);
+  event.sender.send(ipcChannels.events.conversionProgress, {
+    percent: 1,
+    speed: null,
+    eta: null,
+    raw: 'Préparation rapide de FFmpeg...'
+  });
+  const suppliedMediaInfo = payload?.mediaInfo;
+  const hasValidMediaInfo = suppliedMediaInfo
+    && Number(suppliedMediaInfo.duration) > 0
+    && Number(suppliedMediaInfo.height) > 0;
+  const mediaInfo = hasValidMediaInfo
+    ? {
+      duration: Number(suppliedMediaInfo.duration),
+      width: Number(suppliedMediaInfo.width) || 0,
+      height: Number(suppliedMediaInfo.height),
+      bitrate: Number(suppliedMediaInfo.bitrate) || 0
+    }
+    : await inspectVideoFile(ffmpegPath, inputPath);
+  const targetHeight = Number(payload?.targetHeight) || null;
+  const outputPath = await convertLocalVideo(event, ffmpegPath, inputPath, payload?.outputDir, targetHeight, mediaInfo);
+  const outputStats = await fs.promises.stat(outputPath);
+  event.sender.send(ipcChannels.events.conversionProgress, {
+    percent: 100,
+    speed: null,
+    eta: null,
+    raw: 'Conversion terminée.'
+  });
+  return {
+    ok: true,
+    outputPath,
+    inputSize: inputStats.size,
+    outputSize: outputStats.size
+  };
+});
+
 ipcMain.handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
   await ensureYtDlpPath();
 
@@ -593,7 +906,22 @@ ipcMain.handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
   });
 
   try {
-    await runYtDlpDownload(event, args);
+    const result = await runYtDlpDownload(event, args);
+    if (isVideoDownload) {
+      if (shouldRecodeToMp4) {
+        event.sender.send(ipcChannels.events.downloadProgress, {
+          ...downloadConfig.initialProgress,
+          raw: 'Conversion en MP4 H.264/AAC compatible Dartfish...'
+        });
+        await transcodeForDesktopCompatibility(ffmpegPath, result.downloadedFilePath);
+      } else {
+        event.sender.send(ipcChannels.events.downloadProgress, {
+          percent: 99,
+          raw: 'Finalisation MP4 rapide...'
+        });
+        await remuxForDesktopCompatibility(ffmpegPath, result.downloadedFilePath);
+      }
+    }
   } catch (error) {
     if (!isVideoDownload || shouldRecodeToMp4 || !shouldRetryWithRecode(error)) {
       throw error;
@@ -612,7 +940,8 @@ ipcMain.handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
       shouldRecodeToMp4: true
     });
 
-    await runYtDlpDownload(event, fallbackArgs);
+    const fallbackResult = await runYtDlpDownload(event, fallbackArgs);
+    await transcodeForDesktopCompatibility(ffmpegPath, fallbackResult.downloadedFilePath);
   }
 
   return { ok: true };

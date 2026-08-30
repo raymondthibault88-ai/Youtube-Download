@@ -3,11 +3,14 @@
     "startupInfo": "app:startupInfo",
     "depsCheck": "deps:check",
     "videoAnalyze": "video:analyze",
+    "dialogSelectVideo": "dialog:selectVideo",
     "dialogSelectOutput": "dialog:selectOutput",
     "downloadStart": "download:start",
+    "conversionStart": "conversion:start",
     "openPath": "dialog:openPath"
   },
   "events": {
-    "downloadProgress": "download:progress"
+    "downloadProgress": "download:progress",
+    "conversionProgress": "conversion:progress"
   }
 }

@@ -1,0 +1,5 @@
+/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md
+/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html
+/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png
+/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png
+/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png

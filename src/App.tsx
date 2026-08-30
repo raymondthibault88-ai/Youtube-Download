@@ -4,6 +4,7 @@ import downloadConfig from "../shared/download-config.json";
 import { formatSize } from "../shared/formatters.js";
 import logo from "./assets/logo.png";
 import EmptyPanel from "./components/EmptyPanel";
+import ConverterPanel from "./components/ConverterPanel";
 import HeroPanel from "./components/HeroPanel";
 import VideoPanel from "./components/VideoPanel";
 import useDependencyInfo from "./hooks/useDependencyInfo";
@@ -18,6 +19,7 @@ import { getErrorMessage } from "./utils/errors";
 import type { ProgressState, VideoFormat } from "./types";
 
 export default function App() {
+  const [mode, setMode] = useState<"download" | "convert">("download");
   const [url, setUrl] = useState("");
   const [outputDir, setOutputDir] = useState(() => getStoredOutputDir());
   const [progress, setProgress] = useState<ProgressState>({
@@ -144,7 +146,7 @@ export default function App() {
       mediaType,
       selectedFormat.ext?.toUpperCase(),
       codecLabel || null,
-      selectedFormat.quickTimeCompatible ? "QuickTime direct" : "Réencodage H.264/AAC"
+      "Sortie compatible Dartfish (H.264/AAC)"
     ].filter(Boolean);
     const size = formatSize(selectedFormat.fileSizeText);
     return `${details.join(" · ")}${size ? ` · ${size}` : ""}`;
@@ -158,7 +160,13 @@ export default function App() {
       <div className="app-glow" aria-hidden="true" />
 
       <div className="layout">
-        <HeroPanel
+        <nav className="mode-switch" aria-label="Mode de l’application">
+          <button className={mode === "download" ? "is-active" : ""} onClick={() => setMode("download")}>Télécharger YouTube</button>
+          <button className={mode === "convert" ? "is-active" : ""} onClick={() => setMode("convert")}>Convertir une vidéo</button>
+        </nav>
+
+        {mode === "download" ? <>
+          <HeroPanel
           appStatus={appStatus}
           url={url}
           onUrlChange={handleUrlChange}
@@ -178,9 +186,9 @@ export default function App() {
           isPreparingTools={isPreparingTools && !dependencyInfo}
           error={error}
           logoSrc={logo}
-        />
+          />
 
-        {video ? (
+          {video ? (
           <VideoPanel
             video={video}
             selectedFormatSummary={selectedFormatSummary}
@@ -190,8 +198,11 @@ export default function App() {
             onDownload={handleDownload}
             downloading={downloading}
           />
-        ) : (
+          ) : (
           <EmptyPanel />
+          )}
+        </> : (
+          <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} />
         )}
       </div>
     </main>

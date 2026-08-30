@@ -1,0 +1,12 @@
+{
+  "audioBitrate": 160000,
+  "sourceBitrateFactor": 0.82,
+  "minimumVideoBitrate": 700000,
+  "profiles": [
+    { "minHeight": 2160, "videoBitrate": 12000000 },
+    { "minHeight": 1440, "videoBitrate": 8000000 },
+    { "minHeight": 1080, "videoBitrate": 5000000 },
+    { "minHeight": 720, "videoBitrate": 2500000 },
+    { "minHeight": 0, "videoBitrate": 1200000 }
+  ]
+}

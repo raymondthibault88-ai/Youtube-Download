@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { DependencyInfo } from "../types/deps";
 import { checkDependencies } from "../services/desktopApi";
@@ -7,26 +7,27 @@ import { readJsonStorage, STORAGE_KEYS, writeJsonStorage } from "../utils/localS
 
 const DEP_CACHE_TTL_MS = 10 * 60 * 1000;
 
+function readValidDependencyCache() {
+  const cached = readJsonStorage<{ at: number; data: DependencyInfo }>(STORAGE_KEYS.depsCache);
+  return cached?.data && cached?.at && Date.now() - cached.at <= DEP_CACHE_TTL_MS
+    ? cached
+    : null;
+}
+
+const INITIAL_DEPENDENCY_CACHE = readValidDependencyCache();
+
 interface UseDependencyInfoParams {
   setOutputDir: Dispatch<SetStateAction<string>>;
   setError: Dispatch<SetStateAction<string>>;
 }
 
 export default function useDependencyInfo({ setOutputDir, setError }: UseDependencyInfoParams) {
-  const [dependencyInfo, setDependencyInfo] = useState<DependencyInfo | null>(null);
+  const [dependencyInfo, setDependencyInfo] = useState<DependencyInfo | null>(
+    () => INITIAL_DEPENDENCY_CACHE?.data || null
+  );
   const [isChecking, setIsChecking] = useState(false);
-  const depsInfoRequestedRef = useRef(false);
-  const depsCacheAtRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const parsed = readJsonStorage<{ at: number; data: DependencyInfo }>(STORAGE_KEYS.depsCache);
-    if (!parsed?.data || !parsed?.at) return;
-    if (Date.now() - parsed.at > DEP_CACHE_TTL_MS) return;
-    depsCacheAtRef.current = parsed.at;
-    depsInfoRequestedRef.current = true;
-    setDependencyInfo(parsed.data);
-    setOutputDir((current) => current || parsed.data.downloadsPath || "");
-  }, [setOutputDir]);
+  const depsInfoRequestedRef = useRef(Boolean(INITIAL_DEPENDENCY_CACHE));
+  const depsCacheAtRef = useRef<number | null>(INITIAL_DEPENDENCY_CACHE?.at || null);
 
   const requestDependencyInfo = useCallback(async (): Promise<void> => {
     if (depsInfoRequestedRef.current) {

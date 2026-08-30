@@ -1,5 +1,6 @@
 import type { DependencyInfo } from "../types/deps";
 import type { StartDownloadPayload } from "../types/download";
+import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from "../types/conversion";
 import type { ProgressState } from "../types/progress";
 import type { VideoInfo } from "../types/video";
 
@@ -27,8 +28,16 @@ export function selectOutputDir(): Promise<string | null> {
   return getApi().selectOutputDir();
 }
 
+export function selectVideoFile(): Promise<SelectedVideoFile | null> {
+  return getApi().selectVideoFile();
+}
+
 export function startDownload(payload: StartDownloadPayload): Promise<{ ok: boolean }> {
   return getApi().startDownload(payload);
+}
+
+export function startConversion(payload: StartConversionPayload): Promise<ConversionResult> {
+  return getApi().startConversion(payload);
 }
 
 export function openPath(targetPath: string): Promise<{ ok: boolean; error?: string | null }> {
@@ -37,4 +46,8 @@ export function openPath(targetPath: string): Promise<{ ok: boolean; error?: str
 
 export function onDownloadProgress(handler: (payload: ProgressState) => void) {
   return getApi().onDownloadProgress(handler);
+}
+
+export function onConversionProgress(handler: (payload: ProgressState) => void) {
+  return getApi().onConversionProgress(handler);
 }
