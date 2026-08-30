@@ -1,50 +1,53 @@
-# YouTube Downloader (Windows + macOS)
+# Video Downloader & Converter V3
 
-Application desktop (Electron) avec interface React pour:
-- coller une URL YouTube et lancer un téléchargement direct (meilleure qualité)
-- analyser une URL YouTube
-- afficher les formats/résolutions disponibles
-- télécharger le format choisi
-- fusionner automatiquement l'audio pour les formats vidéo-only
-- réencoder automatiquement en MP4 H.264/AAC quand un format n'est pas compatible QuickTime
+Application Electron 44 + React pour télécharger une vidéo YouTube ou convertir un fichier local en MP4 H.264/AAC compatible QuickTime et Dartfish.
 
-## Prérequis
-- Node.js 22.12+
-- npm
+## Fonctionnalités
 
-## Installation
-```bash
-npm install
-```
+- analyse des formats YouTube avec yt-dlp ;
+- téléchargement et fusion audio/vidéo avec `faststart` intégré, sans seconde passe inutile ;
+- réencodage automatique des codecs incompatibles en H.264/AAC ;
+- conversion locale en 2160p, 1440p, 1080p, 720p ou 480p ;
+- estimation de la taille avant conversion ;
+- profils Rapide, Équilibré et Plus léger ;
+- accélération VideoToolbox, NVENC, Quick Sync ou AMF lorsqu’elle est réellement disponible ;
+- progression, vitesse, ETA, annulation et garde contre les tâches concurrentes.
 
 ## Développement
+
+Prérequis : Node.js 22.12 ou supérieur et npm.
+
 ```bash
+npm install
 npm run dev
 ```
 
-## Build frontend
+La commande `npm run verify` exécute le lint, TypeScript, les tests unitaires, le smoke test et le build Vite.
+
+## Distribution
+
 ```bash
-npm run build
+npm run dist:mac
+npm run dist:win
 ```
 
-## Vérification qualité
-```bash
-npm run verify
-```
+Les artefacts sont générés dans `release/`. Le paquet macOS ne conserve que les langues française et anglaise afin de réduire sa taille.
 
-## Packaging desktop
-```bash
-npm run dist
-```
+### Signature et notarisation macOS
 
-Sorties:
-- Windows: `release/` (cible `portable` + `nsis`)
-- macOS: `release/` (`dmg` + `zip`)
+Le build local utilise une signature ad hoc vérifiable, afin de ne pas sélectionner par erreur un certificat `Apple Development` non distribuable. Pour une distribution publique, fournis explicitement ton identité `Developer ID Application` avec `--config.mac.identity`, puis définis :
 
-## Notes techniques
-- `yt-dlp` est téléchargé automatiquement au premier lancement dans le dossier utilisateur de l'application.
-- Le binaire `yt-dlp` est versionné (pin) et vérifié par SHA256 avant exécution.
-- `ffmpeg` est embarqué via `ffmpeg-static`.
+- `APPLE_ID`
+- `APPLE_APP_SPECIFIC_PASSWORD`
+- `APPLE_TEAM_ID`
 
-## Remarques légales
-Tu dois respecter les CGU de YouTube et les droits d'auteur applicables dans ton pays.
+Sans ces identifiants, un DMG local non notarisé est tout de même produit.
+
+## Dépendances binaires
+
+- yt-dlp 2026.08.19 est téléchargé au premier lancement, limité à des hôtes GitHub HTTPS et vérifié par SHA256.
+- FFmpeg est fourni par `ffmpeg-static`. L’application teste l’encodeur matériel avant la conversion et repasse automatiquement sur libx264 si nécessaire.
+
+## Légal
+
+Respecte les conditions d’utilisation des plateformes et les droits d’auteur applicables. Consulte [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) pour les composants distribués avec l’application.

@@ -1,5 +1,6 @@
 node_modules
 dist
 release
+graphify-out
 .DS_Store
 npm-debug.log*

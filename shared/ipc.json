@@ -7,10 +7,13 @@
     "dialogSelectOutput": "dialog:selectOutput",
     "downloadStart": "download:start",
     "conversionStart": "conversion:start",
-    "openPath": "dialog:openPath"
+    "jobCurrent": "job:current",
+    "jobCancel": "job:cancel",
+    "revealPath": "dialog:revealPath"
   },
   "events": {
     "downloadProgress": "download:progress",
-    "conversionProgress": "conversion:progress"
+    "conversionProgress": "conversion:progress",
+    "jobUpdate": "job:update"
   }
 }

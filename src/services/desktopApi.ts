@@ -3,6 +3,7 @@ import type { StartDownloadPayload } from "../types/download";
 import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from "../types/conversion";
 import type { ProgressState } from "../types/progress";
 import type { VideoInfo } from "../types/video";
+import type { JobSnapshot } from "../types/job";
 
 function getApi() {
   if (!window.desktopAPI) {
@@ -32,7 +33,7 @@ export function selectVideoFile(): Promise<SelectedVideoFile | null> {
   return getApi().selectVideoFile();
 }
 
-export function startDownload(payload: StartDownloadPayload): Promise<{ ok: boolean }> {
+export function startDownload(payload: StartDownloadPayload): Promise<{ ok: boolean; outputPath: string }> {
   return getApi().startDownload(payload);
 }
 
@@ -40,8 +41,20 @@ export function startConversion(payload: StartConversionPayload): Promise<Conver
   return getApi().startConversion(payload);
 }
 
-export function openPath(targetPath: string): Promise<{ ok: boolean; error?: string | null }> {
-  return getApi().openPath(targetPath);
+export function revealPath(targetPath: string): Promise<{ ok: boolean; error?: string | null }> {
+  return getApi().revealPath(targetPath);
+}
+
+export function getCurrentJob(): Promise<JobSnapshot | null> {
+  return getApi().getCurrentJob();
+}
+
+export function cancelJob(): Promise<{ ok: boolean }> {
+  return getApi().cancelJob();
+}
+
+export function onJobUpdate(handler: (payload: JobSnapshot) => void) {
+  return getApi().onJobUpdate(handler);
 }
 
 export function onDownloadProgress(handler: (payload: ProgressState) => void) {

@@ -76,6 +76,37 @@ input {
   box-shadow: var(--shadow);
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.active-job {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(10, 132, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 30px -24px rgba(15, 23, 42, 0.5);
+}
+
+.active-job div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.active-job span {
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.profile-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .mode-switch button {
   border: 0;
   border-radius: 10px;

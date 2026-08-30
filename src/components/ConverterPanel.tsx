@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatBytes } from "../../shared/formatters.js";
-import conversionConfig from "../../shared/conversion-config.json";
-import { onConversionProgress, openPath, selectVideoFile, startConversion } from "../services/desktopApi";
+import { onConversionProgress, revealPath, selectVideoFile, startConversion } from "../services/desktopApi";
 import type { ConversionResult, ProgressState, SelectedVideoFile } from "../types";
 import { getErrorMessage } from "../utils/errors";
 import ProgressBlock from "./ui/ProgressBlock";
@@ -18,6 +17,7 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
   const [error, setError] = useState("");
   const [result, setResult] = useState<ConversionResult | null>(null);
   const [targetHeight, setTargetHeight] = useState<number | null>(null);
+  const [profileId, setProfileId] = useState<"fast" | "balanced" | "compact">("fast");
 
   useEffect(() => {
     try {
@@ -39,6 +39,7 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
         setError("");
         setProgress({ percent: 0, raw: "Prêt à convertir" });
         setTargetHeight(null);
+        setProfileId("fast");
       }
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, "Impossible de sélectionner la vidéo."));
@@ -57,14 +58,10 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
         inputPath: file.path,
         outputDir,
         targetHeight,
-        mediaInfo: {
-          duration: file.duration,
-          width: file.width,
-          height: file.height,
-          bitrate: file.bitrate
-        }
+        profileId
       });
       setResult(conversionResult);
+      setProgress({ percent: 100, speed: null, eta: null, raw: "Conversion terminée." });
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, "La conversion a échoué."));
     } finally {
@@ -79,29 +76,17 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
   const percent = Math.max(0, Math.min(progress.percent || 0, 100));
   const resolutionOptions = useMemo(() => {
     if (!file) return [];
-    const presets = [1080, 720, 480].filter((height) => height < file.height);
-    return [{ label: `Original · ${file.height || "?"}p`, height: null }, ...presets.map((height) => ({ label: `${height}p`, height }))];
+    return file.outputOptions;
   }, [file]);
   const estimatedSize = useMemo(() => {
-    if (!file?.duration) return null;
-    const effectiveHeight = targetHeight ? Math.min(targetHeight, file.height || targetHeight) : file.height || 1080;
-    const profile = conversionConfig.profiles.find((entry) => effectiveHeight >= entry.minHeight)
-      || conversionConfig.profiles.at(-1);
-    const limit = profile.videoBitrate;
-    const videoBitrate = file.bitrate > 0
-      ? Math.max(
-        conversionConfig.minimumVideoBitrate,
-        Math.min(limit, Math.round(file.bitrate * conversionConfig.sourceBitrateFactor))
-      )
-      : limit;
-    return Math.round(((videoBitrate + conversionConfig.audioBitrate) * file.duration) / 8);
-  }, [file, targetHeight]);
+    return file?.outputOptions.find((option) => option.height === targetHeight)?.estimates[profileId] || null;
+  }, [file, profileId, targetHeight]);
 
   return (
     <section className="panel converter-panel reveal-up">
       <div className="converter-head">
         <div>
-          <span className="eyebrow">Nouveau · V2</span>
+          <span className="eyebrow">Nouveau · V3</span>
           <h2>Convertisseur vidéo rapide</h2>
           <p>Crée un MP4 H.264/AAC propre, compatible et plus léger, sans modifier l’original.</p>
         </div>
@@ -132,7 +117,7 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
                     disabled={converting}
                   >
                     <strong>{option.label}</strong>
-                    <span>{option.height === null ? "Même définition" : "Plus léger & rapide"}</span>
+                    <span>{option.height === null ? "Même définition" : `≈ ${formatBytes(option.estimates[profileId] || 0)}`}</span>
                   </button>
                 ))}
               </div>
@@ -140,6 +125,22 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
                 Taille estimée : <strong>{estimatedSize ? `≈ ${formatBytes(estimatedSize)}` : "indisponible"}</strong>
                 <span>Estimation indicative selon la durée et le débit cible.</span>
               </p>
+            </div>
+          )}
+          {file && (
+            <div>
+              <span className="meta-label">Priorité d’encodage</span>
+              <div className="resolution-options profile-options">
+                {([
+                  ["fast", "Rapide", "Accélération matérielle"],
+                  ["balanced", "Équilibré", "Bon rapport taille/vitesse"],
+                  ["compact", "Plus léger", "CPU, compression renforcée"]
+                ] as const).map(([id, label, detail]) => (
+                  <button type="button" key={id} className={profileId === id ? "is-active" : ""} onClick={() => setProfileId(id)} disabled={converting}>
+                    <strong>{label}</strong><span>{detail}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <div className="setting-row">
@@ -165,7 +166,10 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
         progressLabel={progress.raw || "Prêt à convertir"}
         progressPercent={percent}
         progressMarker={Math.max(6, percent)}
-        progressDetails={progress.speed ? `Vitesse : ${progress.speed}` : ""}
+        progressDetails={[
+          progress.speed ? `Vitesse : ${progress.speed}` : null,
+          progress.eta ? `Reste : ${progress.eta}` : null
+        ].filter(Boolean).join(" · ")}
       />
 
       {result && (
@@ -174,7 +178,7 @@ export default function ConverterPanel({ outputDir, onPickFolder }: ConverterPan
             <strong>Vidéo convertie avec succès</strong>
             <span>{formatBytes(result.inputSize)} → {formatBytes(result.outputSize)}{saving !== null ? ` · ${saving >= 0 ? `${saving}% plus léger` : "qualité privilégiée"}` : ""}</span>
           </div>
-          <button type="button" className="btn btn-subtle" onClick={() => openPath(result.outputPath)}>Afficher le fichier</button>
+          <button type="button" className="btn btn-subtle" onClick={() => revealPath(result.outputPath)}>Afficher le fichier</button>
         </div>
       )}
       {error && <p className="error-box">{error}</p>}

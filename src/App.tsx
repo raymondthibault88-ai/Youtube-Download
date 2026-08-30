@@ -10,6 +10,7 @@ import VideoPanel from "./components/VideoPanel";
 import useDependencyInfo from "./hooks/useDependencyInfo";
 import useDownloadFlow from "./hooks/useDownloadFlow";
 import useDownloadProgress from "./hooks/useDownloadProgress";
+import useMediaJob from "./hooks/useMediaJob";
 import useSplash from "./hooks/useSplash";
 import useStartupInfo from "./hooks/useStartupInfo";
 import useVideoAnalyze from "./hooks/useVideoAnalyze";
@@ -27,6 +28,7 @@ export default function App() {
   });
   const [error, setError] = useState("");
   const urlInputRef = useRef<HTMLInputElement | null>(null);
+  const { job, cancel, busy } = useMediaJob();
 
   useDownloadProgress({ setProgress, setError });
   useSplash();
@@ -165,7 +167,19 @@ export default function App() {
           <button className={mode === "convert" ? "is-active" : ""} onClick={() => setMode("convert")}>Convertir une vidéo</button>
         </nav>
 
-        {mode === "download" ? <>
+        {busy && job && (
+          <div className="active-job" role="status">
+            <div>
+              <strong>{job.type === "download" ? "Téléchargement" : "Conversion"} · {Math.round(job.percent)}%</strong>
+              <span>{job.raw}{job.eta ? ` · reste ${job.eta}` : ""}</span>
+            </div>
+            <button type="button" className="btn btn-subtle" onClick={() => void cancel()} disabled={job.state === "cancelling"}>
+              {job.state === "cancelling" ? "Annulation…" : "Annuler"}
+            </button>
+          </div>
+        )}
+
+        <div hidden={mode !== "download"}>
           <HeroPanel
           appStatus={appStatus}
           url={url}
@@ -201,9 +215,10 @@ export default function App() {
           ) : (
           <EmptyPanel />
           )}
-        </> : (
+        </div>
+        <div hidden={mode !== "convert"}>
           <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} />
-        )}
+        </div>
       </div>
     </main>
   );

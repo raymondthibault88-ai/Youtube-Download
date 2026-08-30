@@ -1,6 +1,5 @@
 import js from '@eslint/js';
 import globals from 'globals';
-import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
@@ -15,9 +14,6 @@ export default [
   })),
   {
     files: ['src/**/*.{js,jsx,ts,tsx}'],
-    plugins: {
-      react
-    },
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -28,15 +24,6 @@ export default [
       },
       globals: globals.browser
     },
-    settings: {
-      react: {
-        version: 'detect'
-      }
-    },
-    rules: {
-      'react/react-in-jsx-scope': 'off',
-      'react/jsx-uses-vars': 'error'
-    }
   },
   {
     files: ['src/**/*.{js,jsx,ts,tsx}'],

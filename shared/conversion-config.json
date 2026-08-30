@@ -2,6 +2,12 @@
   "audioBitrate": 160000,
   "sourceBitrateFactor": 0.82,
   "minimumVideoBitrate": 700000,
+  "resolutions": [2160, 1440, 1080, 720, 480],
+  "speedProfiles": [
+    { "id": "fast", "label": "Rapide", "bitrateFactor": 1.08, "softwarePreset": "veryfast", "preferHardware": true },
+    { "id": "balanced", "label": "Équilibré", "bitrateFactor": 1, "softwarePreset": "faster", "preferHardware": true },
+    { "id": "compact", "label": "Plus léger", "bitrateFactor": 0.78, "softwarePreset": "fast", "preferHardware": false }
+  ],
   "profiles": [
     { "minHeight": 2160, "videoBitrate": 12000000 },
     { "minHeight": 1440, "videoBitrate": 8000000 },

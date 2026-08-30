@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { DependencyInfo } from "../types/deps";
 import type { ProgressState } from "../types/progress";
 import type { VideoFormat } from "../types/video";
-import { openPath, startDownload } from "../services/desktopApi";
+import { revealPath, startDownload } from "../services/desktopApi";
 import { pickOutputDir } from "../services/outputDirectory";
 import { getErrorMessage } from "../utils/errors";
 
@@ -31,7 +31,7 @@ export default function useDownloadFlow({
   requestDependencyInfo
 }: UseDownloadFlowParams) {
   const [downloading, setDownloading] = useState(false);
-  const hasOpenedFolderRef = useRef(false);
+  const completedPathRef = useRef<string | null>(null);
 
   const resolveTargetDirectory = useCallback(async (forceAskOutput: boolean) => {
     if (forceAskOutput) {
@@ -80,7 +80,7 @@ export default function useDownloadFlow({
       const targetDir = await resolveTargetDirectory(forceAskOutput);
       await dependencyWarmupPromise;
 
-      await startDownload({
+      const result = await startDownload({
         url: url.trim(),
         outputDir: targetDir,
         formatId,
@@ -91,7 +91,7 @@ export default function useDownloadFlow({
       });
 
       setProgress((previous) => ({ ...previous, percent: 100, raw: "Téléchargement terminé." }));
-      hasOpenedFolderRef.current = false;
+      completedPathRef.current = result.outputPath;
     } catch (error) {
       setError(getErrorMessage(error, "Le téléchargement a échoué."));
     } finally {
@@ -128,13 +128,11 @@ export default function useDownloadFlow({
   }, [runDownload, setError]);
 
   useEffect(() => {
-    if (!progress?.raw || hasOpenedFolderRef.current) return;
+    if (!progress?.raw || !completedPathRef.current) return;
     if (progress.percent && progress.percent >= 100) {
-      const targetDir = outputDir || dependencyInfo?.downloadsPath;
-      if (targetDir) {
-        hasOpenedFolderRef.current = true;
-        openPath(targetDir);
-      }
+      const completedPath = completedPathRef.current;
+      completedPathRef.current = null;
+      void revealPath(completedPath);
     }
   }, [dependencyInfo?.downloadsPath, outputDir, progress.percent, progress.raw]);
 

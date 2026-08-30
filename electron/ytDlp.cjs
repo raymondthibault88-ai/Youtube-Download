@@ -3,27 +3,29 @@ const path = require('node:path');
 const https = require('node:https');
 const nodeCrypto = require('node:crypto');
 const { pipeline } = require('node:stream');
+const { Transform } = require('node:stream');
 const { promisify } = require('node:util');
 
 const streamPipeline = promisify(pipeline);
 const ensureBinaryPromises = new Map();
 
-const RELEASE_VERSION = '2026.03.17';
+const RELEASE_VERSION = '2026.08.19';
 const RELEASE_BASE = `https://github.com/yt-dlp/yt-dlp/releases/download/${RELEASE_VERSION}`;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 const MAX_REDIRECTS = 5;
+const MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024;
 const BINARIES_BY_PLATFORM = {
   win32: {
     name: 'yt-dlp.exe',
-    sha256: '3db811b366b2da47337d2fcfdfe5bbd9a258dad3f350c54974f005df115a1545'
+    sha256: '66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a'
   },
   darwin: {
     name: 'yt-dlp_macos',
-    sha256: 'e80c47b3ce712acee51d5e3d4eace2d181b44d38f1942c3a32e3c7ff53cd9ed5'
+    sha256: '0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202'
   },
   linux: {
     name: 'yt-dlp',
-    sha256: '3bda0968a01cde70d26720653003b28553c71be14dcb2e5f4c24e9921fdad745'
+    sha256: '1fa6733c37ea6fb51c99ad8fe785e7b7e5f3246c9b980230329d4fb72ed8d4d6'
   }
 };
 
@@ -69,6 +71,12 @@ async function downloadFile(url, destination, redirectCount = 0) {
     throw new Error(`Téléchargement yt-dlp interrompu: trop de redirections (${MAX_REDIRECTS}).`);
   }
 
+  const parsedUrl = new URL(url);
+  const trustedHost = parsedUrl.hostname === 'github.com' || parsedUrl.hostname.endsWith('.githubusercontent.com');
+  if (parsedUrl.protocol !== 'https:' || !trustedHost) {
+    throw new Error('Téléchargement yt-dlp bloqué: hôte non autorisé.');
+  }
+
   await fs.promises.mkdir(path.dirname(destination), { recursive: true });
 
   return new Promise((resolve, reject) => {
@@ -86,8 +94,22 @@ async function downloadFile(url, destination, redirectCount = 0) {
         return;
       }
 
+      const announcedSize = Number(response.headers['content-length'] || 0);
+      if (announcedSize > MAX_DOWNLOAD_BYTES) {
+        response.destroy();
+        reject(new Error('Téléchargement yt-dlp trop volumineux.'));
+        return;
+      }
+
       const fileStream = fs.createWriteStream(destination);
-      streamPipeline(response, fileStream)
+      let receivedBytes = 0;
+      const sizeGuard = new Transform({
+        transform(chunk, _encoding, callback) {
+          receivedBytes += chunk.length;
+          callback(receivedBytes > MAX_DOWNLOAD_BYTES ? new Error('Téléchargement yt-dlp trop volumineux.') : null, chunk);
+        }
+      });
+      streamPipeline(response, sizeGuard, fileStream)
         .then(resolve)
         .catch(reject);
     });
