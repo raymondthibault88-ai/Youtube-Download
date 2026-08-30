@@ -6,4 +6,5 @@ export interface StartDownloadPayload {
   hasVideo?: boolean;
   hasAudio?: boolean;
   shouldRecodeToMp4?: boolean;
+  expectedSizeBytes?: number | null;
 }

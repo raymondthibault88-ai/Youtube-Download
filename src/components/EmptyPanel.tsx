@@ -1,10 +1,11 @@
 export default function EmptyPanel() {
   return (
-    <section className="panel reveal-up delay-1 empty-panel">
-      <div className="empty-state">
-        <h3>Prêt à analyser une vidéo</h3>
-        <p>Colle une URL YouTube, lance l'analyse et choisis le format idéal.</p>
-      </div>
+    <section className="empty-panel reveal-up delay-1" aria-label="Étapes du téléchargement">
+      <div><span>1</span><strong>Colle le lien</strong><p>Depuis YouTube</p></div>
+      <i aria-hidden="true">→</i>
+      <div><span>2</span><strong>Choisis la qualité</strong><p>Résolution et poids</p></div>
+      <i aria-hidden="true">→</i>
+      <div><span>3</span><strong>Télécharge</strong><p>MP4 compatible</p></div>
     </section>
   );
 }

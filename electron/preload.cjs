@@ -13,7 +13,6 @@ const channels = {
   jobCancel: 'job:cancel',
   revealPath: 'dialog:revealPath',
   downloadProgress: 'download:progress',
-  conversionProgress: 'conversion:progress',
   jobUpdate: 'job:update'
 };
 
@@ -35,6 +34,5 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   cancelJob: () => ipcRenderer.invoke(channels.jobCancel),
   revealPath: (targetPath) => ipcRenderer.invoke(channels.revealPath, targetPath),
   onDownloadProgress: (handler) => subscribe(channels.downloadProgress, handler),
-  onConversionProgress: (handler) => subscribe(channels.conversionProgress, handler),
   onJobUpdate: (handler) => subscribe(channels.jobUpdate, handler)
 });

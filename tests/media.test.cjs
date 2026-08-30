@@ -1,12 +1,18 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { buildOutputOptions, estimateOutputSize, getTargetVideoBitrate, parseFfmpegTime } = require('../electron/services/media.cjs');
+const { formatEta } = require('../shared/formatters.js');
 
 const media = { duration: 120, width: 3840, height: 2160, bitrate: 20_000_000 };
 
 test('parseFfmpegTime converts timestamps', () => {
   assert.equal(parseFfmpegTime('01:02:03.5'), 3723.5);
   assert.equal(parseFfmpegTime('invalid'), null);
+});
+
+test('formatEta is shared by download and conversion progress', () => {
+  assert.equal(formatEta(9.2), '10s');
+  assert.equal(formatEta(65), '1:05');
 });
 
 test('output options include all useful lower resolutions and estimates', () => {

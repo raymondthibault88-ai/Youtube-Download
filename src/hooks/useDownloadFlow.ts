@@ -64,7 +64,8 @@ export default function useDownloadFlow({
     forceAskOutput = false,
     hasVideo = true,
     hasAudio = true,
-    shouldRecodeToMp4 = false
+    shouldRecodeToMp4 = false,
+    expectedSizeBytes: number | null = null
   ) => {
     if (!url.trim()) {
       setError("Colle une URL YouTube valide.");
@@ -87,7 +88,8 @@ export default function useDownloadFlow({
         mergeAudioIfNeeded,
         hasVideo,
         hasAudio,
-        shouldRecodeToMp4
+        shouldRecodeToMp4,
+        expectedSizeBytes
       });
 
       setProgress((previous) => ({ ...previous, percent: 100, raw: "Téléchargement terminé." }));
@@ -123,7 +125,8 @@ export default function useDownloadFlow({
       false,
       selectedFormat.hasVideo,
       selectedFormat.hasAudio,
-      selectedFormat.ext?.toLowerCase() !== "mp4" || !selectedFormat.quickTimeCompatible
+      selectedFormat.ext?.toLowerCase() !== "mp4" || !selectedFormat.quickTimeCompatible,
+      selectedFormat.fileSizeBytes || null
     );
   }, [runDownload, setError]);
 

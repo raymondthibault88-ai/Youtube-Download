@@ -4,8 +4,10 @@ import downloadConfig from "../shared/download-config.json";
 import { formatSize } from "../shared/formatters.js";
 import logo from "./assets/logo.png";
 import EmptyPanel from "./components/EmptyPanel";
+import AppHeader from "./components/AppHeader";
 import ConverterPanel from "./components/ConverterPanel";
 import HeroPanel from "./components/HeroPanel";
+import JobBar from "./components/JobBar";
 import VideoPanel from "./components/VideoPanel";
 import useDependencyInfo from "./hooks/useDependencyInfo";
 import useDownloadFlow from "./hooks/useDownloadFlow";
@@ -86,7 +88,6 @@ export default function App() {
     }
   }, [setOutputDir, setError]);
 
-
   const handlePasteUrl = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -107,28 +108,6 @@ export default function App() {
     return video?.formats || [];
   }, [video]);
 
-  const progressPercent = useMemo(
-    () => Math.max(0, Math.min(progress.percent || 0, 100)),
-    [progress.percent]
-  );
-  const progressLabel = useMemo(
-    () => progress.raw || "Aucun téléchargement en cours",
-    [progress.raw]
-  );
-  const progressDetails = useMemo(
-    () => [
-      progress.speed ? `Vitesse: ${progress.speed}` : null,
-      progress.eta ? `ETA: ${progress.eta}` : null
-    ].filter(Boolean).join(" · "),
-    [progress.speed, progress.eta]
-  );
-
-  const appStatus = downloading
-    ? "Téléchargement en cours"
-    : loadingVideo
-      ? "Analyse en cours"
-      : "Prêt";
-
   const selectedFormatSummary = useMemo(() => {
     if (!selectedFormat) return null;
     const mediaType = selectedFormat.hasVideo && selectedFormat.hasAudio
@@ -145,79 +124,78 @@ export default function App() {
     const codecLabel = [videoCodecLabel, audioCodecLabel].filter(Boolean).join(" + ");
     const details = [
       selectedFormat.resolution,
-      mediaType,
       selectedFormat.ext?.toUpperCase(),
       codecLabel || null,
-      "Sortie compatible Dartfish (H.264/AAC)"
+      mediaType,
+      selectedFormat.quickTimeCompatible ? "Conversion directe" : "Réencodage compatible"
     ].filter(Boolean);
     const size = formatSize(selectedFormat.fileSizeText);
     return `${details.join(" · ")}${size ? ` · ${size}` : ""}`;
   }, [selectedFormat]);
 
   const actionLabel = loadingVideo ? "Analyse..." : "Analyser les formats";
-  const progressMarker = Math.max(6, Math.min(progressPercent, 100));
+  const showJobBar = Boolean(job && ["running", "cancelling", "failed", "cancelled"].includes(job.state));
+  const displayedJob = useMemo(() => {
+    if (!job || job.type !== "download" || progress.percent == null || !progress.raw) return job;
+    return {
+      ...job,
+      percent: Math.max(job.percent || 0, progress.percent),
+      speed: progress.speed ?? job.speed,
+      eta: progress.eta ?? job.eta,
+      raw: progress.raw
+    };
+  }, [job, progress]);
 
   return (
     <main className="app-shell">
       <div className="app-glow" aria-hidden="true" />
 
       <div className="layout">
-        <nav className="mode-switch" aria-label="Mode de l’application">
-          <button className={mode === "download" ? "is-active" : ""} onClick={() => setMode("download")}>Télécharger YouTube</button>
-          <button className={mode === "convert" ? "is-active" : ""} onClick={() => setMode("convert")}>Convertir une vidéo</button>
-        </nav>
+        <AppHeader
+          mode={mode}
+          onModeChange={setMode}
+          logoSrc={logo}
+          toolsReady={Boolean(dependencyInfo)}
+          toolsPreparing={isPreparingTools}
+        />
 
-        {busy && job && (
-          <div className="active-job" role="status">
-            <div>
-              <strong>{job.type === "download" ? "Téléchargement" : "Conversion"} · {Math.round(job.percent)}%</strong>
-              <span>{job.raw}{job.eta ? ` · reste ${job.eta}` : ""}</span>
-            </div>
-            <button type="button" className="btn btn-subtle" onClick={() => void cancel()} disabled={job.state === "cancelling"}>
-              {job.state === "cancelling" ? "Annulation…" : "Annuler"}
-            </button>
-          </div>
-        )}
+        {showJobBar && displayedJob && <JobBar job={displayedJob} onCancel={() => void cancel()} />}
 
         <div hidden={mode !== "download"}>
           <HeroPanel
-          appStatus={appStatus}
-          url={url}
-          onUrlChange={handleUrlChange}
-          urlInputRef={urlInputRef}
-          loadingVideo={loadingVideo}
-          downloading={downloading}
-          outputDir={outputDir}
-          onAnalyze={handleAnalyze}
-          onPasteUrl={handlePasteUrl}
-          onPickFolder={handlePickFolder}
-          actionLabel={actionLabel}
-          dependencyInfo={dependencyInfo}
-          progressLabel={progressLabel}
-          progressPercent={progressPercent}
-          progressMarker={progressMarker}
-          progressDetails={progressDetails}
-          isPreparingTools={isPreparingTools && !dependencyInfo}
-          error={error}
-          logoSrc={logo}
+            url={url}
+            onUrlChange={handleUrlChange}
+            urlInputRef={urlInputRef}
+            loadingVideo={loadingVideo}
+            downloading={downloading}
+            outputDir={outputDir}
+            onAnalyze={handleAnalyze}
+            onPasteUrl={handlePasteUrl}
+            onPickFolder={handlePickFolder}
+            actionLabel={actionLabel}
+            dependencyInfo={dependencyInfo}
+            isPreparingTools={isPreparingTools && !dependencyInfo}
+            error={error}
+            mediaBusy={busy}
           />
 
           {video ? (
-          <VideoPanel
-            video={video}
-            selectedFormatSummary={selectedFormatSummary}
-            availableFormats={availableFormats}
-            selectedFormatId={selectedFormat?.id || null}
-            onSelectFormat={handleSelectFormat}
-            onDownload={handleDownload}
-            downloading={downloading}
-          />
+            <VideoPanel
+              video={video}
+              selectedFormatSummary={selectedFormatSummary}
+              availableFormats={availableFormats}
+              selectedFormatId={selectedFormat?.id || null}
+              onSelectFormat={handleSelectFormat}
+              onDownload={handleDownload}
+              downloading={downloading}
+              mediaBusy={busy}
+            />
           ) : (
-          <EmptyPanel />
+            <EmptyPanel />
           )}
         </div>
         <div hidden={mode !== "convert"}>
-          <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} />
+          <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} mediaBusy={busy} />
         </div>
       </div>
     </main>

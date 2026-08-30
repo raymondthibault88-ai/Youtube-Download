@@ -9,6 +9,7 @@ interface FormatsTableProps {
   selectedFormatSummary: string | null;
   onDownload: () => void;
   downloading: boolean;
+  mediaBusy: boolean;
 }
 
 const FormatsTable = memo(function FormatsTable({
@@ -17,7 +18,8 @@ const FormatsTable = memo(function FormatsTable({
   onSelectFormat,
   selectedFormatSummary,
   onDownload,
-  downloading
+  downloading,
+  mediaBusy
 }: FormatsTableProps) {
   return (
     <div className="formats-box">
@@ -32,12 +34,9 @@ const FormatsTable = memo(function FormatsTable({
         <table className="formats-table">
           <thead>
             <tr>
-              <th>Choix</th>
               <th>Résolution</th>
-              <th>Type</th>
-              <th>Conteneur</th>
-              <th>Codecs</th>
-              <th>Compat.</th>
+              <th>Format</th>
+              <th>Traitement</th>
               <th>FPS</th>
               <th>Taille</th>
             </tr>
@@ -62,10 +61,10 @@ const FormatsTable = memo(function FormatsTable({
         <button
           type="button"
           onClick={onDownload}
-          disabled={downloading || !selectedFormatId}
-          className="btn btn-strong"
+          disabled={downloading || mediaBusy || !selectedFormatId}
+          className="btn btn-primary"
         >
-          {downloading ? "Téléchargement..." : "Télécharger ce format"}
+          {downloading ? "Téléchargement…" : mediaBusy ? "Une tâche est en cours" : "Télécharger"}
         </button>
       </div>
     </div>

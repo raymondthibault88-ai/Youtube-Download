@@ -90,11 +90,7 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
       const inputStats = await fs.promises.stat(inputPath);
       update({ percent: 1, raw: 'Analyse de la vidéo…' });
       const mediaInfo = await media.inspect(inputPath, signal);
-      const onProgress = (progress) => {
-        update(progress);
-        if (!event.sender.isDestroyed()) event.sender.send(ipcChannels.events.conversionProgress, progress);
-      };
-      const outputPath = await media.convert({ inputPath, outputDir, targetHeight, profileId, mediaInfo, signal, onProgress });
+      const outputPath = await media.convert({ inputPath, outputDir, targetHeight, profileId, mediaInfo, signal, onProgress: update });
       const outputStats = await fs.promises.stat(outputPath);
       revealablePaths.add(outputPath);
       return { ok: true, outputPath, inputSize: inputStats.size, outputSize: outputStats.size };
@@ -109,7 +105,10 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
       mergeAudioIfNeeded: payload?.mergeAudioIfNeeded === true,
       hasVideo: payload?.hasVideo !== false,
       hasAudio: payload?.hasAudio !== false,
-      shouldRecodeToMp4: payload?.shouldRecodeToMp4 === true
+      shouldRecodeToMp4: payload?.shouldRecodeToMp4 === true,
+      expectedSizeBytes: Number.isFinite(Number(payload?.expectedSizeBytes))
+        ? Math.max(0, Math.min(Number(payload.expectedSizeBytes), 1024 ** 5))
+        : null
     };
     await fs.promises.mkdir(cleanPayload.outputDir, { recursive: true });
     const youtube = await getYoutube();

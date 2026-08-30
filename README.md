@@ -1,4 +1,4 @@
-# Video Downloader & Converter V3
+# Video Downloader & Converter V4
 
 Application Electron 44 + React pour télécharger une vidéo YouTube ou convertir un fichier local en MP4 H.264/AAC compatible QuickTime et Dartfish.
 
@@ -46,7 +46,9 @@ Sans ces identifiants, un DMG local non notarisé est tout de même produit.
 ## Dépendances binaires
 
 - yt-dlp 2026.08.19 est téléchargé au premier lancement, limité à des hôtes GitHub HTTPS et vérifié par SHA256.
-- FFmpeg est fourni par `ffmpeg-static`. L’application teste l’encodeur matériel avant la conversion et repasse automatiquement sur libx264 si nécessaire.
+- FFmpeg est fourni par `ffmpeg-static`. Les paquets Windows x64 embarquent explicitement le binaire PE vérifié par SHA256 afin de permettre un build croisé fiable depuis macOS. L’application teste l’encodeur matériel avant la conversion et repasse automatiquement sur libx264 si nécessaire.
+
+`npm run dist:win` génère l’installateur NSIS x64. La variante autonome reste disponible avec `npx electron-builder --win portable --x64`.
 
 ## Légal
 

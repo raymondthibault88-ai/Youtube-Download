@@ -24,22 +24,17 @@ const FormatRow = memo(function FormatRow({ format, isSelected, onSelect }: Form
   const codecLabel = [videoCodecLabel, audioCodecLabel].filter(Boolean).join(" + ") || "-";
 
   return (
-    <tr className={isSelected ? "is-active" : ""}>
+    <tr className={isSelected ? "is-active" : ""} onClick={() => onSelect(format)}>
       <td>
-        <input
-          type="radio"
-          name="format"
-          checked={isSelected}
-          onChange={() => onSelect(format)}
-        />
+        <label className="format-choice">
+          <input type="radio" name="format" checked={isSelected} onChange={() => onSelect(format)} />
+          <strong>{format.resolution}</strong>
+        </label>
       </td>
-      <td>{format.resolution}</td>
-      <td>{mediaType}</td>
-      <td className="uppercase">{format.ext}</td>
-      <td>{codecLabel}</td>
-      <td>{format.quickTimeCompatible ? "Direct" : "Réencodage"}</td>
+      <td><strong className="uppercase">{format.ext}</strong><span className="cell-detail">{codecLabel} · {mediaType}</span></td>
+      <td><span className={`compat-badge ${format.quickTimeCompatible ? "is-direct" : ""}`}>{format.quickTimeCompatible ? "Direct" : "Réencodage"}</span></td>
       <td>{format.fps || "-"}</td>
-      <td>{formatSize(format.fileSizeText)}</td>
+      <td className="size-cell">{formatSize(format.fileSizeText) || "—"}</td>
     </tr>
   );
 });

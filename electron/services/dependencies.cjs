@@ -1,5 +1,21 @@
 const fs = require('node:fs');
+const path = require('node:path');
 const { runProcess } = require('./process-runner.cjs');
+
+function resolveFfmpegPath({
+  isPackaged,
+  platform = process.platform,
+  resourcesPath = process.resourcesPath,
+  staticBinary = require('ffmpeg-static')
+}) {
+  if (isPackaged && platform === 'win32') {
+    return path.join(resourcesPath, 'ffmpeg', 'ffmpeg.exe');
+  }
+
+  return staticBinary?.includes('app.asar')
+    ? staticBinary.replace('app.asar', 'app.asar.unpacked')
+    : staticBinary;
+}
 
 class DependencyService {
   constructor(app) {
@@ -13,8 +29,7 @@ class DependencyService {
   }
 
   resolveFfmpegPath() {
-    const binary = require('ffmpeg-static');
-    return binary?.includes('app.asar') ? binary.replace('app.asar', 'app.asar.unpacked') : binary;
+    return resolveFfmpegPath({ isPackaged: this.app.isPackaged });
   }
 
   async getInfo() {
@@ -81,4 +96,4 @@ class DependencyService {
   }
 }
 
-module.exports = { DependencyService };
+module.exports = { DependencyService, resolveFfmpegPath };

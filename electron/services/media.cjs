@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const conversionConfig = require('../../shared/conversion-config.json');
+const { formatEta } = require('../../shared/formatters.js');
 const { appendTail, runProcess } = require('./process-runner.cjs');
 
 const HARDWARE_ENCODERS = {
@@ -217,13 +218,6 @@ class MediaService {
       throw error;
     }
   }
-}
-
-function formatEta(seconds) {
-  const rounded = Math.ceil(seconds);
-  const minutes = Math.floor(rounded / 60);
-  const remainder = rounded % 60;
-  return minutes > 0 ? `${minutes}:${String(remainder).padStart(2, '0')}` : `${remainder}s`;
 }
 
 module.exports = {

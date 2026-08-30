@@ -14,24 +14,28 @@ function readJson(filePath) {
 const projectRoot = path.resolve(__dirname, '..');
 const downloadConfigPath = path.join(projectRoot, 'shared', 'download-config.json');
 const packageJsonPath = path.join(projectRoot, 'package.json');
+const packageLockPath = path.join(projectRoot, 'package-lock.json');
 const ipcPath = path.join(projectRoot, 'shared', 'ipc.json');
 const conversionConfigPath = path.join(projectRoot, 'shared', 'conversion-config.json');
 
 const downloadConfig = readJson(downloadConfigPath);
 const packageJson = readJson(packageJsonPath);
+const packageLock = readJson(packageLockPath);
 const ipc = readJson(ipcPath);
 const conversionConfig = readJson(conversionConfigPath);
 
 assert(typeof downloadConfig.outputTemplate === 'string', 'outputTemplate manquant.');
 assert(downloadConfig.outputTemplate.includes('%(title)'), 'outputTemplate invalide.');
+assert(!downloadConfig.outputTemplate.includes('%(id)'), 'Le nom de sortie ne doit pas contenir l’identifiant YouTube.');
+assert(!downloadConfig.outputTemplate.includes('['), 'Le nom de sortie ne doit pas contenir de crochets techniques.');
 assert(downloadConfig.initialProgress && typeof downloadConfig.initialProgress === 'object', 'initialProgress manquant.');
 
 assert(packageJson.scripts && packageJson.scripts.build, 'Script build manquant.');
 assert(packageJson.scripts && packageJson.scripts.dist, 'Script dist manquant.');
-assert(packageJson.version === '3.0.0', 'La version de l’application doit être 3.0.0.');
+assert(/^\d+\.\d+\.\d+$/.test(packageJson.version), 'La version de l’application doit respecter le format semver.');
+assert(packageLock.version === packageJson.version, 'La version du lockfile doit correspondre à celle de l’application.');
 assert(ipc.invoke.dialogSelectVideo === 'dialog:selectVideo', 'Canal de sélection vidéo manquant.');
 assert(ipc.invoke.conversionStart === 'conversion:start', 'Canal de conversion manquant.');
-assert(ipc.events.conversionProgress === 'conversion:progress', 'Canal de progression de conversion manquant.');
 assert(ipc.invoke.jobCancel === 'job:cancel', 'Canal d’annulation de tâche manquant.');
 assert(ipc.events.jobUpdate === 'job:update', 'Canal de suivi unifié manquant.');
 assert(conversionConfig.audioBitrate > 0, 'Débit audio de conversion invalide.');

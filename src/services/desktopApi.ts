@@ -4,8 +4,12 @@ import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from
 import type { ProgressState } from "../types/progress";
 import type { VideoInfo } from "../types/video";
 import type { JobSnapshot } from "../types/job";
+import { getDevPreviewApi } from "./devPreviewApi";
 
 function getApi() {
+  if (import.meta.env.DEV && !window.desktopAPI) {
+    return getDevPreviewApi();
+  }
   if (!window.desktopAPI) {
     throw new Error("Le bridge Electron (preload) est indisponible.");
   }
@@ -59,8 +63,4 @@ export function onJobUpdate(handler: (payload: JobSnapshot) => void) {
 
 export function onDownloadProgress(handler: (payload: ProgressState) => void) {
   return getApi().onDownloadProgress(handler);
-}
-
-export function onConversionProgress(handler: (payload: ProgressState) => void) {
-  return getApi().onConversionProgress(handler);
 }

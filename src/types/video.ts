@@ -8,6 +8,7 @@ export interface VideoFormat {
   videoCodec?: string | null;
   audioCodec?: string | null;
   quickTimeCompatible: boolean;
+  fileSizeBytes?: number | null;
   fileSizeText?: string | null;
 }
 

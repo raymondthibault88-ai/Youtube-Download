@@ -11,6 +11,7 @@ interface VideoPanelProps {
   onSelectFormat: (format: VideoFormat) => void;
   onDownload: () => void;
   downloading: boolean;
+  mediaBusy: boolean;
 }
 
 const VideoPanel = memo(function VideoPanel({
@@ -20,7 +21,8 @@ const VideoPanel = memo(function VideoPanel({
   selectedFormatId,
   onSelectFormat,
   onDownload,
-  downloading
+  downloading,
+  mediaBusy
 }: VideoPanelProps) {
   return (
     <section className="panel reveal-up delay-1">
@@ -37,12 +39,7 @@ const VideoPanel = memo(function VideoPanel({
               height={180}
             />
           )}
-          <h2>
-            {video.title}
-            {selectedFormatSummary && (
-              <span className="badge">{selectedFormatSummary}</span>
-            )}
-          </h2>
+          <h2>{video.title}</h2>
           <p>{video.uploader || "Chaîne inconnue"} · {formatDuration(video.duration)}</p>
         </aside>
 
@@ -53,6 +50,7 @@ const VideoPanel = memo(function VideoPanel({
           selectedFormatSummary={selectedFormatSummary}
           onDownload={onDownload}
           downloading={downloading}
+          mediaBusy={mediaBusy}
         />
       </div>
     </section>

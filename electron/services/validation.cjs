@@ -1,4 +1,5 @@
 const path = require('node:path');
+const { fileURLToPath } = require('node:url');
 
 const YOUTUBE_HOSTS = new Set([
   'youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com',
@@ -30,16 +31,23 @@ function validateFormatId(value) {
   return normalized;
 }
 
+function isPathInside(basePath, candidatePath, pathApi = path) {
+  const base = pathApi.resolve(basePath);
+  const candidate = pathApi.resolve(candidatePath);
+  const relative = pathApi.relative(base, candidate);
+  return relative === '' || (relative !== '..' && !relative.startsWith(`..${pathApi.sep}`) && !pathApi.isAbsolute(relative));
+}
+
 function validateSender(event, { appPath, devOrigin }) {
   const frameUrl = event.senderFrame?.url || event.sender?.getURL?.() || '';
   try {
     const parsed = new URL(frameUrl);
     if (devOrigin && parsed.origin === devOrigin) return;
-    if (parsed.protocol === 'file:' && path.normalize(decodeURIComponent(parsed.pathname)).startsWith(path.normalize(appPath))) return;
+    if (parsed.protocol === 'file:' && isPathInside(appPath, fileURLToPath(parsed))) return;
   } catch {
     // Rejected below.
   }
   throw new Error('Émetteur IPC non autorisé.');
 }
 
-module.exports = { requireAbsolutePath, validateFormatId, validateSender, validateYouTubeUrl };
+module.exports = { isPathInside, requireAbsolutePath, validateFormatId, validateSender, validateYouTubeUrl };

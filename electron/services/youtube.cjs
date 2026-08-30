@@ -1,5 +1,11 @@
 const downloadConfig = require('../../shared/download-config.json');
 const { formatBytes } = require('../../shared/formatters.js');
+const {
+  PROGRESS_PREFIX,
+  createLineConsumer,
+  parseDownloadOutputLine,
+  startDirectoryProgressMonitor
+} = require('./download-progress.cjs');
 const { runProcess } = require('./process-runner.cjs');
 
 const FAST_EXTRACTOR_ARGS = 'youtube:player_client=web_embedded,web_safari';
@@ -23,6 +29,7 @@ function toFormats(info) {
     const hasAudio = Boolean(format.acodec && format.acodec !== 'none');
     const videoCodec = hasVideo ? normalizeCodec(format.vcodec) : null;
     const audioCodec = hasAudio ? normalizeCodec(format.acodec) : null;
+    const fileSizeBytes = Number(format.filesize || format.filesize_approx || 0) || null;
     return {
       id: String(format.format_id),
       resolution: format.resolution || (format.height ? `${format.height}p` : 'audio only'),
@@ -34,7 +41,8 @@ function toFormats(info) {
       videoCodec,
       audioCodec,
       quickTimeCompatible: hasVideo && hasPrefix(videoCodec, VIDEO_CODECS) && (hasAudio ? hasPrefix(audioCodec, AUDIO_CODECS) : hasCompatibleAudio),
-      fileSizeText: formatBytes(format.filesize || format.filesize_approx)
+      fileSizeBytes,
+      fileSizeText: formatBytes(fileSizeBytes)
     };
   }).filter((format) => format.hasVideo)
     .sort((a, b) => (b.height - a.height) || ((b.fps || 0) - (a.fps || 0)))
@@ -61,7 +69,12 @@ function buildFormatSelector(payload) {
 function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldRecodeToMp4, runtimePath = process.execPath }) {
   const args = [
     '--newline', '--no-playlist', '--no-warnings', '--js-runtimes', `node:${runtimePath}`,
-    '--ffmpeg-location', ffmpegPath, '--format-sort', 'vcodec:h264,acodec:aac', '-f', formatSelector
+    '--color', 'stdout:never', '--color', 'stderr:never',
+    '--progress-template', `download:${PROGRESS_PREFIX}%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s`,
+    '--ffmpeg-location', ffmpegPath, '--windows-filenames',
+    '--replace-in-metadata', 'title', '[\\[\\]{}]', '',
+    '--replace-in-metadata', 'title', '\\s{2,}', ' ',
+    '--format-sort', 'vcodec:h264,acodec:aac', '-f', formatSelector
   ];
   if (downloadConfig.concurrentFragments > 1) args.push('-N', String(Math.floor(downloadConfig.concurrentFragments)));
   if (formatSelector.includes('+')) {
@@ -70,16 +83,6 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
   }
   args.push('--print', 'after_move:__YTDLP_FILE__:%(filepath)s', '-o', downloadConfig.outputTemplate, '-P', outputDir, url);
   return args;
-}
-
-function parseDownloadProgress(line) {
-  const percent = Number(line.match(/(\d+(?:\.\d+)?)%/)?.[1]);
-  return {
-    percent: Number.isFinite(percent) ? percent : null,
-    speed: line.match(/at\s+([^\s]+\/?s)/i)?.[1] || null,
-    eta: line.match(/ETA\s+([^\s]+)/i)?.[1] || null,
-    raw: line.trim()
-  };
 }
 
 class YouTubeService {
@@ -123,23 +126,47 @@ class YouTubeService {
       url: payload.url,
       shouldRecodeToMp4: recode
     });
-    let buffer = '';
     let downloadedPath = null;
-    await runProcess(this.ytDlpPath, args, {
-      env: this.env(), signal, outputLimit: 128 * 1024,
-      onStdout: (chunk) => {
-        buffer += chunk.toString();
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (line.startsWith('__YTDLP_FILE__:')) downloadedPath = line.slice('__YTDLP_FILE__:'.length).trim();
-          if (!line.includes('[download]')) continue;
-          const progress = parseDownloadProgress(line);
-          if (progress.percent !== null) progress.percent = Math.round(progress.percent * (recode ? 0.82 : 0.97));
-          onProgress(progress);
-        }
+    let lastProgressSignature = '';
+    let highestPercent = 0;
+    const emitProgress = (progress) => {
+      if (Number.isFinite(progress.percent)) {
+        if (progress.percent < highestPercent) return;
+        highestPercent = progress.percent;
       }
+      onProgress(progress);
+    };
+    const processLine = (line) => {
+      const parsed = parseDownloadOutputLine(line, recode);
+      if (!parsed) return;
+      if (parsed.outputPath) downloadedPath = parsed.outputPath;
+      if (!parsed.progress) return;
+
+      const signature = `${parsed.progress.percent}|${parsed.progress.speed}|${parsed.progress.eta}|${parsed.progress.raw}`;
+      if (signature === lastProgressSignature) return;
+      lastProgressSignature = signature;
+      emitProgress(parsed.progress);
+    };
+    const consumeStdout = createLineConsumer(processLine);
+    const consumeStderr = createLineConsumer(processLine);
+
+    const stopDirectoryMonitor = await startDirectoryProgressMonitor({
+      outputDir: payload.outputDir,
+      expectedSizeBytes: payload.expectedSizeBytes,
+      rangeEnd: recode ? 82 : 97,
+      onProgress: emitProgress
     });
+    try {
+      await runProcess(this.ytDlpPath, args, {
+        env: this.env(), signal, outputLimit: 128 * 1024,
+        onStdout: consumeStdout,
+        onStderr: consumeStderr
+      });
+    } finally {
+      stopDirectoryMonitor();
+    }
+    consumeStdout.flush();
+    consumeStderr.flush();
     if (!downloadedPath) throw new Error('Le fichier téléchargé est introuvable.');
 
     let outputPath = downloadedPath;
@@ -169,6 +196,5 @@ module.exports = {
   buildAnalyzeArgs,
   buildDownloadArgs,
   buildFormatSelector,
-  parseDownloadProgress,
   toFormats
 };

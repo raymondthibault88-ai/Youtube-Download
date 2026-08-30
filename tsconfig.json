@@ -10,7 +10,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "strict": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true
   },
   "include": ["src", "vite.config.js"]

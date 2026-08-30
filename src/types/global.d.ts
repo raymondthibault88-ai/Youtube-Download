@@ -17,7 +17,6 @@ interface DesktopAPI {
   cancelJob: () => Promise<{ ok: boolean }>;
   revealPath: (targetPath: string) => Promise<{ ok: boolean; error?: string | null }>;
   onDownloadProgress: (handler: (payload: ProgressState) => void) => () => void;
-  onConversionProgress: (handler: (payload: ProgressState) => void) => () => void;
   onJobUpdate: (handler: (payload: JobSnapshot) => void) => () => void;
 }
 

@@ -32,3 +32,10 @@ export function formatBytes(bytes) {
 
   return `${value.toFixed(1)} ${units[index]}`;
 }
+
+export function formatEta(seconds) {
+  const rounded = Math.ceil(seconds);
+  const minutes = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  return minutes > 0 ? `${minutes}:${String(remainder).padStart(2, '0')}` : `${remainder}s`;
+}
