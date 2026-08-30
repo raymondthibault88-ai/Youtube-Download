@@ -1,0 +1,951 @@
+{
+  "nodes": [
+    {
+      "id": "readme_youtube_downloader",
+      "label": "YouTube Downloader",
+      "file_type": "document",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:1-50",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_electron_desktop_application",
+      "label": "Electron Desktop Application",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:1-3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_react_interface",
+      "label": "React Interface",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_direct_best_quality_download",
+      "label": "Direct Best-Quality Download",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:4",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_youtube_url_analysis",
+      "label": "YouTube URL Analysis",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:5",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_format_selection",
+      "label": "Media Format Selection",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:6-7",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_video_only_audio_merge",
+      "label": "Video-Only Audio Merge",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Automatically merge audio into video-only formats so the downloaded result contains both media streams."
+    },
+    {
+      "id": "readme_quicktime_compatible_transcoding",
+      "label": "QuickTime-Compatible Transcoding",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Automatically re-encode incompatible formats as MP4 with H.264/AAC to ensure QuickTime compatibility."
+    },
+    {
+      "id": "readme_nodejs_22_12",
+      "label": "Node.js 22.12+",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:11-13",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_npm",
+      "label": "npm",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:11-17",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_desktop_packaging",
+      "label": "Windows and macOS Packaging",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:35-42",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_yt_dlp",
+      "label": "yt-dlp",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:44-46",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_yt_dlp_integrity_verification",
+      "label": "Pinned yt-dlp Integrity Verification",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:45-46",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Pinning the downloaded yt-dlp binary and verifying its SHA256 before execution protects binary integrity."
+    },
+    {
+      "id": "readme_ffmpeg_static",
+      "label": "ffmpeg-static",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:47",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_youtube_terms_and_copyright",
+      "label": "YouTube Terms and Copyright Compliance",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:49-50",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_document_shell",
+      "label": "Application HTML Shell",
+      "file_type": "code",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:1-97",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_loading_splash",
+      "label": "Loading Splash Screen",
+      "file_type": "code",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:32-92",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_app_ready_transition",
+      "label": "App-Ready Visibility Transition",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:23-30,43-46",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "The React root stays transparent and the splash remains visible until the body receives the app-ready class, producing a controlled loading transition."
+    },
+    {
+      "id": "index_react_mount_point",
+      "label": "React Root Mount Point",
+      "file_type": "code",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:94",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_main_tsx_module",
+      "label": "src/main.tsx Module",
+      "file_type": "code",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:95",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_favicon_asset",
+      "label": "favicon.png Asset",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:6",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_image",
+      "label": "Application icon image",
+      "file_type": "image",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_youtube_logo",
+      "label": "YouTube-style logo",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_play_button",
+      "label": "Video play button",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_red_circle",
+      "label": "Red circular background",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_white_rounded_rectangle",
+      "label": "White rounded video-screen shape",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_long_shadow_style",
+      "label": "Flat long-shadow design style",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "electron_assets_icon_video_application_branding",
+      "label": "Video application branding",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_image",
+      "label": "Favicon image",
+      "file_type": "image",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_video_play_icon",
+      "label": "Video play icon",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_red_circular_background",
+      "label": "Red circular background",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_white_rounded_rectangle",
+      "label": "White rounded rectangle resembling a video screen",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_red_play_triangle",
+      "label": "Right-pointing red play triangle",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_long_diagonal_shadow",
+      "label": "Long diagonal drop shadow",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_youtube_style_branding",
+      "label": "YouTube-style video branding",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_youtube_style_logo",
+      "label": "YouTube-style video logo",
+      "file_type": "image",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_video_playback",
+      "label": "Video playback",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_play_button",
+      "label": "Red triangular play button",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_white_screen",
+      "label": "White rounded video screen",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_red_circle",
+      "label": "Red circular background",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_long_shadow",
+      "label": "Diagonal long-shadow styling",
+      "file_type": "concept",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "src_assets_logo_application_identity",
+      "label": "Video downloader application identity",
+      "file_type": "rationale",
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_electron_desktop_application",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:1-3",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_electron_desktop_application",
+      "target": "readme_react_interface",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:3",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_direct_best_quality_download",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:4",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_youtube_url_analysis",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:5",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_format_selection",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:6-7",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_video_only_audio_merge",
+      "target": "readme_format_selection",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:8",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_quicktime_compatible_transcoding",
+      "target": "readme_format_selection",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:9",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_nodejs_22_12",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:11-13",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_npm",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:13-37",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_desktop_packaging",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:35-42",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_yt_dlp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:44-46",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_yt_dlp_integrity_verification",
+      "target": "readme_yt_dlp",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:45-46",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_video_only_audio_merge",
+      "target": "readme_ffmpeg_static",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:8,47",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_quicktime_compatible_transcoding",
+      "target": "readme_ffmpeg_static",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:9,47",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_youtube_downloader",
+      "target": "readme_youtube_terms_and_copyright",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md",
+      "source_location": "README.md:49-50",
+      "weight": 1.0
+    },
+    {
+      "source": "index_document_shell",
+      "target": "index_loading_splash",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:32-92",
+      "weight": 1.0
+    },
+    {
+      "source": "index_app_ready_transition",
+      "target": "index_loading_splash",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:43-46",
+      "weight": 1.0
+    },
+    {
+      "source": "index_app_ready_transition",
+      "target": "index_react_mount_point",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:23-30",
+      "weight": 1.0
+    },
+    {
+      "source": "index_document_shell",
+      "target": "index_react_mount_point",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:94",
+      "weight": 1.0
+    },
+    {
+      "source": "index_document_shell",
+      "target": "index_main_tsx_module",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:95",
+      "weight": 1.0
+    },
+    {
+      "source": "index_document_shell",
+      "target": "index_favicon_asset",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:6",
+      "weight": 1.0
+    },
+    {
+      "source": "index_document_shell",
+      "target": "readme_youtube_downloader",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:2-7,86-95",
+      "weight": 1.0
+    },
+    {
+      "source": "index_react_mount_point",
+      "target": "readme_react_interface",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:94-95",
+      "weight": 1.0
+    },
+    {
+      "source": "index_main_tsx_module",
+      "target": "readme_react_interface",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/index.html",
+      "source_location": "index.html:94-95",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_image",
+      "target": "electron_assets_icon_youtube_logo",
+      "relation": "depicts",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_image",
+      "target": "electron_assets_icon_red_circle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_image",
+      "target": "electron_assets_icon_white_rounded_rectangle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_image",
+      "target": "electron_assets_icon_play_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_image",
+      "target": "electron_assets_icon_long_shadow_style",
+      "relation": "uses_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_play_button",
+      "target": "electron_assets_icon_white_rounded_rectangle",
+      "relation": "is_centered_within",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_white_rounded_rectangle",
+      "target": "electron_assets_icon_red_circle",
+      "relation": "is_centered_within",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "electron_assets_icon_youtube_logo",
+      "target": "electron_assets_icon_video_application_branding",
+      "relation": "suggests",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/electron/assets/icon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_image",
+      "target": "public_favicon_video_play_icon",
+      "relation": "depicts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_video_play_icon",
+      "target": "public_favicon_red_circular_background",
+      "relation": "uses_background",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_video_play_icon",
+      "target": "public_favicon_white_rounded_rectangle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_white_rounded_rectangle",
+      "target": "public_favicon_red_play_triangle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_white_rounded_rectangle",
+      "target": "public_favicon_long_diagonal_shadow",
+      "relation": "casts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_video_play_icon",
+      "target": "public_favicon_youtube_style_branding",
+      "relation": "evokes",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/public/favicon.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_youtube_style_logo",
+      "target": "src_assets_logo_play_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_youtube_style_logo",
+      "target": "src_assets_logo_white_screen",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_youtube_style_logo",
+      "target": "src_assets_logo_red_circle",
+      "relation": "uses_background",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_youtube_style_logo",
+      "target": "src_assets_logo_long_shadow",
+      "relation": "uses_visual_style",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_play_button",
+      "target": "src_assets_logo_video_playback",
+      "relation": "symbolizes",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_youtube_style_logo",
+      "target": "src_assets_logo_video_playback",
+      "relation": "represents",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_youtube_style_logo",
+      "target": "src_assets_logo_application_identity",
+      "relation": "serves_as",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "src_assets_logo_application_identity",
+      "target": "src_assets_logo_video_playback",
+      "relation": "communicates_function",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/src/assets/logo.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "readme_media_download_processing_flow",
+      "label": "Media Download and Processing Flow",
+      "nodes": [
+        "readme_direct_best_quality_download",
+        "readme_youtube_url_analysis",
+        "readme_format_selection",
+        "readme_video_only_audio_merge",
+        "readme_quicktime_compatible_transcoding"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/README.md"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
