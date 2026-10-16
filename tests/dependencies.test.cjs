@@ -24,6 +24,6 @@ test('uses the vetted external FFmpeg resource on packaged macOS', () => {
 
   assert.equal(
     resolved,
-    '/Applications/Test.app/Contents/Resources/ffmpeg/ffmpeg'
+    path.join('/Applications/Test.app/Contents/Resources', 'ffmpeg', 'ffmpeg')
   );
 });
