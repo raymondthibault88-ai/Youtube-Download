@@ -27,13 +27,13 @@ jobs:
       - if: runner.os != 'Linux'
         run: npm run test:electron
       - if: runner.os == 'Windows'
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
       - if: runner.os == 'Windows'
         run: npm run test:electron
         env:
           YTD_TEST_EXECUTABLE: release/win-unpacked/YouTube Downloader.exe
       - if: runner.os == 'macOS'
-        run: npm run dist:mac
+        run: npm run dist:mac -- --publish never
       - if: runner.os == 'macOS'
         run: npm run test:electron
         env:
