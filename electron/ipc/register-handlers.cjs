@@ -6,10 +6,12 @@ const { JobManager } = require('../services/job-manager.cjs');
 const { MediaService, buildOutputOptions } = require('../services/media.cjs');
 const { YouTubeService } = require('../services/youtube.cjs');
 const { requireAbsolutePath, validateFormatId, validateSender, validateYouTubeUrl } = require('../services/validation.cjs');
+const { waitForPromise } = require('../services/process-runner.cjs');
 
 function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
   const jobs = new JobManager({ channel: ipcChannels.events.jobUpdate });
   const selectedInputs = new Set();
+  const analyses = new Map();
   const revealablePaths = new Set();
   let mediaPromise = null;
   let youtubePromise = null;
@@ -39,6 +41,7 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
   const handle = (channel, handler) => {
     ipcMain.handle(channel, async (event, ...args) => {
       assertSender(event);
+      jobs.subscribe(event.sender);
       return handler(event, ...args);
     });
   };
@@ -48,10 +51,16 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
   handle(ipcChannels.invoke.jobCurrent, async () => jobs.snapshot());
   handle(ipcChannels.invoke.jobCancel, async () => ({ ok: jobs.cancel() }));
 
-  handle(ipcChannels.invoke.videoAnalyze, async (_, rawUrl) => {
+  handle(ipcChannels.invoke.videoAnalyze, async (event, rawUrl) => {
     const url = validateYouTubeUrl(rawUrl);
-    const youtube = await getYoutube();
-    return youtube.analyze(url);
+    return jobs.start('analysis', event.sender, async ({ signal }) => {
+      const youtube = await waitForPromise(getYoutube(), signal);
+      signal.throwIfAborted();
+      const result = await youtube.analyze(url, signal);
+      analyses.set(url, result);
+      if (analyses.size > 20) analyses.delete(analyses.keys().next().value);
+      return result;
+    });
   });
 
   handle(ipcChannels.invoke.dialogSelectOutput, async () => {
@@ -93,22 +102,26 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
       const outputPath = await media.convert({ inputPath, outputDir, targetHeight, profileId, mediaInfo, signal, onProgress: update });
       const outputStats = await fs.promises.stat(outputPath);
       revealablePaths.add(outputPath);
-      return { ok: true, outputPath, inputSize: inputStats.size, outputSize: outputStats.size };
+      return { ok: true, outputPath, inputSize: inputStats.size, outputSize: outputStats.size, sourceName: path.basename(inputPath), profileId, resolutionLabel: targetHeight && mediaInfo.height > targetHeight ? `${targetHeight}p` : "Résolution originale" };
     });
   });
 
   handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
+    const url = validateYouTubeUrl(payload?.url);
+    const formatId = validateFormatId(payload?.formatId);
+    const analyzed = analyses.get(url);
+    const format = analyzed?.formats.find((entry) => entry.id === formatId);
+    if (!format || payload?.videoId !== analyzed.id) throw new Error('Analyse à nouveau cette URL avant de télécharger.');
     const cleanPayload = {
-      url: validateYouTubeUrl(payload?.url),
+      url,
+      videoId: analyzed.id,
       outputDir: requireAbsolutePath(payload?.outputDir, 'Dossier de sortie'),
-      formatId: validateFormatId(payload?.formatId),
-      mergeAudioIfNeeded: payload?.mergeAudioIfNeeded === true,
-      hasVideo: payload?.hasVideo !== false,
-      hasAudio: payload?.hasAudio !== false,
-      shouldRecodeToMp4: payload?.shouldRecodeToMp4 === true,
-      expectedSizeBytes: Number.isFinite(Number(payload?.expectedSizeBytes))
-        ? Math.max(0, Math.min(Number(payload.expectedSizeBytes), 1024 ** 5))
-        : null
+      formatId,
+      mergeAudioIfNeeded: format.hasVideo && !format.hasAudio,
+      hasVideo: format.hasVideo,
+      hasAudio: format.hasAudio,
+      shouldRecodeToMp4: format.ext !== 'mp4' || !format.quickTimeCompatible,
+      expectedSizeBytes: format.fileSizeBytes
     };
     await fs.promises.mkdir(cleanPayload.outputDir, { recursive: true });
     const youtube = await getYoutube();
@@ -118,7 +131,8 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
         if (!event.sender.isDestroyed()) event.sender.send(ipcChannels.events.downloadProgress, progress);
       });
       revealablePaths.add(result.outputPath);
-      return result;
+      const height = format.resolution?.match(/[×x]\s*(\d+)/i)?.[1];
+      return { ...result, description: `${height ? `${height}p` : format.resolution || "Qualité originale"} · MP4 compatible` };
     });
   });
 

@@ -2,7 +2,7 @@ export type JobState = "running" | "cancelling" | "completed" | "cancelled" | "f
 
 export interface JobSnapshot {
   id: string;
-  type: "download" | "conversion";
+  type: "analysis" | "download" | "conversion";
   state: JobState;
   percent: number;
   speed: string | null;
@@ -10,6 +10,7 @@ export interface JobSnapshot {
   raw: string;
   startedAt: number;
   updatedAt: number;
+  revision: number;
   error: string | null;
   result: unknown;
 }

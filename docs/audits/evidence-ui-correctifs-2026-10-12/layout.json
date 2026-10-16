@@ -1,0 +1,86 @@
+[
+  {
+    "name": "01-accueil",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "02-formats",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "03-formats-techniques",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "04-telechargement",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "05-resultat-telechargement",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "06-conversion",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "07-annulation",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "08-erreur",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "09-resultat-immuable",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  },
+  {
+    "name": "10-fenetre-minimale",
+    "width": 1024,
+    "height": 652,
+    "documentWidth": 1024,
+    "minFont": 12
+  },
+  {
+    "name": "11-equivalent-zoom-200",
+    "width": 600,
+    "height": 394,
+    "documentWidth": 600,
+    "minFont": 12
+  },
+  {
+    "name": "12-a-propos",
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200,
+    "minFont": 12
+  }
+]

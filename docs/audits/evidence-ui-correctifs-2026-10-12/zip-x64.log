@@ -1,0 +1,125 @@
+Archive:  release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-x64.zip
+    testing: YouTube Downloader.app/   OK
+    testing: YouTube Downloader.app/Contents/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Electron Framework   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Helpers   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Libraries   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Resources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/vk_swiftshader_icd.json   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/chrome_100_percent.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/chrome_200_percent.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en.lproj/locale.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr.lproj/locale.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr_FEMININE.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr_FEMININE.lproj/locale.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr_MASCULINE.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr_MASCULINE.lproj/locale.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr_NEUTER.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr_NEUTER.lproj/locale.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/icudtl.dat   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/MainMenu.nib   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/resources.pak   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/v8_context_snapshot.x86_64.bin   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/A/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Electron Framework.framework/Versions/Current   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Mantle   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Resources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/A/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/A/Mantle   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/A/Resources/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/A/Resources/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/A/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/A/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Mantle.framework/Versions/Current   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/ReactiveObjC   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Resources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/ReactiveObjC   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/Resources/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/Resources/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/ReactiveObjC.framework/Versions/Current   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Resources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Squirrel   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/A/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/Squirrel.framework/Versions/Current   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/MacOS/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/MacOS/YouTube Downloader Helper (GPU)   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/PkgInfo   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (GPU).app/Contents/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/MacOS/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/MacOS/YouTube Downloader Helper (Plugin)   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/PkgInfo   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Plugin).app/Contents/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/MacOS/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/MacOS/YouTube Downloader Helper (Renderer)   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/PkgInfo   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper (Renderer).app/Contents/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/MacOS/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/MacOS/YouTube Downloader Helper   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/PkgInfo   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/Frameworks/YouTube Downloader Helper.app/Contents/_CodeSignature/CodeResources   OK
+    testing: YouTube Downloader.app/Contents/Info.plist   OK
+    testing: YouTube Downloader.app/Contents/MacOS/   OK
+    testing: YouTube Downloader.app/Contents/MacOS/YouTube Downloader   OK
+    testing: YouTube Downloader.app/Contents/PkgInfo   OK
+    testing: YouTube Downloader.app/Contents/Resources/   OK
+    testing: YouTube Downloader.app/Contents/Resources/app-update.yml   OK
+    testing: YouTube Downloader.app/Contents/Resources/app.asar   OK
+    testing: YouTube Downloader.app/Contents/Resources/en.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Resources/ffmpeg/   OK
+    testing: YouTube Downloader.app/Contents/Resources/ffmpeg/ffmpeg   OK
+    testing: YouTube Downloader.app/Contents/Resources/ffmpeg/LICENSE.txt   OK
+    testing: YouTube Downloader.app/Contents/Resources/ffmpeg/manifest.json   OK
+    testing: YouTube Downloader.app/Contents/Resources/ffmpeg/SOURCES.md   OK
+    testing: YouTube Downloader.app/Contents/Resources/fr.lproj/   OK
+    testing: YouTube Downloader.app/Contents/Resources/icon.icns   OK
+    testing: YouTube Downloader.app/Contents/Resources/LICENSE.electron.txt   OK
+    testing: YouTube Downloader.app/Contents/Resources/LICENSES.chromium.html   OK
+    testing: YouTube Downloader.app/Contents/_CodeSignature/   OK
+    testing: YouTube Downloader.app/Contents/_CodeSignature/CodeResources   OK
+No errors detected in compressed data of release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-x64.zip.

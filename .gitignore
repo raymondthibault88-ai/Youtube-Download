@@ -4,3 +4,6 @@ release
 graphify-out
 .DS_Store
 npm-debug.log*
+playwright-report
+test-results
+build/ffmpeg/win32-x64/ffmpeg.exe

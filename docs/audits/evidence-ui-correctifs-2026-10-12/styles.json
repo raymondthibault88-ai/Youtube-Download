@@ -1,0 +1,194 @@
+{
+  "viewport": {
+    "width": 1200,
+    "height": 820,
+    "documentWidth": 1200
+  },
+  "styles": {
+    ".eyebrow": [
+      {
+        "text": "Conversion locale",
+        "color": "rgb(7, 91, 187)",
+        "background": "rgba(255, 255, 255, 0.9)",
+        "fontSize": "12px",
+        "fontWeight": "800",
+        "height": 15,
+        "width": 154.921875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ],
+    ".field-label": [],
+    ".cell-detail": [],
+    ".compat-badge.is-direct": [],
+    ".format-summary": [],
+    ".resolution-options button.is-active strong": [
+      {
+        "text": "Originale",
+        "color": "rgb(7, 91, 187)",
+        "background": "rgb(233, 243, 255)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "height": 20.296875,
+        "width": 120.1875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ],
+    ".profile-options button.is-active strong": [
+      {
+        "text": "Rapide",
+        "color": "rgb(7, 91, 187)",
+        "background": "rgb(233, 243, 255)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "height": 20.296875,
+        "width": 213.640625,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ],
+    ".resolution-options span": [
+      {
+        "text": "2160p",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgb(233, 243, 255)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 17.390625,
+        "width": 120.1875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      },
+      {
+        "text": "≈ 5.4 GB",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgb(255, 255, 255)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 17.390625,
+        "width": 120.1875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      },
+      {
+        "text": "≈ 3.4 GB",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgb(255, 255, 255)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 17.390625,
+        "width": 120.1875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ],
+    ".profile-options span": [
+      {
+        "text": "Accélération matérielle",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgb(233, 243, 255)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 17.390625,
+        "width": 213.640625,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      },
+      {
+        "text": "Taille et vitesse",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgb(255, 255, 255)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 17.390625,
+        "width": 213.65625,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      },
+      {
+        "text": "Compression renforcée",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgb(255, 255, 255)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 17.390625,
+        "width": 213.65625,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ],
+    ".output-path span": [
+      {
+        "text": "/Users/demo/Vidéos/Handball/Saison 2026-2027/Matchs complets/Finales régionales",
+        "color": "rgb(82, 96, 117)",
+        "background": "rgba(255, 255, 255, 0.9)",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "height": 32,
+        "width": 238.578125,
+        "truncated": true,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ],
+    ".source-copy strong": [
+      {
+        "text": "Finale régionale — deuxième mi-temps et analyse tactique — saison 2026-2027.mov",
+        "color": "rgb(23, 32, 51)",
+        "background": "rgb(251, 252, 254)",
+        "fontSize": "15px",
+        "fontWeight": "700",
+        "height": 21.75,
+        "width": 895.9375,
+        "truncated": false,
+        "title": "Finale régionale — deuxième mi-temps et analyse tactique — saison 2026-2027.mov",
+        "backgroundImage": "none"
+      }
+    ],
+    ".btn-primary": [
+      {
+        "text": "Convertir la vidéo",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgba(255, 255, 255, 0.9)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "height": 38.296875,
+        "width": 318.046875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "linear-gradient(rgb(8, 102, 206), rgb(6, 75, 156))"
+      }
+    ],
+    ".link-btn": [
+      {
+        "text": "Modifier",
+        "color": "rgb(7, 91, 187)",
+        "background": "rgba(255, 255, 255, 0.9)",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "height": 32,
+        "width": 71.46875,
+        "truncated": false,
+        "title": "",
+        "backgroundImage": "none"
+      }
+    ]
+  },
+  "placeholder": "rgb(99, 112, 135)",
+  "activeFocus": {
+    "tag": "BUTTON",
+    "text": "",
+    "outline": "rgb(7, 91, 187) solid 3px"
+  },
+  "revealed": []
+}

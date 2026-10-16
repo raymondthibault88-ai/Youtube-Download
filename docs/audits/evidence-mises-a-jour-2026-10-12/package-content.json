@@ -1,0 +1,26 @@
+[
+  {
+    "target": "arm64",
+    "version": "4.0.8",
+    "sourceFilesCompared": 27,
+    "ffmpegVersion": "9.0.2",
+    "ffmpegIntegrity": true,
+    "developmentModulesIncluded": false
+  },
+  {
+    "target": "x64",
+    "version": "4.0.8",
+    "sourceFilesCompared": 27,
+    "ffmpegVersion": "9.0.2",
+    "ffmpegIntegrity": true,
+    "developmentModulesIncluded": false
+  },
+  {
+    "target": "windows",
+    "version": "4.0.8",
+    "sourceFilesCompared": 27,
+    "ffmpegVersion": "9.0.2",
+    "ffmpegIntegrity": true,
+    "developmentModulesIncluded": false
+  }
+]

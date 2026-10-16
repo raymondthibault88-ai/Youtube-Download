@@ -37,7 +37,7 @@ export function selectVideoFile(): Promise<SelectedVideoFile | null> {
   return getApi().selectVideoFile();
 }
 
-export function startDownload(payload: StartDownloadPayload): Promise<{ ok: boolean; outputPath: string }> {
+export function startDownload(payload: StartDownloadPayload): Promise<{ ok: boolean; outputPath: string; outputSize?: number; description?: string }> {
   return getApi().startDownload(payload);
 }
 

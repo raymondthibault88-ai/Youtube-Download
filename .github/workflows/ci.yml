@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -18,3 +19,31 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+      - run: npm run verify:ffmpeg
+      - run: npx playwright install chromium
+      - run: npm run test:e2e
+      - if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:electron
+      - if: runner.os != 'Linux'
+        run: npm run test:electron
+      - if: runner.os == 'Windows'
+        run: npm run dist:win
+      - if: runner.os == 'Windows'
+        run: npm run test:electron
+        env:
+          YTD_TEST_EXECUTABLE: release/win-unpacked/YouTube Downloader.exe
+      - if: runner.os == 'macOS'
+        run: npm run dist:mac
+      - if: runner.os == 'macOS'
+        run: npm run test:electron
+        env:
+          YTD_TEST_EXECUTABLE: ${{ runner.arch == 'ARM64' && 'release/mac-arm64/YouTube Downloader.app/Contents/MacOS/YouTube Downloader' || 'release/mac/YouTube Downloader.app/Contents/MacOS/YouTube Downloader' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-${{ runner.os }}
+          path: |
+            test-results/
+            release/*.exe
+            release/*.dmg
+            release/*.zip

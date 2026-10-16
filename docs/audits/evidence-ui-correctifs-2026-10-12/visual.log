@@ -1,0 +1,56 @@
+### Result
+[{"name":"01-accueil","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"02-formats","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"03-formats-techniques","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"04-telechargement","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"05-resultat-telechargement","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"06-conversion","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"07-annulation","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"08-erreur","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"09-resultat-immuable","width":1200,"height":820,"documentWidth":1200,"minFont":12},{"name":"10-fenetre-minimale","width":1024,"height":652,"documentWidth":1024,"minFont":12},{"name":"11-equivalent-zoom-200","width":600,"height":394,"documentWidth":600,"minFont":12},{"name":"12-a-propos","width":1200,"height":820,"documentWidth":1200,"minFont":12}]
+### Ran Playwright code
+```js
+await (async page => {
+ const root='output/playwright/ui-correctifs-2026-10-12';
+ const measurements=[];
+ const capture=async name=>{await page.screenshot({path:root+'/'+name+'.png',fullPage:true,animations:'disabled'}); measurements.push(await page.evaluate(name=>({name,width:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,minFont:Math.min(...[...document.querySelectorAll('main *')].filter(el=>el.getClientRects().length&&el.textContent.trim()).map(el=>parseFloat(getComputedStyle(el).fontSize)))}),name));};
+ await page.reload();
+ await page.setViewportSize({width:1200,height:820});
+ await capture('01-accueil');
+ await page.getByRole('textbox',{name:'Lien de la vidéo'}).fill('https://www.youtube.com/watch?v=jNQXAC9IVRw');
+ await page.getByRole('button',{name:'Analyser les formats'}).click();
+ await page.getByRole('radio').first().waitFor();
+ await capture('02-formats');
+ await page.getByRole('checkbox',{name:'Détails techniques'}).check();
+ await capture('03-formats-techniques');
+ await page.getByRole('checkbox',{name:'Détails techniques'}).uncheck();
+ await page.locator('.formats-actions').getByRole('button',{name:'Télécharger',exact:true}).click();
+ await capture('04-telechargement');
+ await page.evaluate(()=>window.__uiAudit.finish());
+ await page.getByText('Téléchargement terminé',{exact:true}).waitFor();
+ await capture('05-resultat-telechargement');
+ await page.getByRole('button',{name:'Convertir',exact:true}).click();
+ await page.getByRole('button',{name:'Sélectionner',exact:true}).click();
+ await page.getByRole('button',{name:/720p/}).click();
+ await page.getByRole('button',{name:/Plus léger/}).click();
+ await capture('06-conversion');
+ await page.getByRole('button',{name:'Convertir la vidéo',exact:true}).click();
+ await page.getByRole('button',{name:'Annuler',exact:true}).click();
+ await page.getByText('Conversion annulée',{exact:true}).waitFor();
+ await capture('07-annulation');
+ await page.getByRole('button',{name:'Convertir la vidéo',exact:true}).click();
+ await page.evaluate(()=>window.__uiAudit.fail());
+ await page.getByText('Conversion échouée',{exact:true}).waitFor();
+ await capture('08-erreur');
+ await page.getByRole('button',{name:'Réessayer la conversion',exact:true}).click();
+ await page.evaluate(()=>window.__uiAudit.finish());
+ await page.getByText('Vidéo prête',{exact:true}).waitFor();
+ await page.getByRole('button',{name:/Originale/}).click();
+ await page.getByRole('button',{name:/Rapide/}).click();
+ await capture('09-resultat-immuable');
+ await page.setViewportSize({width:1024,height:652});
+ await capture('10-fenetre-minimale');
+ await page.setViewportSize({width:600,height:394});
+ await capture('11-equivalent-zoom-200');
+ await page.setViewportSize({width:1200,height:820});
+ await page.getByRole('button',{name:'À propos',exact:true}).click();
+ await capture('12-a-propos');
+ await page.keyboard.press('Escape');
+ return measurements;
+}
+)(page);
+```
+### Events
+- New console entries: .playwright-cli/console-2026-10-12T13-01-05-121Z.log#L5

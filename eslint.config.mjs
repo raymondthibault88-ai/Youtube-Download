@@ -30,7 +30,7 @@ export default [
     ...reactHooks.configs.flat.recommended
   },
   {
-    files: ['electron/**/*.cjs', 'scripts/**/*.cjs'],
+    files: ['electron/**/*.cjs', 'scripts/**/*.cjs', 'tests/**/*.cjs', 'e2e/**/*.cjs', 'playwright.config.cjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'script',

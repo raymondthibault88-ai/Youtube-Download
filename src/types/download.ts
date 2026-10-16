@@ -1,5 +1,6 @@
 export interface StartDownloadPayload {
   url: string;
+  videoId: string;
   outputDir: string;
   formatId: string;
   mergeAudioIfNeeded?: boolean;

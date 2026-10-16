@@ -1,0 +1,78 @@
+- main [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic [ref=f1e7]:
+        - heading "Video Studio" [level=1] [ref=f1e8]
+        - paragraph [ref=f1e9]: Télécharger et convertir, dans un seul espace
+      - navigation "Mode de l’application" [ref=f1e10]:
+        - button "Télécharger" [ref=f1e11] [cursor=pointer]
+        - button "Convertir" [pressed] [ref=f1e12] [cursor=pointer]
+      - generic [ref=f1e13]: Moteurs prêts
+    - generic [ref=f1e207]:
+      - generic [ref=f1e208]:
+        - generic [aria-hidden] [ref=f1e209]: ↻
+        - generic [ref=f1e210]:
+          - generic [ref=f1e211]:
+            - strong [ref=f1e212]: Conversion
+            - generic [ref=f1e213]: 37%
+          - paragraph [ref=f1e214]: Conversion du fichier vidéo… · 4.2 MB/s · reste 04:12
+      - progressbar "Progression conversion" [ref=f1e215]
+      - button "Annuler" [ref=f1e217] [cursor=pointer]
+    - generic [ref=f1e146]:
+      - generic [ref=f1e148]:
+        - text: Conversion locale
+        - heading "Créer un MP4 propre et plus léger" [level=2] [ref=f1e149]
+        - paragraph [ref=f1e150]: H.264/AAC compatible Dartfish, sans modifier le fichier original.
+      - generic [ref=f1e151]:
+        - generic [aria-hidden] [ref=f1e152]: ▶
+        - generic [ref=f1e153]:
+          - generic [ref=f1e154]: Fichier source
+          - strong [ref=f1e155]: Finale régionale — deuxième mi-temps et analyse tactique — saison 2026-2027.mov
+          - paragraph [ref=f1e156]: 16.7 GB · 3840×2160
+        - button "Changer" [disabled] [ref=f1e158]
+      - generic [ref=f1e159]:
+        - generic [ref=f1e160]:
+          - generic [ref=f1e161]:
+            - generic [ref=f1e162]: "1"
+            - generic [ref=f1e163]:
+              - strong [ref=f1e164]: Résolution
+              - generic [ref=f1e165]: Réduire la définition accélère la conversion
+          - generic [ref=f1e166]:
+            - button "Originale 2160p" [disabled] [pressed] [ref=f1e167] [cursor=pointer]:
+              - strong [ref=f1e168]: Originale
+              - generic [ref=f1e169]: 2160p
+            - button "1440p ≈ 5.4 GB" [disabled] [ref=f1e170] [cursor=pointer]:
+              - strong [ref=f1e171]: 1440p
+              - generic [ref=f1e172]: ≈ 5.4 GB
+            - button "1080p ≈ 3.4 GB" [disabled] [ref=f1e173] [cursor=pointer]:
+              - strong [ref=f1e174]: 1080p
+              - generic [ref=f1e175]: ≈ 3.4 GB
+            - button "720p ≈ 1.8 GB" [disabled] [ref=f1e176] [cursor=pointer]:
+              - strong [ref=f1e177]: 720p
+              - generic [ref=f1e178]: ≈ 1.8 GB
+            - button "480p ≈ 944.1 MB" [disabled] [ref=f1e179] [cursor=pointer]:
+              - strong [ref=f1e180]: 480p
+              - generic [ref=f1e181]: ≈ 944.1 MB
+        - generic [ref=f1e182]:
+          - generic [ref=f1e183]:
+            - generic [ref=f1e184]: "2"
+            - generic [ref=f1e185]:
+              - strong [ref=f1e186]: Priorité
+              - generic [ref=f1e187]: Choisir entre vitesse et poids final
+          - generic [ref=f1e188]:
+            - button "Rapide Accélération matérielle" [disabled] [pressed] [ref=f1e189] [cursor=pointer]:
+              - strong [ref=f1e190]: Rapide
+              - generic [ref=f1e191]: Accélération matérielle
+            - button "Équilibré Taille et vitesse" [disabled] [ref=f1e192] [cursor=pointer]:
+              - strong [ref=f1e193]: Équilibré
+              - generic [ref=f1e194]: Taille et vitesse
+            - button "Plus léger Compression renforcée" [disabled] [ref=f1e195] [cursor=pointer]:
+              - strong [ref=f1e196]: Plus léger
+              - generic [ref=f1e197]: Compression renforcée
+        - complementary [ref=f1e198]:
+          - generic [ref=f1e199]: Sortie prévue
+          - strong [ref=f1e200]: Original · 2160p · Rapide
+          - paragraph [ref=f1e201]: Environ 8.2 GB
+          - generic "/Users/demo/Vidéos/Handball/Saison 2026-2027/Matchs complets/Finales régionales" [ref=f1e202]:
+            - button "Modifier" [disabled] [ref=f1e204]
+          - button "Conversion en cours" [disabled] [ref=f1e218]

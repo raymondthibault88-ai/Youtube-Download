@@ -1,0 +1,23 @@
+
+> youtube-downloader-desktop@4.0.9 test:e2e
+> playwright test
+
+[WebServer] (node:26490) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 10 tests using 1 worker
+
+(node:26495) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/flows.spec.cjs:56:1 › initialisation retries a transient failure once and announces readiness (2.6s)
+  ✓   2 e2e/flows.spec.cjs:62:1 › changing URL invalidates old formats and download uses the newly analyzed identity (5.8s)
+  ✓   3 e2e/flows.spec.cjs:79:1 › changing URL during an analysis never exposes the old response (3.2s)
+  ✓   4 e2e/flows.spec.cjs:91:1 › analysis cancellation restores the form and allows a new analysis (1.9s)
+  ✓   5 e2e/flows.spec.cjs:105:1 › conversion and mode selections announce their current state and produce a result (1.9s)
+  ✓   6 e2e/flows.spec.cjs:118:1 › a folder error stays visible in conversion mode and can be dismissed (2.1s)
+  ✓   7 e2e/flows.spec.cjs:128:1 › download locks the quality and keeps a result available across mode changes (8.5s)
+  ✓   8 e2e/flows.spec.cjs:145:1 › conversion result keeps the completed recipe when the next settings change (5.1s)
+  ✓   9 e2e/flows.spec.cjs:158:1 › failed tasks show one full error, no progress, and support dismissal and retry (4.0s)
+  ✓  10 e2e/flows.spec.cjs:174:1 › about dialog contains diagnostics and returns focus to its trigger (1.7s)
+
+  10 passed (44.5s)

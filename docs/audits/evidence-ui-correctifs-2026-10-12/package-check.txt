@@ -1,0 +1,9 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');const asar=require(process.cwd()+'/node_modules/@electron/asar');const {verifyExecutable}=require(process.cwd()+'/electron/services/executable-integrity.cjs');
+const base=path.resolve('release/ui-fixed-4.0.9');
+const dirs=['dist','electron/assets','electron/ipc','electron/services','shared'];
+const files=['electron/main.cjs','electron/preload.cjs','electron/window.cjs','electron/ytDlp.cjs','THIRD_PARTY_NOTICES.md'];
+function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const item=dir+'/'+entry.name;if(entry.isDirectory())walk(item);else files.push(item);}}
+dirs.forEach(walk);
+const targets=[['arm64','mac-arm64/YouTube Downloader.app/Contents/Resources'],['x64','mac/YouTube Downloader.app/Contents/Resources'],['windows','win-unpacked/resources']];
+const results=targets.map(([target,dir])=>{const resources=path.join(base,dir),archive=path.join(resources,'app.asar');const pkg=JSON.parse(asar.extractFile(archive,'package.json'));assert.equal(pkg.version,'4.0.9');for(const name of files)assert.ok(asar.extractFile(archive,name).equals(fs.readFileSync(name)),target+': '+name);const list=asar.listPackage(archive);assert.ok(!list.some(name=>name.includes('/node_modules/')));const manifest=JSON.parse(fs.readFileSync(path.join(resources,'ffmpeg/manifest.json')));assert.equal(manifest.version,'9.0.2');assert.ok(verifyExecutable(fs.readFileSync(path.join(resources,'ffmpeg',target==='windows'?'ffmpeg.exe':'ffmpeg')),manifest,{allowMacSigning:target!=='windows'}));for(const name of ['LICENSE.txt','SOURCES.md',...(target==='windows'?['BUILD_INFORMATION.txt']:[])])assert.ok(fs.statSync(path.join(resources,'ffmpeg',name)).size>0);return {target,version:pkg.version,sourceFilesCompared:files.length,ffmpegVersion:manifest.version,ffmpegIntegrity:true,developmentModulesIncluded:false};});
+console.log(JSON.stringify(results,null,2));

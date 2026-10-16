@@ -1,4 +1,8 @@
 const downloadConfig = require('../../shared/download-config.json');
+const fs = require('node:fs');
+const path = require('node:path');
+const { publishFile } = require('./file-output.cjs');
+const { isPathInside } = require('./validation.cjs');
 const { formatBytes } = require('../../shared/formatters.js');
 const {
   PROGRESS_PREFIX,
@@ -54,7 +58,7 @@ function toFormats(info) {
 }
 
 function buildAnalyzeArgs(url, fast = true, runtimePath = process.execPath) {
-  const args = ['--no-playlist', '--no-warnings', '--js-runtimes', `node:${runtimePath}`, '--skip-download'];
+  const args = ['--ignore-config', '--no-plugin-dirs', '--no-playlist', '--no-warnings', '--socket-timeout', '15', '--retries', '2', '--js-runtimes', `node:${runtimePath}`, '--skip-download'];
   if (fast) args.push('--extractor-args', FAST_EXTRACTOR_ARGS);
   args.push('-J', url);
   return args;
@@ -66,9 +70,9 @@ function buildFormatSelector(payload) {
   return needsAudio ? `${requested}+bestaudio[ext=m4a]/${requested}+bestaudio/${requested}` : requested;
 }
 
-function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldRecodeToMp4, runtimePath = process.execPath }) {
+function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldRecodeToMp4, extractorArgs = null, runtimePath = process.execPath }) {
   const args = [
-    '--newline', '--no-playlist', '--no-warnings', '--js-runtimes', `node:${runtimePath}`,
+    '--ignore-config', '--no-plugin-dirs', '--newline', '--no-playlist', '--no-warnings', '--socket-timeout', '15', '--retries', '2', '--js-runtimes', `node:${runtimePath}`,
     '--color', 'stdout:never', '--color', 'stderr:never',
     '--progress-template', `download:${PROGRESS_PREFIX}%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s`,
     '--ffmpeg-location', ffmpegPath, '--windows-filenames',
@@ -76,21 +80,23 @@ function buildDownloadArgs({ ffmpegPath, formatSelector, outputDir, url, shouldR
     '--replace-in-metadata', 'title', '\\s{2,}', ' ',
     '--format-sort', 'vcodec:h264,acodec:aac', '-f', formatSelector
   ];
+  if (extractorArgs) args.push('--extractor-args', extractorArgs);
   if (downloadConfig.concurrentFragments > 1) args.push('-N', String(Math.floor(downloadConfig.concurrentFragments)));
   if (formatSelector.includes('+')) {
     args.push('--merge-output-format', shouldRecodeToMp4 ? 'mkv' : 'mp4');
     if (!shouldRecodeToMp4) args.push('--postprocessor-args', 'Merger+ffmpeg_o:-movflags +faststart');
   }
-  args.push('--print', 'after_move:__YTDLP_FILE__:%(filepath)s', '-o', downloadConfig.outputTemplate, '-P', outputDir, url);
+  args.push('--print', 'after_move:__YTDLP_ID__:%(id)s', '--print', 'after_move:__YTDLP_FILE__:%(filepath)s', '-o', downloadConfig.outputTemplate, '-P', outputDir, url);
   return args;
 }
 
 class YouTubeService {
-  constructor({ ytDlpPath, ffmpegPath, mediaService }) {
+  constructor({ ytDlpPath, ffmpegPath, mediaService, processRunner = runProcess }) {
     this.ytDlpPath = ytDlpPath;
     this.ffmpegPath = ffmpegPath;
     this.mediaService = mediaService;
     this.cache = new Map();
+    this.runProcess = processRunner;
   }
 
   env() {
@@ -98,35 +104,53 @@ class YouTubeService {
   }
 
   async analyze(url, signal) {
+    signal?.throwIfAborted();
     const cached = this.cache.get(url);
     if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.data;
     let info;
+    let extractorArgs = FAST_EXTRACTOR_ARGS;
+    const deadline = Date.now() + 45_000;
     try {
-      const result = await runProcess(this.ytDlpPath, buildAnalyzeArgs(url, true), { env: this.env(), signal, outputLimit: 16 * 1024 * 1024 });
+      const result = await this.runProcess(this.ytDlpPath, buildAnalyzeArgs(url, true), { env: this.env(), signal, timeoutMs: 45_000, outputLimit: 16 * 1024 * 1024 });
       info = JSON.parse(result.stdout);
       if (!Array.isArray(info.formats) || !info.formats.length) throw new Error('Aucun format exploitable.');
     } catch (fastError) {
-      if (fastError?.name === 'AbortError') throw fastError;
-      const result = await runProcess(this.ytDlpPath, buildAnalyzeArgs(url, false), { env: this.env(), signal, outputLimit: 16 * 1024 * 1024 });
+      if (['AbortError', 'TimeoutError'].includes(fastError?.name)) throw fastError;
+      extractorArgs = null;
+      const result = await this.runProcess(this.ytDlpPath, buildAnalyzeArgs(url, false), { env: this.env(), signal, timeoutMs: Math.max(1, deadline - Date.now()), outputLimit: 16 * 1024 * 1024 });
       info = JSON.parse(result.stdout);
     }
     const data = { id: info.id, title: info.title, thumbnail: info.thumbnail, duration: info.duration, uploader: info.uploader, formats: toFormats(info) };
-    this.cache.set(url, { at: Date.now(), data });
+    if (!data.id || !data.formats.length) throw new Error('Aucun format vidéo exploitable.');
+    this.cache.set(url, { at: Date.now(), data, extractorArgs });
     if (this.cache.size > 20) this.cache.delete(this.cache.keys().next().value);
     return data;
   }
 
   async download(payload, signal, onProgress) {
+    signal?.throwIfAborted();
+    await fs.promises.mkdir(payload.outputDir, { recursive: true });
+    const workingDir = await fs.promises.mkdtemp(path.join(payload.outputDir, '.video-studio-'));
+    try {
+      return await this.downloadInDirectory(payload, workingDir, signal, onProgress);
+    } finally {
+      await fs.promises.rm(workingDir, { recursive: true, force: true });
+    }
+  }
+
+  async downloadInDirectory(payload, workingDir, signal, onProgress) {
     const selector = buildFormatSelector(payload);
     const recode = payload.shouldRecodeToMp4 === true;
     const args = buildDownloadArgs({
       ffmpegPath: this.ffmpegPath,
       formatSelector: selector,
-      outputDir: payload.outputDir,
+      outputDir: workingDir,
       url: payload.url,
-      shouldRecodeToMp4: recode
+      shouldRecodeToMp4: recode,
+      extractorArgs: this.cache.get(payload.url)?.extractorArgs || null
     });
     let downloadedPath = null;
+    let downloadedId = null;
     let lastProgressSignature = '';
     let highestPercent = 0;
     const emitProgress = (progress) => {
@@ -137,6 +161,7 @@ class YouTubeService {
       onProgress(progress);
     };
     const processLine = (line) => {
+      if (line.trim().startsWith('__YTDLP_ID__:')) downloadedId = line.trim().slice('__YTDLP_ID__:'.length);
       const parsed = parseDownloadOutputLine(line, recode);
       if (!parsed) return;
       if (parsed.outputPath) downloadedPath = parsed.outputPath;
@@ -151,13 +176,13 @@ class YouTubeService {
     const consumeStderr = createLineConsumer(processLine);
 
     const stopDirectoryMonitor = await startDirectoryProgressMonitor({
-      outputDir: payload.outputDir,
+      outputDir: workingDir,
       expectedSizeBytes: payload.expectedSizeBytes,
       rangeEnd: recode ? 82 : 97,
       onProgress: emitProgress
     });
     try {
-      await runProcess(this.ytDlpPath, args, {
+      await this.runProcess(this.ytDlpPath, args, {
         env: this.env(), signal, outputLimit: 128 * 1024,
         onStdout: consumeStdout,
         onStderr: consumeStderr
@@ -168,6 +193,12 @@ class YouTubeService {
     consumeStdout.flush();
     consumeStderr.flush();
     if (!downloadedPath) throw new Error('Le fichier téléchargé est introuvable.');
+    if (!payload.videoId || downloadedId !== payload.videoId) throw new Error('La vidéo téléchargée ne correspond pas à la vidéo analysée. Analyse à nouveau le lien.');
+    const actualPath = await fs.promises.realpath(downloadedPath);
+    const actualWorkingDir = await fs.promises.realpath(workingDir);
+    if (!isPathInside(actualWorkingDir, actualPath) || !(await fs.promises.stat(actualPath)).isFile()) {
+      throw new Error('Le moteur a retourné un fichier en dehors de la tâche.');
+    }
 
     let outputPath = downloadedPath;
     if (recode) {
@@ -175,7 +206,7 @@ class YouTubeService {
       const mediaInfo = await this.mediaService.inspect(downloadedPath, signal);
       outputPath = await this.mediaService.convert({
         inputPath: downloadedPath,
-        outputDir: payload.outputDir,
+        outputDir: workingDir,
         targetHeight: null,
         profileId: 'fast',
         mediaInfo,
@@ -183,11 +214,14 @@ class YouTubeService {
         onProgress,
         progressRange: [82, 99]
       });
-      if (outputPath !== downloadedPath) await require('node:fs').promises.unlink(downloadedPath).catch(() => {});
     } else if (!selector.includes('+')) {
       outputPath = await this.mediaService.remux(downloadedPath, signal, onProgress);
     }
-    return { ok: true, outputPath };
+    signal?.throwIfAborted();
+    // Preserve the clean YouTube title even when a recode/remux was required.
+    const finalPath = path.join(payload.outputDir, `${path.parse(downloadedPath).name}.mp4`);
+    outputPath = await publishFile(outputPath, finalPath, signal);
+    return { ok: true, outputPath, outputSize: (await fs.promises.stat(outputPath)).size };
   }
 }
 

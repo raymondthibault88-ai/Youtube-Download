@@ -1,0 +1,11 @@
+{
+  "check": "unrelated-file-progress",
+  "observed": [
+    {
+      "percent": 97,
+      "speed": "1.3 KB/s",
+      "eta": "0s",
+      "raw": "Téléchargement… 97%"
+    }
+  ]
+}

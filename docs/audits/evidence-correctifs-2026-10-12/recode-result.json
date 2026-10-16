@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "originalExists": true,
+  "output": "Match 2.mp4",
+  "expectedIncomingDuration": 1,
+  "actualOutput": {
+    "duration": 1,
+    "width": 640,
+    "height": 360,
+    "bitrate": 9000
+  },
+  "oldHash": "3ee215bb00266986ab807537d9024da2095b5c192d190dbadbfeec8908ac0918",
+  "incomingHash": "ea967a5568c7efdae9bfa7f5c1ee78f4e429f3ca6e865427543a4e52544f4eab"
+}

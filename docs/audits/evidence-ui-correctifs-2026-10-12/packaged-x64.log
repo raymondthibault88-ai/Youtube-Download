@@ -1,0 +1,9 @@
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+TimeoutError: Timeout 180000ms exceeded.
+    at _ProgressController.run (/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/playwright-core/lib/coreBundle.js:13004:32)
+    at DispatcherConnection.dispatch (/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/playwright-core/lib/coreBundle.js:20191:44)
+
+Node.js v22.22.1

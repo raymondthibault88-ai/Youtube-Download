@@ -1,0 +1,17 @@
+{
+  "01-accueil.png": "28e5ce7c26a8d11048219a1cc755ca9dbf54010e556d393f10249bc99da7d38a",
+  "02-formats.png": "49c0bb6e812554caff93f52a4a574ab8091c9360bff1f8fc01639a5ca6613b20",
+  "03-format-modifiable-pendant-tache.png": "5854f01931ab9e75bd8c7687a576545f7272c6cebeaacbb140beb309a28563b6",
+  "04-fin-telechargement.png": "570de1dde0bd52e52ad14c4d7a1b8f34fd163d0866495def7e2e6a594a8f3005",
+  "05-convertisseur-vide.png": "c939ab341b70b413d5d75cb5150205b524d419559fda8d7c9fffb31ee8a5d166",
+  "06-convertisseur-options.png": "07fdc57e5b15fc8595e748625d13c0de0a4c325dfd529d59551a811362259c08",
+  "07-erreur-dossier-cachee.png": "0428381f927414cb9c84ff47703e8fa9fe0e2ef4253b63186a4f30f10dccaedf",
+  "08-erreur-dossier-autre-mode.png": "e8ad7079abe42d4040699a66aca7c8b9ca131c0a82687ad950b17227e566f7fe",
+  "09-convertisseur-petite-fenetre.png": "15e748fdb3603c4971ada5b01f67e2da32123f5659da41377801912fa6dab62a",
+  "10-conversion-reussie.png": "3110d9e42bb26be506504de42ad6a24b6e198e1a89e0410ce51809279d97b0f3",
+  "11-reglages-changes-resultat-persiste.png": "db2334fc8cc30154387b6a50c2db6b0d73f7a7bf01f4d9127e577f713319b58b",
+  "12-annulation.png": "598886881d70cfd28eea26aac2b020123ec351fe6ff4d62a1d24a1cf095f7471",
+  "13-erreur-conversion.png": "2d97afa857640321b8b5d6f0ca36f5dfb1a75fcb4878c5d15ddc6d3a8069867e",
+  "14-native-convertisseur.png": "2a93ba25d7ba0727fb8b3a86cf2c816238ad40077b5a2a1ed37a2e0021bb8198",
+  "15-native-zoom-200.png": "34b43d19d956856affe28e1c17f51d04ad14bf5daec5c3a2c75e0fbebdab17a8"
+}

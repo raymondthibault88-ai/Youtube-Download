@@ -3,6 +3,7 @@ const path = require('node:path');
 const conversionConfig = require('../../shared/conversion-config.json');
 const { formatEta } = require('../../shared/formatters.js');
 const { appendTail, runProcess } = require('./process-runner.cjs');
+const { publishFile } = require('./file-output.cjs');
 
 const HARDWARE_ENCODERS = {
   darwin: ['h264_videotoolbox'],
@@ -63,14 +64,16 @@ async function inspectVideoFile(ffmpegPath, inputPath, signal) {
   });
   const duration = parseFfmpegTime(stderr.match(/Duration:\s*(\d+:\d+:\d+(?:\.\d+)?)/)?.[1]) || 0;
   const videoLine = stderr.split('\n').find((line) => /Video:/.test(line)) || '';
-  const dimensions = videoLine.match(/(?:^|\s)(\d{2,5})x(\d{2,5})(?:[\s,]|$)/);
+  const dimensions = videoLine.match(/(?:^|\s)(\d{1,5})x(\d{1,5})(?:[\s,]|$)/);
   const videoBitrate = Number(videoLine.match(/(\d+)\s*kb\/s/)?.[1] || 0) * 1000;
   const totalBitrate = Number(stderr.match(/Duration:[^\n]*bitrate:\s*(\d+)\s*kb\/s/)?.[1] || 0) * 1000;
   if (!duration || !dimensions) throw new Error('Impossible de lire les informations de cette vidéo.');
+  const rotation = Number(stderr.match(/rotation of\s+(-?\d+(?:\.\d+)?)\s+degrees/)?.[1] || 0);
+  const rotated = Math.abs(rotation % 180) === 90;
   return {
     duration,
-    width: Number(dimensions[1]),
-    height: Number(dimensions[2]),
+    width: Number(dimensions[rotated ? 2 : 1]),
+    height: Number(dimensions[rotated ? 1 : 2]),
     bitrate: videoBitrate || totalBitrate
   };
 }
@@ -89,35 +92,38 @@ function getAvailableOutputPath(inputPath, outputDir, suffix = 'converti') {
 }
 
 class MediaService {
-  constructor(ffmpegPath) {
+  constructor(ffmpegPath, { processRunner = runProcess } = {}) {
     this.ffmpegPath = ffmpegPath;
     this.hardwareEncoderPromise = null;
+    this.runProcess = processRunner;
   }
 
   inspect(inputPath, signal) {
     return inspectVideoFile(this.ffmpegPath, inputPath, signal);
   }
 
-  async detectHardwareEncoder() {
+  async detectHardwareEncoder(signal) {
     if (this.hardwareEncoderPromise) return this.hardwareEncoderPromise;
     this.hardwareEncoderPromise = (async () => {
       const candidates = HARDWARE_ENCODERS[process.platform] || [];
       if (!candidates.length) return null;
-      const { stdout } = await runProcess(this.ffmpegPath, ['-hide_banner', '-encoders']);
+      const { stdout } = await this.runProcess(this.ffmpegPath, ['-hide_banner', '-encoders'], { signal, timeoutMs: 10_000 });
       for (const encoder of candidates) {
         if (!stdout.includes(encoder)) continue;
         try {
-          await runProcess(this.ffmpegPath, [
+          await this.runProcess(this.ffmpegPath, [
             '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'color=size=320x180:rate=30',
             '-t', '0.15', '-an', '-c:v', encoder, '-f', 'null', '-'
-          ], { outputLimit: 64 * 1024 });
+          ], { signal, timeoutMs: 10_000, outputLimit: 64 * 1024 });
           return encoder;
-        } catch {
+        } catch (error) {
+          if (signal?.aborted) throw error;
           // Try the next encoder exposed by this FFmpeg build.
         }
       }
       return null;
     })();
+    this.hardwareEncoderPromise.catch(() => { this.hardwareEncoderPromise = null; });
     return this.hardwareEncoderPromise;
   }
 
@@ -139,9 +145,11 @@ class MediaService {
     const temporaryPath = path.join(path.dirname(destination), `.${path.basename(destination, '.mp4')}.${process.pid}.${Date.now()}.tmp.mp4`);
     const effectiveHeight = targetHeight ? Math.min(targetHeight, mediaInfo.height) : mediaInfo.height;
     const bitrate = getTargetVideoBitrate(effectiveHeight, mediaInfo.bitrate, profileId);
-    const scaleArgs = targetHeight && mediaInfo.height > targetHeight ? ['-vf', `scale=-2:${targetHeight}`] : [];
-    const encoder = speedProfile.preferHardware ? await this.detectHardwareEncoder() : null;
-    const encoderArgs = this.encoderArgs(encoder, bitrate, speedProfile.softwarePreset);
+    const filters = targetHeight && mediaInfo.height > targetHeight ? [`scale=-2:${targetHeight}`] : [];
+    // Pad rather than crop; autorotation is applied by FFmpeg before this filter.
+    filters.push('pad=ceil(iw/2)*2:ceil(ih/2)*2');
+    const scaleArgs = ['-vf', filters.join(',')];
+    let encoder = speedProfile.preferHardware ? await this.detectHardwareEncoder(signal) : null;
     const [rangeStart, rangeEnd] = progressRange;
     let stdoutBuffer = '';
     let progressValues = {};
@@ -165,10 +173,9 @@ class MediaService {
       });
     };
 
-    try {
-      await runProcess(this.ffmpegPath, [
+    const encode = () => this.runProcess(this.ffmpegPath, [
         '-y', '-hide_banner', '-loglevel', 'warning', '-i', inputPath,
-        '-map', '0:v:0', '-map', '0:a:0?', ...scaleArgs, ...encoderArgs,
+        '-map', '0:v:0', '-map', '0:a:0?', ...scaleArgs, ...this.encoderArgs(encoder, bitrate, speedProfile.softwarePreset),
         '-tag:v', 'avc1', '-c:a', 'aac', '-b:a', String(conversionConfig.audioBitrate),
         '-movflags', '+faststart', '-progress', 'pipe:1', '-nostats', temporaryPath
       ], {
@@ -191,8 +198,24 @@ class MediaService {
           }
         }
       });
-      await fs.promises.rename(temporaryPath, destination);
-      return destination;
+    try {
+      try {
+        await encode();
+      } catch (error) {
+        const hardwareFailure = /(?:videotoolbox|nvenc|nvEncode|cuda|qsv|amf|device|hardware|encoder|encoding|initialize|initialis|initializ)/i.test(error.message);
+        const sourceFailure = /(?:No space left|Permission denied|Read-only file system|Input\/output error|Invalid data found|No such file)/i.test(error.message);
+        if (!encoder || signal?.aborted || error.name === 'AbortError' || !hardwareFailure || sourceFailure) throw error;
+        await fs.promises.unlink(temporaryPath).catch(() => {});
+        encoder = null;
+        this.hardwareEncoderPromise = Promise.resolve(null);
+        stdoutBuffer = '';
+        progressValues = {};
+        stderr = '';
+        onProgress?.({ percent: Math.max(rangeStart, lastPercent), speed: null, eta: null, raw: 'Reprise de la conversion sur le processeur…' });
+        await encode();
+      }
+      signal?.throwIfAborted();
+      return await publishFile(temporaryPath, destination, signal);
     } catch (error) {
       await fs.promises.unlink(temporaryPath).catch(() => {});
       if (stderr && !error.message) error.message = stderr.trim();
@@ -210,9 +233,8 @@ class MediaService {
         '-y', '-hide_banner', '-loglevel', 'warning', '-i', inputPath,
         '-map', '0:v:0', '-map', '0:a:0?', '-c', 'copy', '-movflags', '+faststart', temporaryPath
       ], { signal, outputLimit: 128 * 1024 });
-      await fs.promises.rename(temporaryPath, destination);
-      if (destination !== inputPath) await fs.promises.unlink(inputPath).catch(() => {});
-      return destination;
+      signal?.throwIfAborted();
+      return await publishFile(temporaryPath, destination, signal);
     } catch (error) {
       await fs.promises.unlink(temporaryPath).catch(() => {});
       throw error;

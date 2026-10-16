@@ -1,0 +1,57 @@
+Analysis of sampling YouTube Downloader (pid 29573) every 1 millisecond
+Process:         YouTube Downloader [29573]
+Path:            /Users/USER/Desktop/*/YouTube Downloader.app/Contents/MacOS/YouTube Downloader
+Load Address:    0x104cd8000
+Identifier:      YouTube Downloader
+Version:         ???
+Code Type:       ARM64
+Platform:        macOS
+Parent Process:  codex [95627]
+Target Type:     live task
+
+Date/Time:       2026-10-12 15:39:24.959 +0200
+Launch Time:     2026-10-12 15:35:51.109 +0200
+OS Version:      macOS 27.2 (26B5101f)
+Report Version:  7
+Analysis Tool:   /usr/bin/sample
+
+Physical footprint:         1728K
+Physical footprint (peak):  1745K
+Idle exit:                  untracked
+----
+
+Call graph:
+    886 Thread_5748484: Main Thread   DispatchQueue_<multiple>
+    + 886 start  (in dyld) + 3155  [0x204fb4093]
+    +   886 dyld4::start(dyld4::KernelArgs*, void*, void*, unsigned long long)::$_0::operator()() const  (in dyld) + 284  [0x204fb4396]
+    +     886 dyld4::prepare(dyld4::APIs&, mach_o::UnsafeHeader const*)  (in dyld) + 1517  [0x204fb4995]
+    +       886 dyld4::JustInTimeLoader::loadDependents(Diagnostics&, dyld4::RuntimeState&, dyld4::Loader::LoadOptions const&)  (in dyld) + 249  [0x204fcc9f5]
+    +         886 mach_o::Header::forEachLinkedDylib(void (mach_o::Header::DylibInfo const&, bool, bool&) block_pointer) const  (in dyld) + 180  [0x20501549a]
+    +           886 mach_o::Header::forEachLoadCommand(void (mach_o::Header::LoadCommandInfo const&, bool&) block_pointer, mach_o::Error*) const  (in dyld) + 231  [0x205013893]
+    +             886 invocation function for block in mach_o::Header::forEachLinkedDylib(void (mach_o::Header::DylibInfo const&, bool, bool&) block_pointer) const  (in dyld) + 85  [0x205018686]
+    +               886 invocation function for block in dyld4::JustInTimeLoader::loadDependents(Diagnostics&, dyld4::RuntimeState&, dyld4::Loader::LoadOptions const&)  (in dyld) + 715  [0x204fcceb3]
+    +                 886 dyld4::Loader::getLoader(Diagnostics&, dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, bool)  (in dyld) + 1124  [0x204fd17d4]
+    +                   886 dyld4::Loader::forEachPath(Diagnostics&, dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, void (char const*, dyld4::ProcessConfig::PathOverrides::Type, bool&) block_pointer)  (in dyld) + 365  [0x204fd0e57]
+    +                     886 dyld4::ProcessConfig::PathOverrides::forEachPathVariant(CString, mach_o::Platform, bool, bool, bool&, void (char const*, dyld4::ProcessConfig::PathOverrides::Type, bool&) block_pointer) const  (in dyld) + 600  [0x204fbc1fa]
+    +                       886 dyld4::ProcessConfig::PathOverrides::forEachImageSuffix(char const*, dyld4::ProcessConfig::PathOverrides::Type, bool&, void (char const*, dyld4::ProcessConfig::PathOverrides::Type, bool&) block_pointer) const  (in dyld) + 261  [0x204fbbf05]
+    +                         886 dyld4::Loader::forEachResolvedAtPathVar(dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, dyld4::ProcessConfig::PathOverrides::Type, bool&, void (char const*, dyld4::ProcessConfig::PathOverrides::Type, bool&) block_pointer)  (in dyld) + 817  [0x204fd1313]
+    +                           886 mach_o::UnsafeHeader::forEachRPath(void (char const*, bool&) block_pointer) const  (in dyld) + 81  [0x2050239f9]
+    +                             886 mach_o::UnsafeHeader::forEachLoadCommand(void (load_command const*, bool&) block_pointer) const  (in dyld) + 191  [0x205023607]
+    +                               886 invocation function for block in dyld4::Loader::forEachResolvedAtPathVar(dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, dyld4::ProcessConfig::PathOverrides::Type, bool&, void (char const*, dyld4::ProcessConfig::PathOverrides::Type, bool&) block_pointer)  (in dyld) + 173  [0x204fd2e0b]
+    +                                 886 invocation function for block in dyld4::Loader::getLoader(Diagnostics&, dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, bool)  (in dyld) + 3531  [0x204fd29d3]
+    +                                   886 dyld4::Loader::makeDiskLoader(Diagnostics&, dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, bool, unsigned int)  (in dyld) + 169  [0x204fd0ba9]
+    +                                     886 dyld4::JustInTimeLoader::makeJustInTimeLoaderDisk(Diagnostics&, dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, bool, unsigned int)  (in dyld) + 1953  [0x204fcf559]
+    +                                       886 dyld4::JustInTimeLoader::withRegions(mach_o::UnsafeHeader const*, void (std::span<dyld4::Loader::Region const, 18446744073709551615ul>) block_pointer)  (in dyld) + 249  [0x204fcea99]
+    +                                         886 invocation function for block in dyld4::JustInTimeLoader::makeJustInTimeLoaderDisk(Diagnostics&, dyld4::RuntimeState&, char const*, dyld4::Loader::LoadOptions const&, bool, unsigned int)  (in dyld) + 109  [0x204fcf60d]
+    +                                           886 ???  (in <unknown binary>)  [0x20517cda4]
+    +                                             886 ???  (in Rosetta Runtime Routines)  [0x7ff7ffd5eed0]
+    886 Thread_5748489: com.apple.rosetta.exceptionserver
+      886 ???  (in Rosetta Runtime Routines)  [0x7ff7ffd5eed0]
+
+Total number in stack (recursive counted multiple, when >=5):
+
+Sort by top of stack, same collapsed (when >= 5):
+        ???  (in Rosetta Runtime Routines)  [0x7ff7ffd5eed0]        1772
+
+Binary images description not available
+

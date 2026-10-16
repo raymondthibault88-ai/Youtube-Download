@@ -1,0 +1,7 @@
+
+> youtube-downloader-desktop@4.0.9 verify:ffmpeg
+> node scripts/verify-ffmpeg.cjs
+
+FFmpeg darwin-arm64 vérifié (2e11c6f90993cdb79fff84d3f90044d28316b310e75b3e030cfc9a54f2c9d384).
+FFmpeg darwin-x64 vérifié (b25689cf2211c0582d317e849912769a1f1c93904fe102c485b5364a425633d1).
+FFmpeg win32-x64 vérifié (3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec).

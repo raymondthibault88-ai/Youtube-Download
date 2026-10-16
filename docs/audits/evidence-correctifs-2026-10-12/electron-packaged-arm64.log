@@ -1,0 +1,3 @@
+Electron empaqueté : analyse YouTube, téléchargement, fusion et décodage réel OK.
+Electron macOS : fermeture/réouverture pendant une conversion, suivi et fin de tâche OK.
+Electron réel : démarrage, sandbox, preload, IPC, conversion et refus de source non sélectionnée OK.

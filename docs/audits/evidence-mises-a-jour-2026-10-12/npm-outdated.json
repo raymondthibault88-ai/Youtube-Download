@@ -1,0 +1,23 @@
+{
+  "@types/node": {
+    "current": "24.19.2",
+    "wanted": "24.19.2",
+    "latest": "26.6.5",
+    "dependent": "Youtube-Download",
+    "location": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/@types/node"
+  },
+  "electron-builder": {
+    "current": "26.17.0",
+    "wanted": "26.17.0",
+    "latest": "26.15.3",
+    "dependent": "Youtube-Download",
+    "location": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/electron-builder"
+  },
+  "typescript": {
+    "current": "5.9.3",
+    "wanted": "5.9.3",
+    "latest": "7.0.2",
+    "dependent": "Youtube-Download",
+    "location": "/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/typescript"
+  }
+}

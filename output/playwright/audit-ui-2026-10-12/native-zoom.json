@@ -1,0 +1,14 @@
+{
+  "platform": "darwin",
+  "menu": null,
+  "before": 1,
+  "afterMetaEqual": 1,
+  "afterMetaShiftEqual": 1,
+  "at200": {
+    "width": 600,
+    "height": 394,
+    "documentWidth": 600,
+    "viewportOverflow": false,
+    "engineVisible": false
+  }
+}

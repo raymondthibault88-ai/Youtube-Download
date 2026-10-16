@@ -1,0 +1,58 @@
+[
+  {
+    "check": "fast",
+    "ok": true,
+    "size": 196363,
+    "info": {
+      "duration": 2.02,
+      "width": 640,
+      "height": 360,
+      "bitrate": 655000
+    }
+  },
+  {
+    "check": "balanced",
+    "ok": true,
+    "size": 188210,
+    "info": {
+      "duration": 2.02,
+      "width": 640,
+      "height": 360,
+      "bitrate": 622000
+    }
+  },
+  {
+    "check": "compact",
+    "ok": true,
+    "size": 189383,
+    "info": {
+      "duration": 2.02,
+      "width": 640,
+      "height": 360,
+      "bitrate": 627000
+    }
+  },
+  {
+    "check": "odd-dimensions",
+    "ok": false,
+    "error": "[libx264 @ 0x11c604080] width not divisible by 2 (641x361)\n[vost#0:0/libx264 @ 0x12d0059d0] Error initializing output stream: Error while opening encoder for output stream #0:0 - maybe incorrect parameters such as bit_rate, rate, width or height"
+  },
+  {
+    "check": "hardware-fallback",
+    "error": "Simulated hardware failure",
+    "calls": 3,
+    "retriedLibx264": false
+  },
+  {
+    "check": "process-cancel",
+    "error": "AbortError"
+  },
+  {
+    "check": "process-descendant",
+    "stillAlive": true
+  },
+  {
+    "check": "cancel-completion-race",
+    "state": "completed"
+  }
+]

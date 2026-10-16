@@ -1,0 +1,51 @@
+- generic [active] [ref=e1]:
+  - status:
+    - generic:
+      - generic: YouTube Downloader
+      - generic: Demarrage...
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]:
+          - heading "Video Studio" [level=1] [ref=e8]
+          - paragraph [ref=e9]: Télécharger et convertir, dans un seul espace
+        - navigation "Mode de l’application" [ref=e10]:
+          - button "Télécharger" [pressed] [ref=e11] [cursor=pointer]
+          - button "Convertir" [ref=e12] [cursor=pointer]
+        - generic [ref=e13]: Moteurs prêts
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]:
+              - text: Téléchargement
+              - heading "Récupérer une vidéo YouTube" [level=2] [ref=e19]
+              - paragraph [ref=e20]: Colle le lien, analyse les formats, puis choisis la qualité adaptée.
+            - generic "ffmpeg version 6.0" [ref=e21]: yt-dlp 2026.08.19 · FFmpeg 6.0
+          - generic [ref=e22]:
+            - generic [ref=e23]: Lien de la vidéo
+            - generic [ref=e24]:
+              - textbox "Lien de la vidéo" [ref=e25]:
+                - /placeholder: https://www.youtube.com/watch?v=...
+              - button "Coller" [ref=e26] [cursor=pointer]
+              - button "Analyser les formats" [disabled] [ref=e27]
+            - generic [ref=e28]:
+              - generic [aria-hidden] [ref=e29]: ⌁
+              - generic "/Users/preview/Vidéos" [ref=e30]:
+                - generic [ref=e31]: Enregistrer dans
+                - strong [ref=e32]: /Users/preview/Vidéos
+              - button "Modifier" [ref=e33] [cursor=pointer]
+        - region "Étapes du téléchargement" [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: "1"
+            - strong [ref=e37]: Colle le lien
+            - paragraph [ref=e38]: Depuis YouTube
+          - generic [aria-hidden] [ref=e39]: →
+          - generic [ref=e40]:
+            - generic [ref=e41]: "2"
+            - strong [ref=e42]: Choisis la qualité
+            - paragraph [ref=e43]: Résolution et poids
+          - generic [aria-hidden] [ref=e44]: →
+          - generic [ref=e45]:
+            - generic [ref=e46]: "3"
+            - strong [ref=e47]: Télécharge
+            - paragraph [ref=e48]: MP4 compatible

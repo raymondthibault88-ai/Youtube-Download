@@ -1,37 +1,43 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { DependencyInfo } from "../types/deps";
 import type { ProgressState } from "../types/progress";
 import type { VideoFormat } from "../types/video";
-import { revealPath, startDownload } from "../services/desktopApi";
+import { startDownload } from "../services/desktopApi";
 import { pickOutputDir } from "../services/outputDirectory";
-import { getErrorMessage } from "../utils/errors";
+import { getErrorMessage, isCancelledError } from "../utils/errors";
+import { finalFormatSummary } from "../utils/formats";
+import { formatBytes } from "../../shared/formatters.js";
+import type { CompletedActivity } from "../utils/results";
 
 interface UseDownloadFlowParams {
   url: string;
+  videoId: string | null;
   outputDir: string;
   setOutputDir: Dispatch<SetStateAction<string>>;
-  progress: ProgressState;
   initialProgress: ProgressState;
   setProgress: Dispatch<SetStateAction<ProgressState>>;
   setError: Dispatch<SetStateAction<string>>;
   dependencyInfo: DependencyInfo | null;
   requestDependencyInfo: () => void;
+  onStart: () => void;
+  onCompleted: (result: CompletedActivity) => void;
 }
 
 export default function useDownloadFlow({
   url,
+  videoId,
   outputDir,
   setOutputDir,
-  progress,
   initialProgress,
   setProgress,
   setError,
   dependencyInfo,
-  requestDependencyInfo
+  requestDependencyInfo,
+  onStart,
+  onCompleted
 }: UseDownloadFlowParams) {
   const [downloading, setDownloading] = useState(false);
-  const completedPathRef = useRef<string | null>(null);
 
   const resolveTargetDirectory = useCallback(async (forceAskOutput: boolean) => {
     if (forceAskOutput) {
@@ -65,14 +71,16 @@ export default function useDownloadFlow({
     hasVideo = true,
     hasAudio = true,
     shouldRecodeToMp4 = false,
-    expectedSizeBytes: number | null = null
+    expectedSizeBytes: number | null = null,
+    description = "MP4 compatible"
   ) => {
-    if (!url.trim()) {
+    if (!url.trim() || !videoId) {
       setError("Colle une URL YouTube valide.");
       return;
     }
 
     setError("");
+    onStart();
     setDownloading(true);
     setProgress({ ...initialProgress });
 
@@ -83,6 +91,7 @@ export default function useDownloadFlow({
 
       const result = await startDownload({
         url: url.trim(),
+        videoId,
         outputDir: targetDir,
         formatId,
         mergeAudioIfNeeded,
@@ -93,9 +102,9 @@ export default function useDownloadFlow({
       });
 
       setProgress((previous) => ({ ...previous, percent: 100, raw: "Téléchargement terminé." }));
-      completedPathRef.current = result.outputPath;
+      onCompleted({ type: "download", outputPath: result.outputPath, description: result.description || description, sizeSummary: result.outputSize ? formatBytes(result.outputSize) || undefined : undefined });
     } catch (error) {
-      setError(getErrorMessage(error, "Le téléchargement a échoué."));
+      if (!isCancelledError(error)) setError(getErrorMessage(error, "Le téléchargement a échoué."));
     } finally {
       setDownloading(false);
     }
@@ -105,7 +114,10 @@ export default function useDownloadFlow({
     resolveTargetDirectory,
     setError,
     setProgress,
-    url
+    url,
+    videoId,
+    onStart,
+    onCompleted
   ]);
 
   const handleManualDownload = useCallback(async (selectedFormat: VideoFormat | null) => {
@@ -126,18 +138,10 @@ export default function useDownloadFlow({
       selectedFormat.hasVideo,
       selectedFormat.hasAudio,
       selectedFormat.ext?.toLowerCase() !== "mp4" || !selectedFormat.quickTimeCompatible,
-      selectedFormat.fileSizeBytes || null
+      selectedFormat.fileSizeBytes || null,
+      finalFormatSummary(selectedFormat)
     );
   }, [runDownload, setError]);
-
-  useEffect(() => {
-    if (!progress?.raw || !completedPathRef.current) return;
-    if (progress.percent && progress.percent >= 100) {
-      const completedPath = completedPathRef.current;
-      completedPathRef.current = null;
-      void revealPath(completedPath);
-    }
-  }, [dependencyInfo?.downloadsPath, outputDir, progress.percent, progress.raw]);
 
   return {
     downloading,

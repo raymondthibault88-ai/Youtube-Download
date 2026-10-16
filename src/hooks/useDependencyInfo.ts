@@ -4,11 +4,13 @@ import type { DependencyInfo } from "../types/deps";
 import { checkDependencies } from "../services/desktopApi";
 import { getErrorMessage } from "../utils/errors";
 import { readJsonStorage, STORAGE_KEYS, writeJsonStorage } from "../utils/localStorage";
+import packageInfo from "../../package.json";
 
 const DEP_CACHE_TTL_MS = 10 * 60 * 1000;
+const DEP_CACHE_KEY = `${STORAGE_KEYS.depsCache}:${packageInfo.version}`;
 
 function readValidDependencyCache() {
-  const cached = readJsonStorage<{ at: number; data: DependencyInfo }>(STORAGE_KEYS.depsCache);
+  const cached = readJsonStorage<{ at: number; data: DependencyInfo }>(DEP_CACHE_KEY);
   return cached?.data && cached?.at && Date.now() - cached.at <= DEP_CACHE_TTL_MS
     ? cached
     : null;
@@ -26,36 +28,35 @@ export default function useDependencyInfo({ setOutputDir, setError }: UseDepende
     () => INITIAL_DEPENDENCY_CACHE?.data || null
   );
   const [isChecking, setIsChecking] = useState(false);
-  const depsInfoRequestedRef = useRef(Boolean(INITIAL_DEPENDENCY_CACHE));
+  const pendingRef = useRef<Promise<void> | null>(null);
   const depsCacheAtRef = useRef<number | null>(INITIAL_DEPENDENCY_CACHE?.at || null);
 
   const requestDependencyInfo = useCallback(async (): Promise<void> => {
-    if (depsInfoRequestedRef.current) {
-      if (depsCacheAtRef.current && Date.now() - depsCacheAtRef.current <= DEP_CACHE_TTL_MS) {
-        return;
-      }
-      depsInfoRequestedRef.current = false;
-    }
-
-    if (depsInfoRequestedRef.current) {
-      return;
-    }
-
-    depsInfoRequestedRef.current = true;
+    if (pendingRef.current) return pendingRef.current;
+    if (depsCacheAtRef.current && Date.now() - depsCacheAtRef.current <= DEP_CACHE_TTL_MS) return;
     setIsChecking(true);
-
-    try {
-      const deps = await checkDependencies();
-      setDependencyInfo(deps);
-      setOutputDir((current) => current || deps.downloadsPath || "");
-      depsCacheAtRef.current = Date.now();
-      writeJsonStorage(STORAGE_KEYS.depsCache, { at: depsCacheAtRef.current, data: deps });
-    } catch (error) {
-      depsInfoRequestedRef.current = false;
-      setError(getErrorMessage(error, "Impossible d'initialiser les dependances."));
-    } finally {
-      setIsChecking(false);
-    }
+    const request = (async () => {
+      try {
+        let deps: DependencyInfo;
+        try {
+          deps = await checkDependencies();
+        } catch (error) {
+          if (!/TimeoutError|délai|ETIMEDOUT|ECONNRESET/.test(getErrorMessage(error, ""))) throw error;
+          deps = await checkDependencies();
+        }
+        setDependencyInfo(deps);
+        setOutputDir((current) => current || deps.downloadsPath || "");
+        depsCacheAtRef.current = Date.now();
+        writeJsonStorage(DEP_CACHE_KEY, { at: depsCacheAtRef.current, data: deps });
+      } catch (error) {
+        setError(getErrorMessage(error, "Impossible d'initialiser les dépendances."));
+      } finally {
+        pendingRef.current = null;
+        setIsChecking(false);
+      }
+    })();
+    pendingRef.current = request;
+    return request;
   }, [setError, setOutputDir]);
 
   return { dependencyInfo, requestDependencyInfo, isChecking };

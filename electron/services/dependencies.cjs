@@ -1,15 +1,21 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { verifyExecutable } = require('./executable-integrity.cjs');
 const { runProcess } = require('./process-runner.cjs');
 
 function resolveFfmpegPath({
   isPackaged,
   platform = process.platform,
+  arch = process.arch,
   resourcesPath = process.resourcesPath,
-  staticBinary = require('ffmpeg-static')
+  staticBinary
 }) {
-  if (isPackaged && platform === 'win32') {
-    return path.join(resourcesPath, 'ffmpeg', 'ffmpeg.exe');
+  const name = platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+  if (isPackaged) return path.join(resourcesPath, 'ffmpeg', name);
+  const bundled = path.join(__dirname, '..', '..', 'build', 'ffmpeg', `${platform}-${arch}`, name);
+  if (!staticBinary && fs.existsSync(bundled)) return bundled;
+  if (staticBinary === undefined && platform === process.platform) {
+    staticBinary = require('ffmpeg-static'); // development/CI fallback only
   }
 
   return staticBinary?.includes('app.asar')
@@ -63,7 +69,15 @@ class DependencyService {
     this.ffmpegPromise = (async () => {
       const ffmpegPath = this.resolveFfmpegPath();
       if (!ffmpegPath || !fs.existsSync(ffmpegPath)) throw new Error('FFmpeg est introuvable. Réinstalle l’application.');
-      const { stdout } = await runProcess(ffmpegPath, ['-version']);
+      const manifestPath = path.join(path.dirname(ffmpegPath), 'manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        const manifest = JSON.parse(await fs.promises.readFile(manifestPath, 'utf8'));
+        const bytes = await fs.promises.readFile(ffmpegPath);
+        if (!verifyExecutable(bytes, manifest, { allowMacSigning: this.app.isPackaged }) || manifest.nonfree !== false) throw new Error('Intégrité ou licence FFmpeg invalide. Réinstalle l’application.');
+      }
+      const { stdout } = await runProcess(ffmpegPath, ['-version'], { timeoutMs: 30_000 });
+      const license = await runProcess(ffmpegPath, ['-L'], { timeoutMs: 30_000 });
+      if (/nonfree|not legally redistributable/i.test(license.stdout + license.stderr)) throw new Error('Ce binaire FFmpeg ne peut pas être distribué.');
       this.ffmpegInfo = { ffmpegPath, ffmpegVersion: (stdout.split('\n')[0] || '').trim() };
       return this.ffmpegInfo;
     })();
@@ -80,7 +94,7 @@ class DependencyService {
     this.ytDlpPromise = (async () => {
       const { ensureYtDlp } = require('../ytDlp.cjs');
       const ytDlpPath = await ensureYtDlp(this.app.getPath('userData'));
-      const { stdout } = await runProcess(ytDlpPath, ['--version']);
+      const { stdout } = await runProcess(ytDlpPath, ['--ignore-config', '--no-plugin-dirs', '--version'], { timeoutMs: 30_000 });
       this.ytDlpInfo = { ytDlpPath, ytDlpVersion: stdout.trim() };
       return this.ytDlpInfo;
     })();

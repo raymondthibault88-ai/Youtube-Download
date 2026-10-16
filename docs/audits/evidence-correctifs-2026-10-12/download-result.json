@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "selectedFormat": {
+    "id": "134",
+    "resolution": "320x240",
+    "ext": "mp4",
+    "fps": 15,
+    "hasVideo": true,
+    "hasAudio": false,
+    "videoCodec": "avc1.4d400c",
+    "audioCodec": null,
+    "quickTimeCompatible": true,
+    "fileSizeBytes": 322379,
+    "fileSizeText": "314.8 KB"
+  },
+  "outputSize": 633710,
+  "media": {
+    "duration": 19.06,
+    "width": 320,
+    "height": 240,
+    "bitrate": 134000
+  },
+  "decodeOk": true,
+  "codecs": [
+    "  Stream #0:0[0x1](und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, smpte170m/bt470bg/bt709, progressive), 320x240 [SAR 1:1 DAR 4:3], 134 kb/s, 15 fps, 15 tbr, 15360 tbn (default)",
+    "  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 127 kb/s (default)",
+    "  Stream #0:0(und): Video: wrapped_avframe, yuv420p(tv, smpte170m/bt470bg/bt709, progressive), 320x240 [SAR 1:1 DAR 4:3], q=2-31, 200 kb/s, 15 fps, 15 tbn (default)",
+    "  Stream #0:1(und): Audio: pcm_s16le, 44100 Hz, stereo, s16, 1411 kb/s (default)"
+  ]
+}

@@ -1,0 +1,22 @@
+
+> youtube-downloader-desktop@4.0.8 test:electron
+> npm run build && node scripts/test-electron.cjs
+
+
+> youtube-downloader-desktop@4.0.8 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+dist/index.html                   1.08 kB
+dist/assets/logo-B1DQdERU.png    39.91 kB
+dist/assets/style-BJunpPRc.css   14.42 kB
+dist/assets/index-3Rn-P0mT.js   244.88 kB
+
+✓ built in 136ms
+Downloading Electron binary...
+Electron empaqueté : analyse YouTube, téléchargement, fusion et décodage réel OK.
+Electron macOS : fermeture/réouverture pendant une conversion, suivi et fin de tâche OK.
+Electron réel : démarrage, sandbox, preload, IPC, conversion et refus de source non sélectionnée OK.

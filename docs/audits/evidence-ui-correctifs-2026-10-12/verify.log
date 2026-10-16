@@ -1,0 +1,303 @@
+
+> youtube-downloader-desktop@4.0.9 verify
+> npm run lint && npm run typecheck && npm test && npm run test:smoke && npm run build
+
+
+> youtube-downloader-desktop@4.0.9 lint
+> eslint .
+
+
+> youtube-downloader-desktop@4.0.9 typecheck
+> tsc --noEmit
+
+
+> youtube-downloader-desktop@4.0.9 test
+> node --test tests/*.test.cjs
+
+TAP version 13
+# Subtest: uses the packaged Windows FFmpeg binary on Windows
+ok 1 - uses the packaged Windows FFmpeg binary on Windows
+  ---
+  duration_ms: 1.823625
+  type: 'test'
+  ...
+# Subtest: uses the vetted external FFmpeg resource on packaged macOS
+ok 2 - uses the vetted external FFmpeg resource on packaged macOS
+  ---
+  duration_ms: 0.135791
+  type: 'test'
+  ...
+# Subtest: macOS signature metadata can change while executable code remains verified
+ok 3 - macOS signature metadata can change while executable code remains verified
+  ---
+  duration_ms: 502.973875
+  type: 'test'
+  ...
+# Subtest: IPC rejects unanalysed identities and derives media flags from the analysed format
+ok 4 - IPC rejects unanalysed identities and derives media flags from the analysed format
+  ---
+  duration_ms: 16.844625
+  type: 'test'
+  ...
+# Subtest: parseFfmpegTime converts timestamps
+ok 5 - parseFfmpegTime converts timestamps
+  ---
+  duration_ms: 1.379458
+  type: 'test'
+  ...
+# Subtest: formatEta is shared by download and conversion progress
+ok 6 - formatEta is shared by download and conversion progress
+  ---
+  duration_ms: 0.433584
+  type: 'test'
+  ...
+# Subtest: output options include all useful lower resolutions and estimates
+ok 7 - output options include all useful lower resolutions and estimates
+  ---
+  duration_ms: 3.855292
+  type: 'test'
+  ...
+# Subtest: compact profile targets a lower bitrate and size
+ok 8 - compact profile targets a lower bitrate and size
+  ---
+  duration_ms: 0.134916
+  type: 'test'
+  ...
+# Subtest: publishing concurrent outputs preserves all existing files
+ok 9 - publishing concurrent outputs preserves all existing files
+  ---
+  duration_ms: 33.906125
+  type: 'test'
+  ...
+# Subtest: yt-dlp commands isolate configuration and plugins
+ok 10 - yt-dlp commands isolate configuration and plugins
+  ---
+  duration_ms: 0.555208
+  type: 'test'
+  ...
+# Subtest: download uses the clients that supplied its analyzed format (fallback=false)
+ok 11 - download uses the clients that supplied its analyzed format (fallback=false)
+  ---
+  duration_ms: 8.904625
+  type: 'test'
+  ...
+# Subtest: download uses the clients that supplied its analyzed format (fallback=true)
+ok 12 - download uses the clients that supplied its analyzed format (fallback=true)
+  ---
+  duration_ms: 6.1025
+  type: 'test'
+  ...
+# Subtest: same-title download keeps the original and publishes the requested video
+ok 13 - same-title download keeps the original and publishes the requested video
+  ---
+  duration_ms: 17.235792
+  type: 'test'
+  ...
+# Subtest: wrong video identity never publishes a result and cleans its working directory
+ok 14 - wrong video identity never publishes a result and cleans its working directory
+  ---
+  duration_ms: 6.641292
+  type: 'test'
+  ...
+# Subtest: a reported path outside the download cannot move or remove another file
+ok 15 - a reported path outside the download cannot move or remove another file
+  ---
+  duration_ms: 10.451542
+  type: 'test'
+  ...
+# Subtest: failed download removes only its own temporary files
+ok 16 - failed download removes only its own temporary files
+  ---
+  duration_ms: 5.603042
+  type: 'test'
+  ...
+# Subtest: progress ignores writes beside the task working directory
+ok 17 - progress ignores writes beside the task working directory
+  ---
+  duration_ms: 860.588666
+  type: 'test'
+  ...
+# Subtest: new window continues receiving updates and completion after the old window closes
+ok 18 - new window continues receiving updates and completion after the old window closes
+  ---
+  duration_ms: 1.014834
+  type: 'test'
+  ...
+# Subtest: analysis occupies the shared job guard and can be cancelled
+ok 19 - analysis occupies the shared job guard and can be cancelled
+  ---
+  duration_ms: 0.697917
+  type: 'test'
+  ...
+# Subtest: process timeout stops the engine and reports a recoverable timeout
+ok 20 - process timeout stops the engine and reports a recoverable timeout
+  ---
+  duration_ms: 854.644334
+  type: 'test'
+  ...
+# Subtest: analysis deadline includes dependency preparation and reports failure rather than cancellation
+ok 21 - analysis deadline includes dependency preparation and reports failure rather than cancellation
+  ---
+  duration_ms: 21.35225
+  type: 'test'
+  ...
+# Subtest: cancellation stops descendants even when they ignore SIGTERM
+ok 22 - cancellation stops descendants even when they ignore SIGTERM
+  ---
+  duration_ms: 943.306667
+  type: 'test'
+  ...
+# Subtest: application shutdown waits for active engines to stop
+ok 23 - application shutdown waits for active engines to stop
+  ---
+  duration_ms: 789.401833
+  type: 'test'
+  ...
+# Subtest: odd dimensions encode to even H264 dimensions without modifying the original
+ok 24 - odd dimensions encode to even H264 dimensions without modifying the original
+  ---
+  duration_ms: 389.64075
+  type: 'test'
+  ...
+# Subtest: hardware failure retries CPU once, while cancellation never retries
+ok 25 - hardware failure retries CPU once, while cancellation never retries
+  ---
+  duration_ms: 5.203417
+  type: 'test'
+  ...
+# Subtest: portrait rotation metadata is respected when reducing the displayed height
+ok 26 - portrait rotation metadata is respected when reducing the displayed height
+  ---
+  duration_ms: 276.229959
+  type: 'test'
+  ...
+# Subtest: cancelling a real FFmpeg conversion removes partial output and preserves the source
+ok 27 - cancelling a real FFmpeg conversion removes partial output and preserves the source
+  ---
+  duration_ms: 973.418
+  type: 'test'
+  ...
+# Subtest: cancelling during a real FFmpeg merge leaves no task files or damaged existing files
+ok 28 - cancelling during a real FFmpeg merge leaves no task files or damaged existing files
+  ---
+  duration_ms: 1513.286583
+  type: 'test'
+  ...
+# Subtest: YouTube URL validation rejects untrusted origins
+ok 29 - YouTube URL validation rejects untrusted origins
+  ---
+  duration_ms: 2.47475
+  type: 'test'
+  ...
+# Subtest: format ids cannot inject yt-dlp arguments
+ok 30 - format ids cannot inject yt-dlp arguments
+  ---
+  duration_ms: 0.381791
+  type: 'test'
+  ...
+# Subtest: sender path confinement handles Windows file URLs without prefix bypasses
+ok 31 - sender path confinement handles Windows file URLs without prefix bypasses
+  ---
+  duration_ms: 0.542125
+  type: 'test'
+  ...
+# Subtest: format selector adds compatible audio only when necessary
+ok 32 - format selector adds compatible audio only when necessary
+  ---
+  duration_ms: 1.270834
+  type: 'test'
+  ...
+# Subtest: compatible merge performs faststart inside yt-dlp
+ok 33 - compatible merge performs faststart inside yt-dlp
+  ---
+  duration_ms: 0.588292
+  type: 'test'
+  ...
+# Subtest: download filenames stay clean and portable
+ok 34 - download filenames stay clean and portable
+  ---
+  duration_ms: 0.181166
+  type: 'test'
+  ...
+# Subtest: download command requests stable machine-readable progress
+ok 35 - download command requests stable machine-readable progress
+  ---
+  duration_ms: 0.238375
+  type: 'test'
+  ...
+# Subtest: format analysis preserves the numeric size for progress fallback
+ok 36 - format analysis preserves the numeric size for progress fallback
+  ---
+  duration_ms: 0.846459
+  type: 'test'
+  ...
+# Subtest: written-byte fallback estimates progress without exceeding its reserved range
+ok 37 - written-byte fallback estimates progress without exceeding its reserved range
+  ---
+  duration_ms: 0.221125
+  type: 'test'
+  ...
+# Subtest: download progress parser extracts speed and ETA
+ok 38 - download progress parser extracts speed and ETA
+  ---
+  duration_ms: 1.220375
+  type: 'test'
+  ...
+# Subtest: download output parser ignores status lines without a percentage
+ok 39 - download output parser ignores status lines without a percentage
+  ---
+  duration_ms: 0.401833
+  type: 'test'
+  ...
+# Subtest: download output parser maps progress into the reserved download range
+ok 40 - download output parser maps progress into the reserved download range
+  ---
+  duration_ms: 1.219542
+  type: 'test'
+  ...
+# Subtest: download output parser handles the machine-readable progress marker
+ok 41 - download output parser handles the machine-readable progress marker
+  ---
+  duration_ms: 0.781333
+  type: 'test'
+  ...
+# Subtest: line consumer emits progress separated by carriage returns and flushes its tail
+ok 42 - line consumer emits progress separated by carriage returns and flushes its tail
+  ---
+  duration_ms: 0.474333
+  type: 'test'
+  ...
+# Subtest: download output parser extracts the final path printed on stdout
+ok 43 - download output parser extracts the final path printed on stdout
+  ---
+  duration_ms: 0.122083
+  type: 'test'
+  ...
+1..43
+# tests 43
+# suites 0
+# pass 43
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6868.657833
+
+> youtube-downloader-desktop@4.0.9 test:smoke
+> node scripts/smoke-test.cjs
+
+Smoke test OK
+
+> youtube-downloader-desktop@4.0.9 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 47 modules transformed.
+rendering chunks...
+dist/index.html                   1.08 kB
+dist/assets/logo-B1DQdERU.png    39.91 kB
+dist/assets/style-BvFf8HOf.css   19.29 kB
+dist/assets/index-v06AfRiK.js   252.37 kB
+
+✓ built in 169ms

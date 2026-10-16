@@ -9,7 +9,7 @@ const dependencyInfo: DependencyInfo = {
   ytDlpPath: "/preview/yt-dlp",
   ytDlpVersion: "2026.08.19",
   ffmpegPath: "/preview/ffmpeg",
-  ffmpegVersion: "ffmpeg version 6.0",
+  ffmpegVersion: "ffmpeg version 9.0.2",
   downloadsPath: "/Users/preview/Vidéos"
 };
 

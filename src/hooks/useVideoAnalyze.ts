@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { Dispatch, SetStateAction, FormEvent } from "react";
 import type { VideoFormat, VideoInfo } from "../types/video";
 import { analyzeVideo } from "../services/desktopApi";
-import { getErrorMessage } from "../utils/errors";
+import { getErrorMessage, isCancelledError } from "../utils/errors";
 
 interface UseVideoAnalyzeParams {
   url: string;
@@ -18,10 +18,16 @@ function pickDefaultFormat(formats?: VideoFormat[]) {
 }
 
 export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams) {
-  const [video, setVideo] = useState<VideoInfo | null>(null);
+  const [result, setResult] = useState<{ url: string; data: VideoInfo } | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<VideoFormat | null>(null);
-  const lastAnalyzeRef = useRef<{ url: string; data: VideoInfo | null }>({ url: "", data: null });
+  const [selection, setSelection] = useState<{ url: string; format: VideoFormat } | null>(null);
+  const pendingRef = useRef(0);
+  const normalizedUrl = url.trim();
+  const video = result?.url === normalizedUrl ? result.data : null;
+  const selectedFormat = video && selection?.url === normalizedUrl ? selection.format : null;
+  const setSelectedFormat = useCallback((format: VideoFormat | null) => {
+    setSelection(format ? { url: normalizedUrl, format } : null);
+  }, [normalizedUrl]);
 
   const analyze = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,36 +37,29 @@ export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams
       return;
     }
 
+    const request = ++pendingRef.current;
+    setResult(null);
+    setSelection(null);
     setLoadingVideo(true);
     setError("");
 
     try {
-      if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
-        const cachedData = lastAnalyzeRef.current.data;
-        setVideo(cachedData);
-        const cachedBest = pickDefaultFormat(cachedData?.formats);
-        if (cachedBest) {
-          setSelectedFormat(cachedBest);
-        }
-        setLoadingVideo(false);
-        return;
-      }
-
       const data = await analyzeVideo(normalizedUrl);
-      lastAnalyzeRef.current = { url: normalizedUrl, data };
-      setVideo(data);
+      if (request !== pendingRef.current) return;
+      setResult({ url: normalizedUrl, data });
       const bestFormat = pickDefaultFormat(data?.formats);
       if (bestFormat) {
         setSelectedFormat(bestFormat);
       }
     } catch (error) {
-      setVideo(null);
-      setSelectedFormat(null);
-      setError(getErrorMessage(error, "Erreur pendant l'analyse de la vidéo."));
+      if (request !== pendingRef.current) return;
+      setResult(null);
+      setSelection(null);
+      if (!isCancelledError(error)) setError(getErrorMessage(error, "Erreur pendant l'analyse de la vidéo."));
     } finally {
-      setLoadingVideo(false);
+      if (request === pendingRef.current) setLoadingVideo(false);
     }
-  }, [setError, url]);
+  }, [setError, setSelectedFormat, url]);
 
   return {
     video,

@@ -1,0 +1,6 @@
+{
+  "check": "reopen-subscription",
+  "snapshotForB": "running",
+  "actualFinalState": "completed",
+  "receivedAfterReopenB": 0
+}

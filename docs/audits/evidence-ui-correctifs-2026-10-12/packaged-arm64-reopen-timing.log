@@ -1,0 +1,37 @@
+Electron empaqueté : analyse YouTube, téléchargement, fusion et décodage réel OK.
+État Electron au moment de l’échec : {
+  id: '2f663bf5-e0bb-4175-959a-38313d3476be',
+  type: 'conversion',
+  state: 'completed',
+  percent: 100,
+  speed: null,
+  eta: null,
+  raw: 'Conversion terminée.',
+  startedAt: 1791811733234,
+  updatedAt: 1791811738075,
+  revision: 4,
+  result: {
+    ok: true,
+    outputPath: '/var/folders/l_/ft83xcgs48bf7v0xhnlytrdm0000gn/T/video-studio-electron-ysGL5R/source - converti 2.mp4',
+    inputSize: 141645,
+    outputSize: 10350,
+    sourceName: 'source.mkv',
+    profileId: 'compact',
+    resolutionLabel: 'Résolution originale'
+  },
+  error: null
+}
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'completed'
+- 'running'
+
+    at /Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/scripts/test-electron.cjs:105:14 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'completed',
+  expected: 'running',
+  operator: 'strictEqual',
+  diff: 'simple'
+}

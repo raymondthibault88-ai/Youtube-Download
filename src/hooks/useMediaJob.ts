@@ -4,13 +4,19 @@ import type { JobSnapshot } from "../types/job";
 
 export default function useMediaJob() {
   const [job, setJob] = useState<JobSnapshot | null>(null);
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void getCurrentJob().then((snapshot) => {
-      if (active) setJob(snapshot);
-    }).catch(() => {});
-    const unsubscribe = onJobUpdate(setJob);
+    const accept = (snapshot: JobSnapshot | null) => {
+      if (active) setJob((current) => {
+        if (!snapshot && current) return current;
+        if (snapshot && current && (snapshot.startedAt < current.startedAt || (snapshot.id === current.id && snapshot.revision < current.revision))) return current;
+        return snapshot;
+      });
+    };
+    const unsubscribe = onJobUpdate(accept);
+    void getCurrentJob().then(accept).catch(() => {});
     return () => {
       active = false;
       unsubscribe();
@@ -18,5 +24,6 @@ export default function useMediaJob() {
   }, []);
 
   const cancel = useCallback(() => cancelJob(), []);
-  return { job, cancel, busy: job?.state === "running" || job?.state === "cancelling" };
+  const dismiss = useCallback(() => { if (job && job.state !== "running" && job.state !== "cancelling") setDismissedKey(`${job.id}:${job.startedAt}`); }, [job]);
+  return { job: job && `${job.id}:${job.startedAt}` === dismissedKey ? null : job, cancel, dismiss, busy: job?.state === "running" || job?.state === "cancelling" };
 }

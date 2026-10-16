@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import downloadConfig from "../shared/download-config.json";
-import { formatSize } from "../shared/formatters.js";
 import logo from "./assets/logo.png";
 import EmptyPanel from "./components/EmptyPanel";
 import AppHeader from "./components/AppHeader";
@@ -17,7 +16,12 @@ import useSplash from "./hooks/useSplash";
 import useStartupInfo from "./hooks/useStartupInfo";
 import useVideoAnalyze from "./hooks/useVideoAnalyze";
 import { getStoredOutputDir, pickOutputDir } from "./services/outputDirectory";
-import { getCodecLabel } from "./utils/codecs";
+import { finalFormatSummary } from "./utils/formats";
+import { completedActivityFromJob } from "./utils/results";
+import type { CompletedActivity } from "./utils/results";
+import ResultCard from "./components/ResultCard";
+import Notice from "./components/ui/Notice";
+import AboutDialog from "./components/AboutDialog";
 import { getErrorMessage } from "./utils/errors";
 import type { ProgressState, VideoFormat } from "./types";
 
@@ -30,7 +34,10 @@ export default function App() {
   });
   const [error, setError] = useState("");
   const urlInputRef = useRef<HTMLInputElement | null>(null);
-  const { job, cancel, busy } = useMediaJob();
+  const { job, cancel, dismiss, busy } = useMediaJob();
+  const [lastResult, setLastResult] = useState<CompletedActivity | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const onActivityStart = useCallback(() => { setLastResult(null); setError(""); dismiss(); }, [dismiss]);
 
   useDownloadProgress({ setProgress, setError });
   useSplash();
@@ -51,9 +58,11 @@ export default function App() {
 
   const { downloading, handleManualDownload } = useDownloadFlow({
     url,
+    videoId: video?.id || null,
     outputDir,
     setOutputDir,
-    progress,
+    onStart: onActivityStart,
+    onCompleted: setLastResult,
     initialProgress: downloadConfig.initialProgress as ProgressState,
     setProgress,
     setError,
@@ -66,19 +75,21 @@ export default function App() {
   }, [requestDependencyInfo]);
 
   const handleSelectFormat = useCallback((format: VideoFormat) => {
-    setSelectedFormat(format);
-  }, [setSelectedFormat]);
+    if (!busy && !downloading && !loadingVideo) setSelectedFormat(format);
+  }, [setSelectedFormat, busy, downloading, loadingVideo]);
 
   const handleUrlChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setUrl(event.target.value);
   }, []);
 
   const handleAnalyze = useCallback((event: FormEvent<HTMLFormElement>) => {
+    onActivityStart();
     analyze(event);
-  }, [analyze]);
+  }, [analyze, onActivityStart]);
 
   const handlePickFolder = useCallback(async () => {
     try {
+      setError("");
       const folder = await pickOutputDir();
       if (folder) {
         setOutputDir(folder);
@@ -108,35 +119,15 @@ export default function App() {
     return video?.formats || [];
   }, [video]);
 
-  const selectedFormatSummary = useMemo(() => {
-    if (!selectedFormat) return null;
-    const mediaType = selectedFormat.hasVideo && selectedFormat.hasAudio
-      ? "Vidéo + Audio"
-      : selectedFormat.hasVideo
-        ? "Vidéo seule"
-        : "Audio seul";
-    const videoCodecLabel = getCodecLabel(selectedFormat.videoCodec);
-    const audioCodecLabel = selectedFormat.hasAudio
-      ? getCodecLabel(selectedFormat.audioCodec)
-      : selectedFormat.quickTimeCompatible
-        ? "AAC"
-        : null;
-    const codecLabel = [videoCodecLabel, audioCodecLabel].filter(Boolean).join(" + ");
-    const details = [
-      selectedFormat.resolution,
-      selectedFormat.ext?.toUpperCase(),
-      codecLabel || null,
-      mediaType,
-      selectedFormat.quickTimeCompatible ? "Conversion directe" : "Réencodage compatible"
-    ].filter(Boolean);
-    const size = formatSize(selectedFormat.fileSizeText);
-    return `${details.join(" · ")}${size ? ` · ${size}` : ""}`;
-  }, [selectedFormat]);
+  const selectedFormatSummary = selectedFormat ? finalFormatSummary(selectedFormat) : null;
+  const completedResult = lastResult || completedActivityFromJob(job);
+  const visibleError = error && !(job?.state === "failed" && error === getErrorMessage(job.error, "")) ? error : "";
+  const dismissTask = () => { if (job?.state === "failed" && error === getErrorMessage(job.error, "")) setError(""); dismiss(); };
 
   const actionLabel = loadingVideo ? "Analyse..." : "Analyser les formats";
   const showJobBar = Boolean(job && ["running", "cancelling", "failed", "cancelled"].includes(job.state));
   const displayedJob = useMemo(() => {
-    if (!job || job.type !== "download" || progress.percent == null || !progress.raw) return job;
+    if (!job || job.state !== "running" || job.type !== "download" || progress.percent == null || !progress.raw) return job;
     return {
       ...job,
       percent: Math.max(job.percent || 0, progress.percent),
@@ -157,9 +148,12 @@ export default function App() {
           logoSrc={logo}
           toolsReady={Boolean(dependencyInfo)}
           toolsPreparing={isPreparingTools}
+          onAbout={() => setAboutOpen(true)}
         />
 
-        {showJobBar && displayedJob && <JobBar job={displayedJob} onCancel={() => void cancel()} />}
+        {visibleError && <Notice message={visibleError} onDismiss={() => setError("")} />}
+        {showJobBar && displayedJob && <JobBar job={displayedJob} onCancel={() => { void cancel().catch(error => setError(getErrorMessage(error, "Impossible d’annuler la tâche."))); }} onDismiss={dismissTask} onReview={job?.type === "conversion" && mode !== "convert" ? () => setMode("convert") : job?.type !== "conversion" && mode !== "download" ? () => setMode("download") : undefined} />}
+        {completedResult && <ResultCard result={completedResult} onError={setError} onDismiss={() => { setLastResult(null); if (job?.state === "completed") dismiss(); }} />}
 
         <div hidden={mode !== "download"}>
           <HeroPanel
@@ -175,7 +169,6 @@ export default function App() {
             actionLabel={actionLabel}
             dependencyInfo={dependencyInfo}
             isPreparingTools={isPreparingTools && !dependencyInfo}
-            error={error}
             mediaBusy={busy}
           />
 
@@ -188,16 +181,17 @@ export default function App() {
               onSelectFormat={handleSelectFormat}
               onDownload={handleDownload}
               downloading={downloading}
-              mediaBusy={busy}
+              mediaBusy={busy || loadingVideo}
             />
           ) : (
             <EmptyPanel />
           )}
         </div>
         <div hidden={mode !== "convert"}>
-          <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} mediaBusy={busy} />
+          <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} mediaBusy={busy} onError={setError} onStart={onActivityStart} onCompleted={setLastResult} failed={job?.type === "conversion" && job.state === "failed"} />
         </div>
       </div>
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} dependencies={dependencyInfo} preparing={isPreparingTools} onRetry={() => { setError(""); void requestDependencyInfo(); }} />
     </main>
   );
 }

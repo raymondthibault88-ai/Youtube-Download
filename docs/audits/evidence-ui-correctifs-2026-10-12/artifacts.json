@@ -1,0 +1,32 @@
+[
+  {
+    "name": "YouTube Downloader-4.0.9-arm64.dmg",
+    "bytes": 144664080,
+    "sha256": "55cfad04476c90455cbbc23794a2be04355bdf8ff08bd2d6136e3a8745f12e65"
+  },
+  {
+    "name": "YouTube Downloader-4.0.9-arm64.zip",
+    "bytes": 140148753,
+    "sha256": "9182ed1b52359c997df475d867fa5d6562c839508afd5676d8737588071de672"
+  },
+  {
+    "name": "YouTube Downloader-4.0.9-x64.dmg",
+    "bytes": 157384099,
+    "sha256": "f4dd26b17a7e1785d31f7556811a6bd7c7aa85fa9854251d45ed58e2c79dcc54"
+  },
+  {
+    "name": "YouTube Downloader-4.0.9-x64.zip",
+    "bytes": 152618961,
+    "sha256": "2812e2cb9c453c242d14d89feb55f9c6d82375ba8fe7f520dc9bf5489c6da0b9"
+  },
+  {
+    "name": "YouTube Downloader-Portable-4.0.9-x64.exe",
+    "bytes": 141422919,
+    "sha256": "61bd609798cd0bc26f3060bc1305504139d3cf761ebb729fdf5c910e5d9fbb44"
+  },
+  {
+    "name": "YouTube Downloader-Setup-4.0.9-x64.exe",
+    "bytes": 141600252,
+    "sha256": "8ab889de93a4cef3ed03f4e35e1dcbfb27770adfe1cb3483c3a2af6f0fea8728"
+  }
+]

@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { DependencyInfo } from "../types/deps";
+import Icon from "./ui/Icon";
 
 interface HeroPanelProps {
   url: string;
@@ -15,11 +16,6 @@ interface HeroPanelProps {
   actionLabel: string;
   dependencyInfo: DependencyInfo | null;
   isPreparingTools: boolean;
-  error: string;
-}
-
-function getFfmpegVersion(rawVersion: string) {
-  return rawVersion.match(/ffmpeg version\s+([^\s]+)/i)?.[1] || rawVersion.split(" ")[0];
 }
 
 export default function HeroPanel({
@@ -34,9 +30,7 @@ export default function HeroPanel({
   onPasteUrl,
   onPickFolder,
   actionLabel,
-  dependencyInfo,
-  isPreparingTools,
-  error
+  isPreparingTools
 }: HeroPanelProps) {
   return (
     <section className="panel download-panel reveal-up">
@@ -46,12 +40,7 @@ export default function HeroPanel({
           <h2>Récupérer une vidéo YouTube</h2>
           <p>Colle le lien, analyse les formats, puis choisis la qualité adaptée.</p>
         </div>
-        {dependencyInfo && (
-          <span className="version-pill" title={dependencyInfo.ffmpegVersion}>
-            yt-dlp {dependencyInfo.ytDlpVersion} · FFmpeg {getFfmpegVersion(dependencyInfo.ffmpegVersion)}
-          </span>
-        )}
-        {isPreparingTools && <span className="version-pill">Préparation des moteurs…</span>}
+        {isPreparingTools && <span className="version-pill">Préparation…</span>}
       </div>
 
       <form className="download-form" onSubmit={onAnalyze}>
@@ -66,25 +55,25 @@ export default function HeroPanel({
             value={url}
             ref={urlInputRef}
             onChange={onUrlChange}
+            disabled={downloading || (mediaBusy && !loadingVideo)}
           />
-          <button type="button" onClick={onPasteUrl} className="btn btn-ghost">Coller</button>
+          <button type="button" onClick={onPasteUrl} disabled={downloading || (mediaBusy && !loadingVideo)} className="btn btn-ghost">Coller</button>
           <button type="submit" disabled={loadingVideo || downloading || mediaBusy || !url.trim()} className="btn btn-primary">
             {loadingVideo && <span className="btn-spinner" aria-hidden="true" />}
-            {mediaBusy && !downloading ? "Tâche en cours" : actionLabel}
+            {loadingVideo ? "Analyse…" : mediaBusy && !downloading ? "Tâche en cours" : actionLabel}
           </button>
         </div>
 
         <div className="destination-row">
-          <span className="destination-icon" aria-hidden="true">⌁</span>
+          <span className="destination-icon"><Icon name="folder" /></span>
           <div title={outputDir || "Aucun dossier sélectionné"}>
             <span className="meta-label">Enregistrer dans</span>
             <strong>{outputDir || "Choisir un dossier"}</strong>
           </div>
-          <button type="button" className="btn btn-ghost" onClick={onPickFolder}>Modifier</button>
+          <button type="button" className="btn btn-ghost" disabled={mediaBusy || downloading} onClick={onPickFolder}>Modifier</button>
         </div>
       </form>
 
-      {error && <p className="error-box">{error}</p>}
     </section>
   );
 }

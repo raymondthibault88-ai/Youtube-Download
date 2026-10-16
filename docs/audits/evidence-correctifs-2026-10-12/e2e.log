@@ -1,0 +1,18 @@
+
+> youtube-downloader-desktop@4.0.7 test:e2e
+> playwright test
+
+[WebServer] (node:68367) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:68398) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/flows.spec.cjs:43:1 › initialisation retries a transient failure once and announces readiness (1.2s)
+  ✓  2 e2e/flows.spec.cjs:49:1 › changing URL invalidates old formats and download uses the newly analyzed identity (1.1s)
+  ✓  3 e2e/flows.spec.cjs:66:1 › changing URL during an analysis never exposes the old response (777ms)
+  ✓  4 e2e/flows.spec.cjs:78:1 › analysis cancellation restores the form and allows a new analysis (811ms)
+  ✓  5 e2e/flows.spec.cjs:90:1 › conversion and mode selections announce their current state and produce a result (1.7s)
+
+  5 passed (9.8s)

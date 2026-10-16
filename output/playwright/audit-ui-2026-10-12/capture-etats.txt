@@ -1,0 +1,11 @@
+async page => {
+ await page.getByRole('button',{name:'Convertir la vidéo',exact:true}).click();
+ await page.evaluate(async()=>{ Object.assign(await window.desktopAPI.getCurrentJob(),{speed:null,eta:null}); return window.desktopAPI.cancelJob(); });
+ await page.screenshot({path:'output/playwright/audit-ui-2026-10-12/12-annulation.png'});
+ const cancelled=await page.evaluate(()=>({barText:document.querySelector('.job-bar')?.innerText,barButtons:document.querySelector('.job-bar')?.querySelectorAll('button').length,alerts:[...document.querySelectorAll('[role=alert]')].filter(el=>el.getClientRects().length).map(el=>el.innerText)}));
+ await page.getByRole('button',{name:'Convertir la vidéo',exact:true}).click();
+ await page.evaluate(async()=>{ Object.assign(await window.desktopAPI.getCurrentJob(),{speed:null,eta:null}); window.__uiAudit.fail(); });
+ await page.screenshot({path:'output/playwright/audit-ui-2026-10-12/13-erreur-conversion.png'});
+ const failed=await page.evaluate(()=>({barText:document.querySelector('.job-bar')?.innerText,barButtons:document.querySelector('.job-bar')?.querySelectorAll('button').length,detailTruncated:document.querySelector('.job-copy p')?.scrollWidth>document.querySelector('.job-copy p')?.clientWidth,alerts:[...document.querySelectorAll('[role=alert]')].filter(el=>el.getClientRects().length).map(el=>el.innerText)}));
+ return {cancelled,failed};
+}

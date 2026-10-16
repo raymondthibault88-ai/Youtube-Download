@@ -1,0 +1,121 @@
+  • electron-builder  version=26.17.0 os=27.2.0
+  • loaded configuration  file=package.json ("build" field)
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=44.7.0 appOutDir=release/updated-4.0.8/win-unpacked
+  • downloading     label=electron progress=1%
+  • downloading     label=electron progress=2%
+  • downloading     label=electron progress=3%
+  • downloading     label=electron progress=4%
+  • downloading     label=electron progress=5%
+  • downloading     label=electron progress=6%
+  • downloading     label=electron progress=7%
+  • downloading     label=electron progress=8%
+  • downloading     label=electron progress=9%
+  • downloading     label=electron progress=10%
+  • downloading     label=electron progress=11%
+  • downloading     label=electron progress=12%
+  • downloading     label=electron progress=13%
+  • downloading     label=electron progress=14%
+  • downloading     label=electron progress=15%
+  • downloading     label=electron progress=16%
+  • downloading     label=electron progress=17%
+  • downloading     label=electron progress=18%
+  • downloading     label=electron progress=19%
+  • downloading     label=electron progress=20%
+  • downloading     label=electron progress=21%
+  • downloading     label=electron progress=22%
+  • downloading     label=electron progress=23%
+  • downloading     label=electron progress=24%
+  • downloading     label=electron progress=25%
+  • downloading     label=electron progress=26%
+  • downloading     label=electron progress=27%
+  • downloading     label=electron progress=28%
+  • downloading     label=electron progress=29%
+  • downloading     label=electron progress=30%
+  • downloading     label=electron progress=31%
+  • downloading     label=electron progress=32%
+  • downloading     label=electron progress=33%
+  • downloading     label=electron progress=34%
+  • downloading     label=electron progress=35%
+  • downloading     label=electron progress=36%
+  • downloading     label=electron progress=37%
+  • downloading     label=electron progress=38%
+  • downloading     label=electron progress=39%
+  • downloading     label=electron progress=40%
+  • downloading     label=electron progress=41%
+  • downloading     label=electron progress=42%
+  • downloading     label=electron progress=43%
+  • downloading     label=electron progress=44%
+  • downloading     label=electron progress=45%
+  • downloading     label=electron progress=46%
+  • downloading     label=electron progress=47%
+  • downloading     label=electron progress=48%
+  • downloading     label=electron progress=49%
+  • downloading     label=electron progress=50%
+  • downloading     label=electron progress=51%
+  • downloading     label=electron progress=52%
+  • downloading     label=electron progress=53%
+  • downloading     label=electron progress=54%
+  • downloading     label=electron progress=55%
+  • downloading     label=electron progress=56%
+  • downloading     label=electron progress=57%
+  • downloading     label=electron progress=58%
+  • downloading     label=electron progress=59%
+  • downloading     label=electron progress=60%
+  • downloading     label=electron progress=61%
+  • downloading     label=electron progress=62%
+  • downloading     label=electron progress=63%
+  • downloading     label=electron progress=64%
+  • downloading     label=electron progress=65%
+  • downloading     label=electron progress=66%
+  • downloading     label=electron progress=67%
+  • downloading     label=electron progress=68%
+  • downloading     label=electron progress=69%
+  • downloading     label=electron progress=70%
+  • downloading     label=electron progress=71%
+  • downloading     label=electron progress=72%
+  • downloading     label=electron progress=73%
+  • downloading     label=electron progress=74%
+  • downloading     label=electron progress=75%
+  • downloading     label=electron progress=76%
+  • downloading     label=electron progress=77%
+  • downloading     label=electron progress=78%
+  • downloading     label=electron progress=79%
+  • downloading     label=electron progress=80%
+  • downloading     label=electron progress=81%
+  • downloading     label=electron progress=82%
+  • downloading     label=electron progress=83%
+  • downloading     label=electron progress=84%
+  • downloading     label=electron progress=85%
+  • downloading     label=electron progress=86%
+  • downloading     label=electron progress=87%
+  • downloading     label=electron progress=88%
+  • downloading     label=electron progress=89%
+  • downloading     label=electron progress=90%
+  • downloading     label=electron progress=91%
+  • downloading     label=electron progress=92%
+  • downloading     label=electron progress=93%
+  • downloading     label=electron progress=94%
+  • downloading     label=electron progress=95%
+  • downloading     label=electron progress=96%
+  • downloading     label=electron progress=97%
+  • downloading     label=electron progress=98%
+  • downloading     label=electron progress=99%
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/release/updated-4.0.8/win-unpacked
+  • searching for node modules  pm=npm searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • no node modules found in collection, trying next search directory  pm=npm searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • searching for node modules  pm=traversal searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • no node modules returned while searching directories  searchDirectories=[""]
+  • updating asar integrity executable resource  executablePath=release/updated-4.0.8/win-unpacked/YouTube Downloader.exe
+  • no code signing certificate configured, signing is skipped  path=release/updated-4.0.8/win-unpacked/resources/ffmpeg/ffmpeg.exe
+  • no code signing certificate configured, signing is skipped  path=release/updated-4.0.8/win-unpacked/YouTube Downloader.exe
+  • building        target=nsis file=release/updated-4.0.8/YouTube Downloader-Setup-4.0.8-x64.exe archs=x64 oneClick=true perMachine=false
+  • no code signing certificate configured, signing is skipped  path=/private/var/folders/l_/ft83xcgs48bf7v0xhnlytrdm0000gn/T/t-qYaUUg/elevate-staging-1/resources/elevate.exe
+  • no code signing certificate configured, signing is skipped  path=release/updated-4.0.8/YouTube Downloader-Setup-4.0.8-x64.__uninstaller.exe
+  • no code signing certificate configured, signing is skipped  path=release/updated-4.0.8/YouTube Downloader-Setup-4.0.8-x64.exe
+  • building block map  blockMapFile=release/updated-4.0.8/YouTube Downloader-Setup-4.0.8-x64.exe.blockmap
+  • building        target=portable file=release/updated-4.0.8/YouTube Downloader-Portable-4.0.8-x64.exe archs=x64
+  • no code signing certificate configured, signing is skipped  path=release/updated-4.0.8/YouTube Downloader-Portable-4.0.8-x64.exe

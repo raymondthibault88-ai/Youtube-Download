@@ -1,0 +1,44 @@
+[
+  {
+    "element": "Placeholder",
+    "foreground": "#637087",
+    "background": "#ffffff",
+    "ratio": 5.002
+  },
+  {
+    "element": "Option sélectionnée",
+    "foreground": "#075bbb",
+    "background": "#e9f3ff",
+    "ratio": 5.811
+  },
+  {
+    "element": "Badge assemblage",
+    "foreground": "#116c3a",
+    "background": "#e9f8ef",
+    "ratio": 5.925
+  },
+  {
+    "element": "Texte secondaire",
+    "foreground": "#526075",
+    "background": "#f7f9fc",
+    "ratio": 6.054
+  },
+  {
+    "element": "Texte secondaire sur sélection",
+    "foreground": "#526075",
+    "background": "#e9f3ff",
+    "ratio": 5.695
+  },
+  {
+    "element": "Bouton primaire, partie la plus claire",
+    "foreground": "#ffffff",
+    "background": "#0866ce",
+    "ratio": 5.523
+  },
+  {
+    "element": "Badge conversion",
+    "foreground": "#9a5b06",
+    "background": "#fff3dc",
+    "ratio": 4.933
+  }
+]

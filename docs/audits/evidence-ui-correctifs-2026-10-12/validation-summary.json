@@ -1,0 +1,28 @@
+{
+  "version": "4.0.9",
+  "nodeTests": {
+    "passed": 43,
+    "failed": 0
+  },
+  "chromiumScenarios": {
+    "passed": 10,
+    "failed": 0
+  },
+  "sourceElectronConversionZoomReopen": true,
+  "sourceElectronYouTubeDownloadDecode": true,
+  "packagedAppleSiliconConversionZoomReopen": true,
+  "packagedAppleSiliconYouTubeDownloadDecode": true,
+  "packageTargetsCompared": [
+    "darwin-arm64",
+    "darwin-x64",
+    "win32-x64"
+  ],
+  "filesComparedPerTarget": 27,
+  "macSignaturesLocal": true,
+  "dmgIntegrity": true,
+  "zipIntegrity": true,
+  "artifactsBuilt": 6,
+  "windowsRuntimeTested": false,
+  "intelRuntimeValidation": "not validated: automated launches timed out at 60 and 180 seconds; direct launch produced no accessible window/debugger during the check",
+  "intelStartupStage": "dyld/Rosetta dependency loading, before window creation; precise cause not established"
+}

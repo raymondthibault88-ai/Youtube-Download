@@ -1,0 +1,18 @@
+État Electron au moment de l’échec : {
+  id: 'dbe9d3b9-db71-4275-9cbd-6f938e19e45d',
+  type: 'download',
+  state: 'failed',
+  percent: 0,
+  speed: null,
+  eta: null,
+  raw: 'La tâche a échoué.',
+  startedAt: 1791811869001,
+  updatedAt: 1791811897779,
+  revision: 2,
+  result: null,
+  error: 'ERROR: [youtube] jNQXAC9IVRw: This video is unavailable'
+}
+page.evaluate: Error: Error invoking remote method 'download:start': Error: ERROR: [youtube] jNQXAC9IVRw: This video is unavailable
+    at /Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/scripts/test-electron.cjs:81:37 {
+  log: []
+}

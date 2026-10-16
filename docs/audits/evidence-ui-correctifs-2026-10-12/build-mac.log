@@ -1,0 +1,38 @@
+  • electron-builder  version=26.17.0 os=27.2.0
+  • loaded configuration  file=package.json ("build" field)
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=darwin arch=x64 electron=44.7.0 appOutDir=release/ui-fixed-4.0.9/mac
+  • using cached artifact  label=electron
+  • downloaded electron zip extracted successfully  output=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/release/ui-fixed-4.0.9/mac
+  • searching for node modules  pm=npm searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • no node modules found in collection, trying next search directory  pm=npm searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • searching for node modules  pm=traversal searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • no node modules returned while searching directories  searchDirectories=[""]
+  • ad-hoc signing with hardenedRuntime enabled requires the com.apple.security.cs.disable-library-validation entitlement to prevent app launch failures due to library validation. See https://electron.build/code-signing for details.
+  • signing         file=release/ui-fixed-4.0.9/mac/YouTube Downloader.app platform=darwin type=distribution identityName=- identityHash=none provisioningProfile=none
+  • skipped macOS notarization  reason=`notarize` options were unable to be generated
+Notarisation ignorée: identifiants Apple absents.
+  • building        target=macOS zip arch=x64 file=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-x64.zip
+  • building        target=DMG arch=x64 file=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-x64.dmg
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=darwin arch=arm64 electron=44.7.0 appOutDir=release/ui-fixed-4.0.9/mac-arm64
+  • using cached artifact  label=electron
+  • downloaded electron zip extracted successfully  output=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/release/ui-fixed-4.0.9/mac-arm64
+  • searching for node modules  pm=npm searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • no node modules found in collection, trying next search directory  pm=npm searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • searching for node modules  pm=traversal searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • using manual traversal of node_modules to build dependency tree
+  • no node modules found in collection, trying next search directory  pm=traversal searchDir=/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download
+  • no node modules returned while searching directories  searchDirectories=[""]
+  • ad-hoc signing with hardenedRuntime enabled requires the com.apple.security.cs.disable-library-validation entitlement to prevent app launch failures due to library validation. See https://electron.build/code-signing for details.
+  • signing         file=release/ui-fixed-4.0.9/mac-arm64/YouTube Downloader.app platform=darwin type=distribution identityName=- identityHash=none provisioningProfile=none
+  • building block map  blockMapFile=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-x64.dmg.blockmap
+  • skipped macOS notarization  reason=`notarize` options were unable to be generated
+Notarisation ignorée: identifiants Apple absents.
+  • building        target=macOS zip arch=arm64 file=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-arm64.zip
+  • building        target=DMG arch=arm64 file=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-arm64.dmg
+  • building block map  blockMapFile=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-arm64.dmg.blockmap
+  • building block map  blockMapFile=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-x64.zip.blockmap
+  • building block map  blockMapFile=release/ui-fixed-4.0.9/YouTube Downloader-4.0.9-arm64.zip.blockmap

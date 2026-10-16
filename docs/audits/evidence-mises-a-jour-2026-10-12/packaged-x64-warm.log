@@ -1,0 +1,81 @@
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByText('Vidéo prête', { exact: true })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByText('Vidéo prête', { exact: true }) with timeout 5000ms
+  - waiting for getByText('Vidéo prête', { exact: true })
+
+    at captureRawStack (/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/playwright-core/lib/coreBundle.js:9282:17)
+    at callMatcherAsStep (/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/playwright/lib/matchers/expect.js:13316:57)
+    at Object.toBeVisible (/Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/node_modules/playwright/lib/matchers/expect.js:13308:23)
+    at /Users/thibault/Desktop/Developpement/GitHub/Youtube-Download/scripts/test-electron.cjs:42:66 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByText('Vidéo prête', { exact: true })\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByText('Vidéo prête', { exact: true }) with timeout 5000ms\n` +
+      "  - waiting for getByText('Vidéo prête', { exact: true })\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByText('Vidéo prête', { exact: true }) with timeout 5000ms`,
+      "  - waiting for getByText('Vidéo prête', { exact: true })"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- main:\n' +
+      '  - heading "Video Studio" [level=1]\n' +
+      '  - paragraph: Télécharger et convertir, dans un seul espace\n' +
+      '  - navigation "Mode de l’application":\n' +
+      '    - button "Télécharger"\n' +
+      '    - button "Convertir" [pressed]\n' +
+      '  - text: Préparation…\n' +
+      '  - strong: Conversion\n' +
+      '  - text: 1%\n' +
+      '  - paragraph: Analyse de la vidéo…\n' +
+      '  - progressbar "Progression conversion"\n' +
+      '  - button "Annuler"\n' +
+      '  - text: Conversion locale\n' +
+      '  - heading "Créer un MP4 propre et plus léger" [level=2]\n' +
+      '  - paragraph: H.264/AAC compatible Dartfish, sans modifier le fichier original.\n' +
+      '  - text: Fichier source\n' +
+      '  - strong: source.mkv\n' +
+      '  - paragraph: 138.3 KB · 641×361\n' +
+      '  - button "Changer" [disabled]\n' +
+      '  - text: "1"\n' +
+      '  - strong: Résolution\n' +
+      '  - text: Réduire la définition accélère la conversion\n' +
+      '  - button "Originale 361p" [disabled] [pressed]:\n' +
+      '    - strong: Originale\n' +
+      '    - text: 361p\n' +
+      '  - text: "2"\n' +
+      '  - strong: Priorité\n' +
+      '  - text: Choisir entre vitesse et poids final\n' +
+      '  - button "Rapide Accélération matérielle" [disabled]:\n' +
+      '    - strong: Rapide\n' +
+      '    - text: Accélération matérielle\n' +
+      '  - button "Équilibré Taille et vitesse" [disabled]:\n' +
+      '    - strong: Équilibré\n' +
+      '    - text: Taille et vitesse\n' +
+      '  - button "Plus léger Compression renforcée" [disabled] [pressed]:\n' +
+      '    - strong: Plus léger\n' +
+      '    - text: Compression renforcée\n' +
+      '  - complementary:\n' +
+      '    - text: Sortie prévue\n' +
+      '    - strong: Original · 361p · Plus léger\n' +
+      '    - paragraph: Environ 69.6 KB\n' +
+      '    - text: /var/folders/l_/ft83xcgs48bf7v0xhnlytrdm0000gn/T/video-studio-electron-7FjRiG\n' +
+      '    - button "Modifier" [disabled]\n' +
+      '    - button "Conversion en cours" [disabled]'
+  }
+}

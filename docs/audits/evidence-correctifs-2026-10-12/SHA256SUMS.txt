@@ -1,0 +1,6 @@
+137732fe43c98fa8736f9736ce50c75563256714dc0061f6e43c86d5885e0ab3  YouTube Downloader-4.0.7-arm64.dmg
+bf444bcbab96163167889dda353b9248b9443447daaedacba3316823c730bbba  YouTube Downloader-4.0.7-arm64.zip
+df593a9e47e6c60b33f8eaaf4952cc8988a3117b77767b0f5e2f89c0da16e790  YouTube Downloader-4.0.7-x64.dmg
+2ff5c5d9bad851d9a3662f60733c9e3aa30ec5d7fdf348654ad118e19feb73e4  YouTube Downloader-4.0.7-x64.zip
+28a85cfbda4c500f1e1e81c1710d572f364b3ed0fa7476d1905344affbaab441  YouTube Downloader-Portable-4.0.7-x64.exe
+225d578bae6b81a99185a0960d68b4ec7308de44f92ce46425b23c3380e8e7f9  YouTube Downloader-Setup-4.0.7-x64.exe

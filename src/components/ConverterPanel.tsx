@@ -1,13 +1,20 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { formatBytes } from "../../shared/formatters.js";
-import { revealPath, selectVideoFile, startConversion } from "../services/desktopApi";
-import type { ConversionResult, SelectedVideoFile } from "../types";
-import { getErrorMessage } from "../utils/errors";
+import { selectVideoFile, startConversion } from "../services/desktopApi";
+import type { SelectedVideoFile } from "../types";
+import { getErrorMessage, isCancelledError } from "../utils/errors";
+import { conversionSizeSummary } from "../utils/results";
+import type { CompletedActivity } from "../utils/results";
+import Icon from "./ui/Icon";
 
 interface ConverterPanelProps {
   outputDir: string;
   onPickFolder: () => void;
   mediaBusy: boolean;
+  onError: (message: string) => void;
+  onStart: () => void;
+  onCompleted: (result: CompletedActivity) => void;
+  failed: boolean;
 }
 
 const PROFILES = [
@@ -16,11 +23,9 @@ const PROFILES = [
   { id: "compact", label: "Plus léger", detail: "Compression renforcée" }
 ] as const;
 
-export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy }: ConverterPanelProps) {
+export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy, onError, onStart, onCompleted, failed }: ConverterPanelProps) {
   const [file, setFile] = useState<SelectedVideoFile | null>(null);
   const [converting, setConverting] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<ConversionResult | null>(null);
   const [targetHeight, setTargetHeight] = useState<number | null>(null);
   const [profileId, setProfileId] = useState<"fast" | "balanced" | "compact">("fast");
   const isLocked = converting || mediaBusy;
@@ -28,34 +33,30 @@ export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy }: C
   const selectedResolution = file?.outputOptions.find((option) => option.height === targetHeight) || null;
   const selectedProfile = PROFILES.find((profile) => profile.id === profileId) || PROFILES[0];
   const estimatedSize = selectedResolution?.estimates[profileId] || null;
-  const saving = useMemo(() => {
-    if (!result || result.inputSize <= 0) return null;
-    return Math.round((1 - (result.outputSize / result.inputSize)) * 100);
-  }, [result]);
 
   const selectFile = async () => {
     try {
       const selected = await selectVideoFile();
       if (!selected) return;
       setFile(selected);
-      setResult(null);
-      setError("");
+      onError("");
       setTargetHeight(null);
       setProfileId("fast");
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, "Impossible de sélectionner la vidéo."));
+      onError(getErrorMessage(caughtError, "Impossible de sélectionner la vidéo."));
     }
   };
 
   const convert = async () => {
     if (!file) return;
+    const description = `Source : ${file.name} · ${selectedResolution?.label || "Résolution originale"} · ${selectedProfile.label}`;
     setConverting(true);
-    setError("");
-    setResult(null);
+    onStart();
     try {
-      setResult(await startConversion({ inputPath: file.path, outputDir, targetHeight, profileId }));
+      const result = await startConversion({ inputPath: file.path, outputDir, targetHeight, profileId });
+      onCompleted({ type: "conversion", outputPath: result.outputPath, description, sizeSummary: conversionSizeSummary(result.inputSize, result.outputSize) });
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, "La conversion a échoué."));
+      if (!isCancelledError(caughtError)) onError(getErrorMessage(caughtError, "La conversion a échoué."));
     } finally {
       setConverting(false);
     }
@@ -72,10 +73,10 @@ export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy }: C
       </div>
 
       <div className={`source-card ${file ? "has-file" : ""}`}>
-        <span className="source-icon" aria-hidden="true">▶</span>
+        <span className="source-icon"><Icon name="file" /></span>
         <div className="source-copy">
           <span className="meta-label">Fichier source</span>
-          <strong>{file?.name || "Choisir une vidéo à convertir"}</strong>
+          <strong title={file?.name}>{file?.name || "Choisir une vidéo à convertir"}</strong>
           <p>{file ? `${formatBytes(file.size)} · ${file.width}×${file.height}` : "MP4, MOV, MKV, AVI, WebM, MTS…"}</p>
         </div>
         <button type="button" className={file ? "btn btn-ghost" : "btn btn-primary"} onClick={selectFile} disabled={isLocked}>
@@ -92,7 +93,7 @@ export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy }: C
             </div>
             <div className="resolution-options">
               {file.outputOptions.map((option) => (
-                <button type="button" key={option.label} className={targetHeight === option.height ? "is-active" : ""} onClick={() => setTargetHeight(option.height)} disabled={isLocked}>
+                <button type="button" aria-pressed={targetHeight === option.height} key={option.label} className={targetHeight === option.height ? "is-active" : ""} onClick={() => setTargetHeight(option.height)} disabled={isLocked}>
                   <strong>{option.height === null ? "Originale" : option.label}</strong>
                   <span>{option.height === null ? `${file.height}p` : `≈ ${formatBytes(option.estimates[profileId] || 0)}`}</span>
                 </button>
@@ -107,7 +108,7 @@ export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy }: C
             </div>
             <div className="profile-options">
               {PROFILES.map((profile) => (
-                <button type="button" key={profile.id} className={profileId === profile.id ? "is-active" : ""} onClick={() => setProfileId(profile.id)} disabled={isLocked}>
+                <button type="button" aria-pressed={profileId === profile.id} key={profile.id} className={profileId === profile.id ? "is-active" : ""} onClick={() => setProfileId(profile.id)} disabled={isLocked}>
                   <strong>{profile.label}</strong>
                   <span>{profile.detail}</span>
                 </button>
@@ -129,22 +130,12 @@ export default function ConverterPanel({ outputDir, onPickFolder, mediaBusy }: C
                 ? "Conversion en cours"
                 : mediaBusy
                   ? "Une tâche est en cours"
-                  : "Convertir la vidéo"}
+                  : failed ? "Réessayer la conversion" : "Convertir la vidéo"}
             </button>
           </aside>
         </div>
       )}
 
-      {result && (
-        <div className="success-box">
-          <div>
-            <strong>Vidéo prête</strong>
-            <span>{formatBytes(result.inputSize)} → {formatBytes(result.outputSize)}{saving !== null && saving >= 0 ? ` · ${saving}% plus léger` : ""}</span>
-          </div>
-          <button type="button" className="btn btn-ghost" onClick={() => revealPath(result.outputPath)}>Afficher le fichier</button>
-        </div>
-      )}
-      {error && <p className="error-box">{error}</p>}
     </section>
   );
 }

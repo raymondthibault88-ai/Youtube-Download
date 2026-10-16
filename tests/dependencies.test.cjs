@@ -14,7 +14,7 @@ test('uses the packaged Windows FFmpeg binary on Windows', () => {
   assert.equal(resolved, path.join('C:', 'Program Files', 'YouTube Downloader', 'resources', 'ffmpeg', 'ffmpeg.exe'));
 });
 
-test('rewrites the ffmpeg-static path when it is unpacked from an asar archive', () => {
+test('uses the vetted external FFmpeg resource on packaged macOS', () => {
   const resolved = resolveFfmpegPath({
     isPackaged: true,
     platform: 'darwin',
@@ -24,6 +24,6 @@ test('rewrites the ffmpeg-static path when it is unpacked from an asar archive',
 
   assert.equal(
     resolved,
-    '/Applications/Test.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg'
+    '/Applications/Test.app/Contents/Resources/ffmpeg/ffmpeg'
   );
 });

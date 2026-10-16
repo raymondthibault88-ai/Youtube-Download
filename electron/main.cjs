@@ -1,9 +1,21 @@
 const { app, BrowserWindow, ipcMain, session } = require('electron');
+const fs = require('node:fs');
+const path = require('node:path');
 const { registerHandlers } = require('./ipc/register-handlers.cjs');
 const { DependencyService } = require('./services/dependencies.cjs');
 const { createMainWindow } = require('./window.cjs');
+const { terminateAllProcesses } = require('./services/process-runner.cjs');
 
 let mainWindow = null;
+let jobs = null;
+let shutdownComplete = false;
+let shuttingDown = false;
+
+const profilePath = app.commandLine.getSwitchValue('user-data-dir');
+if (profilePath && path.isAbsolute(profilePath)) {
+  fs.mkdirSync(profilePath, { recursive: true });
+  app.setPath('userData', profilePath);
+}
 
 if (process.platform === 'win32') app.setAppUserModelId('com.thibs.youtubedownloader');
 app.enableSandbox();
@@ -39,7 +51,7 @@ if (!hasSingleInstanceLock) {
     session.defaultSession.setPermissionCheckHandler(() => false);
 
     const dependencies = new DependencyService(app);
-    registerHandlers({ app, ipcMain, dependencyService: dependencies, devOrigin });
+    jobs = registerHandlers({ app, ipcMain, dependencyService: dependencies, devOrigin });
     mainWindow = createMainWindow({ devUrl });
     mainWindow.on('closed', () => { mainWindow = null; });
     setImmediate(() => { void dependencies.prewarm(); });
@@ -48,6 +60,15 @@ if (!hasSingleInstanceLock) {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', (event) => {
+  if (shutdownComplete) return;
+  event.preventDefault();
+  if (shuttingDown) return;
+  shuttingDown = true;
+  jobs?.cancel();
+  void terminateAllProcesses().finally(() => { shutdownComplete = true; app.quit(); });
 });
 
 app.on('activate', () => {

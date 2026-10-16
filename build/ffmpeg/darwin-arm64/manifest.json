@@ -1,0 +1,14 @@
+{
+  "version": "9.0.2",
+  "platform": "darwin",
+  "arch": "arm64",
+  "license": "GPL-3.0-or-later",
+  "nonfree": false,
+  "source": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffmpeg.zip",
+  "archiveSha256": "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924",
+  "sha256": "2e11c6f90993cdb79fff84d3f90044d28316b310e75b3e030cfc9a54f2c9d384",
+  "buildInformation": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/versions.txt",
+  "buildScript": "https://git.martin-riedl.de/ffmpeg/build-script",
+  "sourceCode": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+  "codeSha256": "d559cea8839409beda8a3b58efbc76942becc51c1640d3a5f6b0011e469e9c0b"
+}

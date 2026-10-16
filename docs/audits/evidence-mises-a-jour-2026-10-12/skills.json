@@ -1,0 +1,17 @@
+[
+  {
+    "name": "security-best-practices",
+    "path": "/Users/thibault/.codex/skills/security-best-practices/SKILL.md",
+    "sha256": "7b3dae1ffc5434d890f3c65c8f552af52d0307fab3b35dec13013c9ca3844c4f"
+  },
+  {
+    "name": "gh-fix-ci",
+    "path": "/Users/thibault/.codex/skills/gh-fix-ci/SKILL.md",
+    "sha256": "7b326b4a2f0f5f85122144628ec02077e48841e0e0e82efce88b3415bcfb7c26"
+  },
+  {
+    "name": "playwright",
+    "path": "/Users/thibault/.codex/skills/playwright/SKILL.md",
+    "sha256": "0ffaabcc8e0990627c4725f18bf1c7955534a796c1c199e872909de2013ce6a8"
+  }
+]
