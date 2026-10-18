@@ -101,7 +101,7 @@ async function analyze(page, url = 'https://youtu.be/VideoA') {
   await expect(page.getByRole('radiogroup', { name: 'Qualité' })).toBeVisible();
 }
 async function selectFile(page) {
-  await page.getByRole('tab', { name: 'Convertir un fichier' }).click();
+  await page.getByRole('tab', { name: 'Convertir / compresser' }).click();
   await page.getByRole('button', { name: 'Choisir une vidéo' }).click();
   await expect(page.getByText('Vacances en Bretagne.mov', { exact: true })).toBeVisible();
 }

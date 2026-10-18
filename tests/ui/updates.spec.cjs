@@ -25,7 +25,7 @@ test('checking, downloading and restarting are separate explicit actions with vi
 
 test('a ready update waits for the running media job before enabling restart', async ({ page }) => {
   await selectFile(page);
-  await page.getByRole('button', { name: 'Créer mon MP4', exact: true }).click();
+  await page.getByRole('button', { name: 'Convertir en MP4', exact: true }).click();
   await page.evaluate(() => window.__test.setUpdate({ status: 'downloaded', version: '5.0.1', percent: 100 }));
   await page.getByRole('button', { name: 'Voir la mise à jour' }).click();
   await expect(page.getByRole('button', { name: 'Redémarrer et installer', exact: true })).toBeDisabled();
@@ -57,5 +57,5 @@ test('an offline check can be retried without losing the selected media', async 
   await expect(page.getByRole('dialog')).toContainText('La version 5.0.1 est disponible.');
   await page.keyboard.press('Escape');
   await expect(page.getByText('Vacances en Bretagne.mov', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Créer mon MP4', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Convertir en MP4', exact: true })).toBeEnabled();
 });

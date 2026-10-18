@@ -70,7 +70,7 @@ export default function App() {
   return <div className="app-shell">
     <a href="#workspace" className="skip-link">Aller à l’espace de travail</a>
     <header className="app-header">
-      <div className="brand"><BrandMark className="brand-mark" /><h1 className="brand-name">YouTube Downloader</h1><span className="version-tag">V{version.split(".")[0]}</span></div>
+      <div className="brand"><BrandMark className="brand-mark" /><h1 className="brand-name">YouTube Downloader</h1><span className="version-tag">V{version.split(".").slice(0, 2).join(".")}</span></div>
       <div className="header-actions">
         {isChecking && !dependencyInfo && <span className="app-status is-working" role="status"><span />Préparation des outils…</span>}
         <AboutDialog info={dependencyInfo} checking={isChecking} onCheck={() => void requestDependencyInfo(true)} busy={busy || analysis.loadingVideo} />
@@ -78,7 +78,7 @@ export default function App() {
     </header>
     <main className="main-content">
       <Tabs.Root value={mode} onValueChange={(value) => { if (value === "convert" && analysis.loadingVideo) analysis.cancelAnalysis(); setMode(String(value)); setError(""); }} className="workflow-tabs">
-        <div className="workspace-toolbar"><Tabs.List activateOnFocus className="mode-tabs" aria-label="Que souhaitez-vous faire ?"><Tabs.Tab value="download" className="mode-tab"><ArrowDownToLine size={17} aria-hidden="true" />Télécharger</Tabs.Tab><Tabs.Tab value="convert" className="mode-tab"><FileVideo size={17} aria-hidden="true" />Convertir un fichier</Tabs.Tab></Tabs.List></div>
+        <div className="workspace-toolbar"><Tabs.List activateOnFocus className="mode-tabs" aria-label="Que souhaitez-vous faire ?"><Tabs.Tab value="download" className="mode-tab"><ArrowDownToLine size={17} aria-hidden="true" />Télécharger</Tabs.Tab><Tabs.Tab value="convert" className="mode-tab"><FileVideo size={17} aria-hidden="true" />Convertir / compresser</Tabs.Tab></Tabs.List></div>
         <div id="workspace">
           <Tabs.Panel value="download" keepMounted className="workflow-panel"><div className="workspace"><section className="source-card" aria-label="Vidéo à télécharger"><HeroPanel url={analysis.url} inputRef={inputRef} onUrlChange={(url) => { analysis.setUrl(url); clear(); }} onAnalyze={(event) => { if (!busy) void analysis.analyze(event); else event.preventDefault(); }} onPaste={() => void onPaste()} onCancelAnalyze={analysis.cancelAnalysis} loading={analysis.loadingVideo} busy={busy} video={analysis.video} />{analysis.video && <VideoPanel formats={analysis.video.formats || []} selected={analysis.selectedFormat} onSelect={analysis.setSelectedFormat} disabled={busy} />}</section><OutputCard ready={Boolean(analysis.video && analysis.selectedFormat)} quality={qualityLabel(analysis.selectedFormat?.resolution)} outputDir={outputDir} onPickFolder={() => void onPickFolder()} onStart={() => void download()} disabled={!analysis.video || !analysis.selectedFormat || busy || analysis.loadingVideo} busy={busy} action={downloading ? "Téléchargement en cours…" : "Télécharger la vidéo"} /></div></Tabs.Panel>
           <Tabs.Panel value="convert" keepMounted className="workflow-panel"><ConverterPanel outputDir={outputDir} onPickFolder={() => void onPickFolder()} busy={busy || analysis.loadingVideo} run={run} onError={setError} onSourceChange={clear} /></Tabs.Panel>

@@ -68,14 +68,24 @@ test('conversion defaults, resolution and compression profiles retain their engi
   await page.setViewportSize({ width: 1024, height: 680 });
   await selectFile(page);
   await expect(page.getByRole('radio', { name: 'Conserver la définition, 1080p' })).toBeChecked();
-  await page.getByRole('button', { name: 'Personnaliser la conversion' }).click();
-  await page.getByRole('radio', { name: /Plus léger/ }).click();
+  await expect(page.getByRole('radio', { name: 'Convertir en MP4', exact: true })).toBeChecked();
+  await expect(page.getByRole('group', { name: 'Comparaison du poids du fichier' })).toContainText('300.0 MB');
+  await page.getByRole('radio', { name: 'Compresser', exact: true }).click();
+  await expect(page.getByRole('radio', { name: /Modérée/ })).toBeChecked();
+  await page.getByRole('radio', { name: /Forte/ }).click();
   await page.getByRole('radio', { name: '720p', exact: true }).click();
-  await expect(page.getByRole('complementary', { name: 'Fichier de sortie' })).toContainText('Plus léger');
-  const action = await page.getByRole('button', { name: 'Créer mon MP4' }).boundingBox();
+  await expect(page.getByRole('complementary', { name: 'Fichier de sortie' })).toContainText('Compression forte');
+  await expect(page.getByRole('group', { name: 'Comparaison du poids du fichier' })).toContainText('181.5 MB');
+  for (const [width, height] of [[760, 580], [390, 844], [1024, 680]]) {
+    await page.setViewportSize({ width, height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.getByRole('button', { name: 'Compresser la vidéo', exact: true })).toBeInViewport();
+    await capture(page, `v5-conversion-${width}`, testInfo);
+  }
+  const action = await page.getByRole('button', { name: 'Compresser la vidéo' }).boundingBox();
   expect(action.y + action.height).toBeLessThanOrEqual(680);
   await capture(page, 'v5-04-conversion', testInfo);
-  await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+  await page.getByRole('button', { name: 'Compresser la vidéo' }).click();
   const payload = await page.evaluate(() => window.__test.calls.find((entry) => entry.type === 'conversion').payload);
   expect(payload).toEqual({ inputPath: 'C:\\Videos\\Vacances en Bretagne.mov', outputDir: 'C:\\Videos\\Mes exports', targetHeight: 720, profileId: 'compact' });
   await capture(page, 'v5-05-traitement', testInfo);
@@ -85,7 +95,8 @@ test('conversion defaults, resolution and compression profiles retain their engi
 
 test('a running conversion locks both modes, cancellation is neutral and retry is possible', async ({ page }) => {
   await selectFile(page);
-  await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+  await page.getByRole('button', { name: 'Convertir en MP4' }).click();
+  expect(await page.evaluate(() => window.__test.calls.find(entry => entry.type === 'conversion').payload)).toMatchObject({ targetHeight: null, profileId: 'fast' });
   await page.getByRole('tab', { name: 'Télécharger', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Télécharger la vidéo', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Coller', exact: true })).toBeDisabled();
@@ -93,20 +104,20 @@ test('a running conversion locks both modes, cancellation is neutral and retry i
   await page.getByRole('button', { name: 'Annuler', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Traitement annulé' })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await page.getByRole('tab', { name: 'Convertir un fichier' }).click();
-  await expect(page.getByRole('button', { name: 'Créer mon MP4' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+  await page.getByRole('tab', { name: 'Convertir / compresser' }).click();
+  await expect(page.getByRole('button', { name: 'Convertir en MP4' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Convertir en MP4' }).click();
   expect(await page.evaluate(() => window.__test.calls.filter((entry) => entry.type === 'conversion').length)).toBe(2);
   await page.evaluate(() => window.__test.finish());
 });
 
 test('failure and reveal errors explain the next action without losing the selected file', async ({ page }) => {
   await selectFile(page);
-  await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+  await page.getByRole('button', { name: 'Convertir en MP4' }).click();
   await page.evaluate(() => window.__test.fail());
   await expect(page.getByRole('alert')).toContainText('L’espace disponible est insuffisant.');
-  await expect(page.getByRole('button', { name: 'Créer mon MP4' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+  await expect(page.getByRole('button', { name: 'Convertir en MP4' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Convertir en MP4' }).click();
   await page.evaluate(() => window.__test.finish());
   await page.evaluate(() => { window.__test.revealError = true; });
   await page.getByRole('button', { name: 'Afficher le fichier' }).click();
@@ -116,7 +127,7 @@ test('failure and reveal errors explain the next action without losing the selec
 test('keyboard tabs and dialogs keep focus and the selected file', async ({ page }) => {
   await page.getByRole('tab', { name: 'Télécharger', exact: true }).focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: 'Convertir un fichier' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Convertir / compresser' })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', { name: 'Choisir une vidéo' }).click();
   await page.getByRole('button', { name: 'À propos', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -134,9 +145,9 @@ test('key states pass automated accessibility checks', async ({ page }) => {
   await check();
   await analyze(page); await check();
   await selectFile(page);
-  await page.getByRole('button', { name: 'Personnaliser la conversion' }).click();
+  await page.getByRole('radio', { name: 'Compresser', exact: true }).click();
   await check();
-  await page.getByRole('button', { name: 'Créer mon MP4' }).click(); await check();
+  await page.getByRole('button', { name: 'Compresser la vidéo' }).click(); await check();
   await page.evaluate(() => window.__test.finish()); await check();
   await page.getByRole('button', { name: 'À propos', exact: true }).click(); await check();
 });

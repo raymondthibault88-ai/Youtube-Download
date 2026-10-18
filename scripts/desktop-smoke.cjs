@@ -21,10 +21,13 @@ async function main() {
   const originalHash = hash(inputPath);
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
-  const electronApp = await _electron.launch({ executablePath: process.env.V5_EXECUTABLE || require('electron'), args: process.env.V5_EXECUTABLE ? [] : [projectRoot], cwd: projectRoot, env });
+  const userDataDir = process.env.V5_TEST_USER_DATA_DIR && path.resolve(process.env.V5_TEST_USER_DATA_DIR);
+  const args = [...(userDataDir ? [`--user-data-dir=${userDataDir}`] : []), ...(process.env.V5_EXECUTABLE ? [] : [projectRoot])];
+  const electronApp = await _electron.launch({ executablePath: process.env.V5_EXECUTABLE || require('electron'), args, cwd: projectRoot, env });
   let page;
   let storageBefore;
   try {
+    if (userDataDir) assert.equal(path.resolve(await electronApp.evaluate(({ app }) => app.getPath('userData'))), userDataDir, 'Le test doit utiliser son dossier de données isolé.');
     page = await electronApp.firstWindow();
     await page.getByRole('heading', { level: 1 }).waitFor();
     await page.waitForFunction(() => getComputedStyle(document.querySelector('.app-header')).display === 'flex');
@@ -69,14 +72,14 @@ async function main() {
       globalThis.smokeRevealedPath = null;
       shell.showItemInFolder = (targetPath) => { globalThis.smokeRevealedPath = targetPath; };
     }, { inputPath, outputDir });
-    await page.getByRole('tab', { name: 'Convertir un fichier' }).click();
+    await page.getByRole('tab', { name: 'Convertir / compresser' }).click();
     await page.getByRole('button', { name: 'Choisir une vidéo' }).click();
     await page.getByText('Vidéo originale é.mov', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Changer le dossier de sortie :', exact: false }).click();
     await page.getByRole('radio', { name: '480p', exact: true }).click();
-    await page.getByRole('button', { name: 'Personnaliser la conversion' }).click();
-    await page.getByRole('radio', { name: /Plus léger/ }).click();
-    await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+    await page.getByRole('radio', { name: 'Compresser', exact: true }).click();
+    await page.getByRole('radio', { name: /Forte/ }).click();
+    await page.getByRole('button', { name: 'Compresser la vidéo' }).click();
     await page.getByRole('heading', { name: 'Fichier enregistré' }).waitFor({ timeout: 60000 });
     const job = await page.evaluate(() => window.desktopAPI.getCurrentJob());
     assert.equal(job.state, 'completed');
@@ -89,8 +92,8 @@ async function main() {
     const metadata = await new MediaService(ffmpeg).inspect(job.result.outputPath);
     assert.equal(metadata.height, 480);
     // Exercise the default profile too: this includes the real hardware probe.
-    await page.getByRole('radio', { name: /^Rapide/ }).click();
-    await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+    await page.getByRole('radio', { name: 'Convertir en MP4', exact: true }).click();
+    await page.getByRole('button', { name: 'Convertir en MP4' }).click();
     await page.getByRole('heading', { name: 'Fichier enregistré' }).waitFor({ timeout: 60000 });
     const fastJob = await page.evaluate(() => window.desktopAPI.getCurrentJob());
     assert.equal(fastJob.state, 'completed');
@@ -110,7 +113,7 @@ async function main() {
         await page.getByRole('radio', { name: `Conserver la définition, ${expectedHeight}p`, exact: true }).click();
         const previous = await page.evaluate(() => window.desktopAPI.getCurrentJob());
         const started = performance.now();
-        await page.getByRole('button', { name: 'Créer mon MP4' }).click();
+        await page.getByRole('button', { name: 'Convertir en MP4' }).click();
         // waitForFunction's page predicate is synchronous. Await IPC on the
         // Node side so a Promise cannot be mistaken for a completed job.
         let current;

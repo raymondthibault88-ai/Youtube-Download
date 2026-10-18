@@ -1,16 +1,18 @@
-# YouTube Downloader V5
+# YouTube Downloader V5.1
 
 Application Electron 44 + React 19 pour télécharger une vidéo YouTube ou convertir un fichier local en MP4 H.264/AAC compatible QuickTime et Dartfish.
 
-## Interface V5
+## Interface V5.1
 
-L’interface s’adresse au grand public : deux espaces « Télécharger » et « Convertir un fichier », une action principale visible, les réglages essentiels au premier plan et les détails techniques accessibles à la demande. Les primitives Base UI gèrent les onglets, les choix, les accordéons, les dialogues et la progression. L’identité visuelle utilise Manrope en local, une palette rouge YouTube/blanc/anthracite et des icônes Lucide. Le logo d’origine est conservé dans l’interface, le favicon et les icônes natives. Le rouge des boutons est assombri pour le contraste du texte ; le vert est réservé aux confirmations de réussite. L’interface conserve uniquement les libellés et les informations utiles, sans slogans.
+L’interface s’adresse au grand public : deux espaces « Télécharger » et « Convertir / compresser », une action principale visible, les réglages essentiels au premier plan et les détails techniques accessibles à la demande. Les primitives Base UI gèrent les onglets, les choix, les accordéons, les dialogues et la progression. L’identité visuelle utilise Manrope en local, une palette rouge YouTube/blanc/anthracite et des icônes Lucide. Le logo d’origine est conservé dans l’interface, le favicon et les icônes natives. Le rouge des boutons est assombri pour le contraste du texte ; le vert est réservé aux confirmations de réussite. L’interface conserve uniquement les libellés et les informations utiles, sans slogans.
 
 Les formats, les profils, les règles d’export, le choix du dossier et le moteur yt-dlp/FFmpeg sont conservés. Les annulations ont un état dédié ; une seule tâche peut être lancée à la fois. La navigation clavier, le focus, les annonces de statut, le contraste et la préférence de réduction des animations font partie de l’interface.
 
 Un panneau unique regroupe la source et les réglages. Le dossier, le résumé MP4 et l’action sont réunis dans une barre d’export fixée en bas de la fenêtre ; la progression et l’annulation restent visibles au-dessus pendant le défilement. Les profils se présentent sur une ligne sur ordinateur. La fenêtre démarre en 1040 × 720 et la mise en page s’adapte aux fenêtres plus petites.
 
 Les fichiers exportés gardent le titre de la vidéo ou le nom du fichier source, avec l’extension `.mp4`. Aucun identifiant YouTube ni suffixe technique n’est ajouté. Si le nom existe déjà, un numéro est ajouté, par exemple `Mes vacances (2).mp4`, pour conserver les fichiers présents et l’original.
+
+La conversion présente deux objectifs : « Convertir en MP4 » utilise le profil `fast` existant ; « Compresser » propose les profils `balanced` (modérée) et `compact` (forte). Un sélecteur compact et des choix en ligne regroupent les réglages dans un seul panneau, comme les qualités de téléchargement. Le défaut reste `fast` à définition constante. La comparaison Avant / Après estimé montre le poids prévu et son écart avec l’original, y compris si le résultat estimé est plus volumineux. Le choix de définition reste indépendant de la compression : « Originale » conserve les dimensions, sans promettre un encodage sans perte. Ces libellés ne changent ni le moteur, ni les débits, ni les formats transmis aux IPC.
 
 ## Fonctionnalités
 
@@ -47,7 +49,7 @@ npm run test:desktop
 
 `verify` exécute ESLint, TypeScript, les tests unitaires, le contrôle du contrat preload/IPC, le build et les parcours UI Playwright. Ceux-ci utilisent un bridge de test et des médias synthétiques ; ils vérifient les paramètres transmis, les changements de lien pendant l’analyse, l’annulation, les erreurs, le clavier, les différentes tailles de fenêtre et l’accessibilité avec axe. Un test lance aussi Vite pour vérifier les styles, les polices et la connexion de rechargement en développement sous CSP. Les balises injectées par Vite reçoivent un nonce aléatoire au démarrage du serveur ; les exécutables conservent leur politique stricte, sans autorisation des styles en ligne.
 
-`test:desktop` lance la véritable application Electron et génère une petite vidéo de test. Il vérifie les styles, les IPC sous `file:`, le presse-papiers, les noms accentués émis par le véritable yt-dlp hors réseau, les conversions FFmpeg en 480p avec les profils Plus léger et Rapide, le décodage intégral des résultats et la conservation de l’original et du premier export. Le bouton d’accès au fichier passe par le véritable IPC ; seul l’appel final à l’Explorateur est intercepté pour éviter d’ouvrir des fenêtres pendant le test. Les résultats sont écrits dans `test-results/desktop/`. Fermer une autre instance de l’application avant ce test. `V5_EXECUTABLE` permet de cibler l’exécutable empaqueté et `V5_ARTIFACT_DIR` de choisir le dossier des résultats.
+`test:desktop` lance la véritable application Electron et génère une petite vidéo de test. Il vérifie les styles, les IPC sous `file:`, le presse-papiers, les noms accentués émis par le véritable yt-dlp hors réseau, les conversions FFmpeg en 480p avec la compression forte et la conversion rapide, le décodage intégral des résultats et la conservation de l’original et du premier export. Le bouton d’accès au fichier passe par le véritable IPC ; seul l’appel final à l’Explorateur est intercepté pour éviter d’ouvrir des fenêtres pendant le test. Les résultats sont écrits dans `test-results/desktop/`. Fermer une autre instance de l’application avant ce test, ou définir `V5_TEST_USER_DATA_DIR` avec un dossier de profil isolé. `V5_EXECUTABLE` permet de cibler l’exécutable empaqueté et `V5_ARTIFACT_DIR` de choisir le dossier des résultats.
 
 ### Conversion : performances et qualité
 
