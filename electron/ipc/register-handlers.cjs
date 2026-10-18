@@ -1,16 +1,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { dialog, shell } = require('electron');
+const { clipboard, dialog, shell } = require('electron');
 const ipcChannels = require('../../shared/ipc.json');
 const { JobManager } = require('../services/job-manager.cjs');
 const { MediaService, buildOutputOptions } = require('../services/media.cjs');
 const { YouTubeService } = require('../services/youtube.cjs');
 const { requireAbsolutePath, validateFormatId, validateSender, validateYouTubeUrl } = require('../services/validation.cjs');
 
-function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
+function registerHandlers({ app, ipcMain, dependencyService, updateService, devOrigin }) {
   const jobs = new JobManager({ channel: ipcChannels.events.jobUpdate });
   const selectedInputs = new Set();
   const revealablePaths = new Set();
+  const analyses = new Map();
   let mediaPromise = null;
   let youtubePromise = null;
 
@@ -47,11 +48,29 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
   handle(ipcChannels.invoke.depsCheck, async () => dependencyService.getInfo());
   handle(ipcChannels.invoke.jobCurrent, async () => jobs.snapshot());
   handle(ipcChannels.invoke.jobCancel, async () => ({ ok: jobs.cancel() }));
+  handle(ipcChannels.invoke.clipboardRead, async () => (await clipboard.readText()).slice(0, 16384).trim());
+  handle(ipcChannels.invoke.updateCurrent, async () => updateService.snapshot());
+  handle(ipcChannels.invoke.updateCheck, async () => updateService.check());
+  handle(ipcChannels.invoke.updateDownload, async () => updateService.download());
+  handle(ipcChannels.invoke.updateInstall, async () => updateService.install());
+  handle(ipcChannels.invoke.updateOpenRelease, async () => updateService.openReleasePage());
+  handle(ipcChannels.invoke.videoCancelAnalyze, async (event) => {
+    analyses.get(event.sender.id)?.abort();
+    return { ok: true };
+  });
 
-  handle(ipcChannels.invoke.videoAnalyze, async (_, rawUrl) => {
+  handle(ipcChannels.invoke.videoAnalyze, async (event, rawUrl) => {
     const url = validateYouTubeUrl(rawUrl);
-    const youtube = await getYoutube();
-    return youtube.analyze(url);
+    const senderId = event.sender.id;
+    analyses.get(senderId)?.abort();
+    const controller = new AbortController();
+    analyses.set(senderId, controller);
+    try {
+      const youtube = await getYoutube();
+      return await youtube.analyze(url, controller.signal);
+    } finally {
+      if (analyses.get(senderId) === controller) analyses.delete(senderId);
+    }
   });
 
   handle(ipcChannels.invoke.dialogSelectOutput, async () => {
@@ -79,6 +98,7 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
   });
 
   handle(ipcChannels.invoke.conversionStart, async (event, payload) => {
+    updateService.assertCanStartJob();
     const inputPath = requireAbsolutePath(payload?.inputPath, 'Fichier source');
     if (!selectedInputs.has(inputPath) || !fs.existsSync(inputPath)) throw new Error('Sélectionne à nouveau le fichier source.');
     const outputDir = payload?.outputDir ? requireAbsolutePath(payload.outputDir, 'Dossier de sortie') : path.dirname(inputPath);
@@ -86,6 +106,7 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
     if (targetHeight !== null && ![2160, 1440, 1080, 720, 480].includes(targetHeight)) throw new Error('Résolution de sortie invalide.');
     const profileId = ['fast', 'balanced', 'compact'].includes(payload?.profileId) ? payload.profileId : 'fast';
     const media = await getMedia();
+    updateService.assertCanStartJob();
     return jobs.start('conversion', event.sender, async ({ signal, update }) => {
       const inputStats = await fs.promises.stat(inputPath);
       update({ percent: 1, raw: 'Analyse de la vidéo…' });
@@ -102,6 +123,7 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
   });
 
   handle(ipcChannels.invoke.downloadStart, async (event, payload) => {
+    updateService.assertCanStartJob();
     const cleanPayload = {
       url: validateYouTubeUrl(payload?.url),
       outputDir: requireAbsolutePath(payload?.outputDir, 'Dossier de sortie'),
@@ -113,6 +135,7 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
     };
     await fs.promises.mkdir(cleanPayload.outputDir, { recursive: true });
     const youtube = await getYoutube();
+    updateService.assertCanStartJob();
     return jobs.start('download', event.sender, async ({ signal, update }) => {
       const result = await youtube.download(cleanPayload, signal, (progress) => {
         update(progress);
@@ -133,10 +156,17 @@ function registerHandlers({ app, ipcMain, dependencyService, devOrigin }) {
       const error = await shell.openPath(targetPath);
       return { ok: error === '', error: error || null };
     }
-    shell.showItemInFolder(targetPath);
+    await shell.showItemInFolder(targetPath);
     return { ok: true, error: null };
   });
 
+  app.on('web-contents-created', (_, contents) => {
+    const id = contents.id;
+    contents.once('destroyed', () => analyses.get(id)?.abort());
+  });
+  app.on('before-quit', () => {
+    for (const controller of analyses.values()) controller.abort();
+  });
   return jobs;
 }
 

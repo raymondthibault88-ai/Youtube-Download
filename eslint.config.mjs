@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['dist/**', 'release/**', 'node_modules/**']
+    ignores: ['dist/**', 'release/**', 'node_modules/**', 'test-results/**', 'playwright-report/**']
   },
   js.configs.recommended,
   ...tseslint.configs.recommended.map((config) => ({
@@ -30,11 +30,15 @@ export default [
     ...reactHooks.configs.flat.recommended
   },
   {
-    files: ['electron/**/*.cjs', 'scripts/**/*.cjs'],
+    files: ['electron/**/*.cjs', 'scripts/**/*.cjs', 'tests/**/*.cjs', 'playwright.config.cjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'script',
       globals: globals.node
     }
+  },
+  {
+    files: ['tests/ui/**/*.cjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } }
   }
 ];

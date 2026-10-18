@@ -1,225 +1,91 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-import downloadConfig from "../shared/download-config.json";
-import { formatSize } from "../shared/formatters.js";
-import logo from "./assets/logo.png";
-import EmptyPanel from "./components/EmptyPanel";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Tabs } from "@base-ui/react/tabs";
+import { ArrowDownToLine, FileVideo } from "lucide-react";
+import { version } from "../package.json";
+import AboutDialog from "./components/AboutDialog";
 import ConverterPanel from "./components/ConverterPanel";
 import HeroPanel from "./components/HeroPanel";
+import JobStatus from "./components/JobStatus";
+import OutputCard from "./components/OutputCard";
 import VideoPanel from "./components/VideoPanel";
+import BrandMark from "./components/ui/BrandMark";
+import Notice from "./components/ui/Notice";
 import useDependencyInfo from "./hooks/useDependencyInfo";
-import useDownloadFlow from "./hooks/useDownloadFlow";
-import useDownloadProgress from "./hooks/useDownloadProgress";
 import useMediaJob from "./hooks/useMediaJob";
 import useSplash from "./hooks/useSplash";
 import useStartupInfo from "./hooks/useStartupInfo";
 import useVideoAnalyze from "./hooks/useVideoAnalyze";
+import { readClipboard, revealPath, startDownload } from "./services/desktopApi";
 import { getStoredOutputDir, pickOutputDir } from "./services/outputDirectory";
-import { getCodecLabel } from "./utils/codecs";
-import { getErrorMessage } from "./utils/errors";
-import type { ProgressState, VideoFormat } from "./types";
+import { getErrorMessage, isCancellationError } from "./utils/errors";
+import { qualityLabel } from "./utils/media";
 
 export default function App() {
-  const [mode, setMode] = useState<"download" | "convert">("download");
-  const [url, setUrl] = useState("");
-  const [outputDir, setOutputDir] = useState(() => getStoredOutputDir());
-  const [progress, setProgress] = useState<ProgressState>({
-    ...(downloadConfig.initialProgress as ProgressState)
-  });
+  const [mode, setMode] = useState("download");
+  const [outputDir, setOutputDir] = useState(getStoredOutputDir);
   const [error, setError] = useState("");
-  const urlInputRef = useRef<HTMLInputElement | null>(null);
-  const { job, cancel, busy } = useMediaJob();
-
-  useDownloadProgress({ setProgress, setError });
+  const [downloading, setDownloading] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { job, pendingType, busy, run, clear, cancel } = useMediaJob();
+  const analysis = useVideoAnalyze({ setError });
+  const changeUrl = analysis.setUrl;
   useSplash();
   useStartupInfo({ setOutputDir, setError });
+  const { dependencyInfo, requestDependencyInfo, isChecking } = useDependencyInfo({ setOutputDir, setError });
+  useEffect(() => { void requestDependencyInfo(); }, [requestDependencyInfo]);
 
-  const { dependencyInfo, requestDependencyInfo, isChecking: isPreparingTools } = useDependencyInfo({
-    setOutputDir,
-    setError
-  });
-
-  const {
-    video,
-    loadingVideo,
-    selectedFormat,
-    setSelectedFormat,
-    analyze
-  } = useVideoAnalyze({ url, setError });
-
-  const { downloading, handleManualDownload } = useDownloadFlow({
-    url,
-    outputDir,
-    setOutputDir,
-    progress,
-    initialProgress: downloadConfig.initialProgress as ProgressState,
-    setProgress,
-    setError,
-    dependencyInfo,
-    requestDependencyInfo
-  });
-
-  useEffect(() => {
-    void requestDependencyInfo();
-  }, [requestDependencyInfo]);
-
-  const handleSelectFormat = useCallback((format: VideoFormat) => {
-    setSelectedFormat(format);
-  }, [setSelectedFormat]);
-
-  const handleUrlChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setUrl(event.target.value);
+  const onPickFolder = useCallback(async () => {
+    if (busy) return;
+    try { const folder = await pickOutputDir(); if (folder) setOutputDir(folder); }
+    catch (caught) { setError(getErrorMessage(caught, "Impossible de sélectionner ce dossier.")); }
+  }, [busy]);
+  const onPaste = useCallback(async () => {
+    if (busy) return;
+    try { const text = await readClipboard(); if (text) { changeUrl(text); clear(); inputRef.current?.focus(); } }
+    catch (caught) { setError(getErrorMessage(caught, "Impossible de coller ce lien. Vous pouvez le saisir dans le champ.")); }
+  }, [changeUrl, busy, clear]);
+  const onReveal = useCallback(async (filePath: string) => {
+    try {
+      const result = await revealPath(filePath);
+      if (!result.ok) throw new Error(result.error || "Impossible d’afficher le fichier.");
+    } catch (caught) { setError(getErrorMessage(caught, "Le fichier est enregistré, mais son dossier n’a pas pu être ouvert.")); }
   }, []);
-
-  const handleAnalyze = useCallback((event: FormEvent<HTMLFormElement>) => {
-    analyze(event);
-  }, [analyze]);
-
-  const handlePickFolder = useCallback(async () => {
+  const download = async () => {
+    const format = analysis.selectedFormat;
+    if (!analysis.video || !format || busy || analysis.loadingVideo) return;
+    const sourceUrl = analysis.url.trim();
+    setError(""); setDownloading(true);
     try {
-      const folder = await pickOutputDir();
-      if (folder) {
-        setOutputDir(folder);
-      }
-    } catch (errorCaught) {
-      setError(getErrorMessage(errorCaught, "Impossible de sélectionner le dossier de sortie."));
-    }
-  }, [setOutputDir, setError]);
-
-
-  const handlePasteUrl = useCallback(async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setUrl(text.trim());
-        urlInputRef.current?.focus();
-      }
-    } catch (errorCaught) {
-      setError(getErrorMessage(errorCaught, "Impossible de lire le presse-papier."));
-    }
-  }, [setError]);
-
-  const handleDownload = useCallback(() => {
-    handleManualDownload(selectedFormat);
-  }, [handleManualDownload, selectedFormat]);
-
-  const availableFormats = useMemo(() => {
-    return video?.formats || [];
-  }, [video]);
-
-  const progressPercent = useMemo(
-    () => Math.max(0, Math.min(progress.percent || 0, 100)),
-    [progress.percent]
-  );
-  const progressLabel = useMemo(
-    () => progress.raw || "Aucun téléchargement en cours",
-    [progress.raw]
-  );
-  const progressDetails = useMemo(
-    () => [
-      progress.speed ? `Vitesse: ${progress.speed}` : null,
-      progress.eta ? `ETA: ${progress.eta}` : null
-    ].filter(Boolean).join(" · "),
-    [progress.speed, progress.eta]
-  );
-
-  const appStatus = downloading
-    ? "Téléchargement en cours"
-    : loadingVideo
-      ? "Analyse en cours"
-      : "Prêt";
-
-  const selectedFormatSummary = useMemo(() => {
-    if (!selectedFormat) return null;
-    const mediaType = selectedFormat.hasVideo && selectedFormat.hasAudio
-      ? "Vidéo + Audio"
-      : selectedFormat.hasVideo
-        ? "Vidéo seule"
-        : "Audio seul";
-    const videoCodecLabel = getCodecLabel(selectedFormat.videoCodec);
-    const audioCodecLabel = selectedFormat.hasAudio
-      ? getCodecLabel(selectedFormat.audioCodec)
-      : selectedFormat.quickTimeCompatible
-        ? "AAC"
-        : null;
-    const codecLabel = [videoCodecLabel, audioCodecLabel].filter(Boolean).join(" + ");
-    const details = [
-      selectedFormat.resolution,
-      mediaType,
-      selectedFormat.ext?.toUpperCase(),
-      codecLabel || null,
-      "Sortie compatible Dartfish (H.264/AAC)"
-    ].filter(Boolean);
-    const size = formatSize(selectedFormat.fileSizeText);
-    return `${details.join(" · ")}${size ? ` · ${size}` : ""}`;
-  }, [selectedFormat]);
-
-  const actionLabel = loadingVideo ? "Analyse..." : "Analyser les formats";
-  const progressMarker = Math.max(6, Math.min(progressPercent, 100));
-
-  return (
-    <main className="app-shell">
-      <div className="app-glow" aria-hidden="true" />
-
-      <div className="layout">
-        <nav className="mode-switch" aria-label="Mode de l’application">
-          <button className={mode === "download" ? "is-active" : ""} onClick={() => setMode("download")}>Télécharger YouTube</button>
-          <button className={mode === "convert" ? "is-active" : ""} onClick={() => setMode("convert")}>Convertir une vidéo</button>
-        </nav>
-
-        {busy && job && (
-          <div className="active-job" role="status">
-            <div>
-              <strong>{job.type === "download" ? "Téléchargement" : "Conversion"} · {Math.round(job.percent)}%</strong>
-              <span>{job.raw}{job.eta ? ` · reste ${job.eta}` : ""}</span>
-            </div>
-            <button type="button" className="btn btn-subtle" onClick={() => void cancel()} disabled={job.state === "cancelling"}>
-              {job.state === "cancelling" ? "Annulation…" : "Annuler"}
-            </button>
-          </div>
-        )}
-
-        <div hidden={mode !== "download"}>
-          <HeroPanel
-          appStatus={appStatus}
-          url={url}
-          onUrlChange={handleUrlChange}
-          urlInputRef={urlInputRef}
-          loadingVideo={loadingVideo}
-          downloading={downloading}
-          outputDir={outputDir}
-          onAnalyze={handleAnalyze}
-          onPasteUrl={handlePasteUrl}
-          onPickFolder={handlePickFolder}
-          actionLabel={actionLabel}
-          dependencyInfo={dependencyInfo}
-          progressLabel={progressLabel}
-          progressPercent={progressPercent}
-          progressMarker={progressMarker}
-          progressDetails={progressDetails}
-          isPreparingTools={isPreparingTools && !dependencyInfo}
-          error={error}
-          logoSrc={logo}
-          />
-
-          {video ? (
-          <VideoPanel
-            video={video}
-            selectedFormatSummary={selectedFormatSummary}
-            availableFormats={availableFormats}
-            selectedFormatId={selectedFormat?.id || null}
-            onSelectFormat={handleSelectFormat}
-            onDownload={handleDownload}
-            downloading={downloading}
-          />
-          ) : (
-          <EmptyPanel />
-          )}
-        </div>
-        <div hidden={mode !== "convert"}>
-          <ConverterPanel outputDir={outputDir} onPickFolder={handlePickFolder} />
-        </div>
+      const result = await run("download", async () => {
+        await requestDependencyInfo();
+        const targetDir = outputDir || dependencyInfo?.downloadsPath || await pickOutputDir();
+        if (!targetDir) { const cancelled = new Error("Opération annulée."); cancelled.name = "AbortError"; throw cancelled; }
+        setOutputDir(targetDir);
+        return startDownload({ url: sourceUrl, outputDir: targetDir, formatId: format.id, mergeAudioIfNeeded: format.hasVideo && !format.hasAudio, hasVideo: format.hasVideo, hasAudio: format.hasAudio, shouldRecodeToMp4: format.ext?.toLowerCase() !== "mp4" || !format.quickTimeCompatible });
+      });
+      await onReveal(result.outputPath);
+    } catch (caught) { if (!isCancellationError(caught)) setError(getErrorMessage(caught, "Le téléchargement n’a pas pu aboutir.")); }
+    finally { setDownloading(false); }
+  };
+  return <div className="app-shell">
+    <a href="#workspace" className="skip-link">Aller à l’espace de travail</a>
+    <header className="app-header">
+      <div className="brand"><BrandMark className="brand-mark" /><h1 className="brand-name">YouTube Downloader</h1><span className="version-tag">V{version.split(".")[0]}</span></div>
+      <div className="header-actions">
+        {isChecking && !dependencyInfo && <span className="app-status is-working" role="status"><span />Préparation des outils…</span>}
+        <AboutDialog info={dependencyInfo} checking={isChecking} onCheck={() => void requestDependencyInfo(true)} busy={busy || analysis.loadingVideo} />
       </div>
+    </header>
+    <main className="main-content">
+      <Tabs.Root value={mode} onValueChange={(value) => { if (value === "convert" && analysis.loadingVideo) analysis.cancelAnalysis(); setMode(String(value)); setError(""); }} className="workflow-tabs">
+        <div className="workspace-toolbar"><Tabs.List activateOnFocus className="mode-tabs" aria-label="Que souhaitez-vous faire ?"><Tabs.Tab value="download" className="mode-tab"><ArrowDownToLine size={17} aria-hidden="true" />Télécharger</Tabs.Tab><Tabs.Tab value="convert" className="mode-tab"><FileVideo size={17} aria-hidden="true" />Convertir un fichier</Tabs.Tab></Tabs.List></div>
+        <div id="workspace">
+          <Tabs.Panel value="download" keepMounted className="workflow-panel"><div className="workspace"><section className="source-card" aria-label="Vidéo à télécharger"><HeroPanel url={analysis.url} inputRef={inputRef} onUrlChange={(url) => { analysis.setUrl(url); clear(); }} onAnalyze={(event) => { if (!busy) void analysis.analyze(event); else event.preventDefault(); }} onPaste={() => void onPaste()} onCancelAnalyze={analysis.cancelAnalysis} loading={analysis.loadingVideo} busy={busy} video={analysis.video} />{analysis.video && <VideoPanel formats={analysis.video.formats || []} selected={analysis.selectedFormat} onSelect={analysis.setSelectedFormat} disabled={busy} />}</section><OutputCard ready={Boolean(analysis.video && analysis.selectedFormat)} quality={qualityLabel(analysis.selectedFormat?.resolution)} outputDir={outputDir} onPickFolder={() => void onPickFolder()} onStart={() => void download()} disabled={!analysis.video || !analysis.selectedFormat || busy || analysis.loadingVideo} busy={busy} action={downloading ? "Téléchargement en cours…" : "Télécharger la vidéo"} /></div></Tabs.Panel>
+          <Tabs.Panel value="convert" keepMounted className="workflow-panel"><ConverterPanel outputDir={outputDir} onPickFolder={() => void onPickFolder()} busy={busy || analysis.loadingVideo} run={run} onError={setError} onSourceChange={clear} /></Tabs.Panel>
+        </div>
+      </Tabs.Root>
+      <Notice error={error || (job?.state === "failed" ? job.error || "Le traitement n’a pas pu aboutir." : "")} onDismiss={() => { setError(""); if (job?.state === "failed") clear(); }} />
+      <JobStatus job={job} pendingType={pendingType} onCancel={() => { void cancel().catch((caught) => setError(getErrorMessage(caught, "Impossible d’annuler le traitement."))); }} onReveal={(filePath) => void onReveal(filePath)} onDismiss={clear} />
     </main>
-  );
+  </div>;
 }

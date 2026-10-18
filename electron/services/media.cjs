@@ -54,103 +54,143 @@ function buildOutputOptions(mediaInfo) {
   }));
 }
 
-async function inspectVideoFile(ffmpegPath, inputPath, signal) {
-  const { stderr } = await runProcess(ffmpegPath, ['-hide_banner', '-i', inputPath], {
+async function inspectVideoFile(ffmpegPath, inputPath, signal, processRunner = runProcess) {
+  const { stderr } = await processRunner(ffmpegPath, ['-hide_banner', '-i', inputPath], {
     signal,
     acceptedExitCodes: [0, 1],
     outputLimit: 512 * 1024
   });
   const duration = parseFfmpegTime(stderr.match(/Duration:\s*(\d+:\d+:\d+(?:\.\d+)?)/)?.[1]) || 0;
   const videoLine = stderr.split('\n').find((line) => /Video:/.test(line)) || '';
+  const audioLine = stderr.split('\n').find((line) => /Audio:/.test(line)) || '';
   const dimensions = videoLine.match(/(?:^|\s)(\d{2,5})x(\d{2,5})(?:[\s,]|$)/);
   const videoBitrate = Number(videoLine.match(/(\d+)\s*kb\/s/)?.[1] || 0) * 1000;
   const totalBitrate = Number(stderr.match(/Duration:[^\n]*bitrate:\s*(\d+)\s*kb\/s/)?.[1] || 0) * 1000;
+  const rotation = Number(stderr.match(/displaymatrix:\s*rotation of\s*(-?[\d.]+)/)?.[1]
+    || stderr.match(/\brotate\s*:\s*(-?[\d.]+)/)?.[1] || 0);
   if (!duration || !dimensions) throw new Error('Impossible de lire les informations de cette vidéo.');
   return {
     duration,
     width: Number(dimensions[1]),
     height: Number(dimensions[2]),
-    bitrate: videoBitrate || totalBitrate
+    bitrate: videoBitrate || totalBitrate,
+    codec: videoLine.match(/Video:\s*(\w+)/)?.[1] || null,
+    hasAudio: Boolean(audioLine),
+    audioCodec: audioLine.match(/Audio:\s*(\w+)/)?.[1] || null,
+    pixelFormat: videoLine.match(/,\s*(yuv\w+|nv12|p010le)\b/)?.[1] || null,
+    highDynamicRange: /bt2020|smpte2084|arib-std-b67/i.test(videoLine),
+    interlaced: /interlaced|top first|bottom first|top coded first|bottom coded first/i.test(videoLine),
+    rotation
   };
 }
 
-function getAvailableOutputPath(inputPath, outputDir, suffix = 'converti') {
+function conversionPipeline(encoder, mediaInfo, targetHeight, forceSoftwareDecode) {
+  const resize = targetHeight && mediaInfo.height > targetHeight;
+  const scale = resize ? [`scale=-2:${targetHeight}`] : [];
+  // Restrict the new decoder path to SDR 8-bit 4:2:0 streams. Keep FFmpeg's
+  // existing handling of HDR, chroma conversion, interlacing and autorotation.
+  const accelerated = encoder === 'h264_qsv' && !forceSoftwareDecode
+    && ['h264', 'hevc'].includes(mediaInfo.codec)
+    && mediaInfo.pixelFormat === 'yuv420p'
+    && !mediaInfo.highDynamicRange && !mediaInfo.interlaced && !mediaInfo.rotation && !resize;
+  if (!accelerated) return { input: [], filters: scale, pixelFormat: 'yuv420p', accelerated: false };
+  return {
+    input: ['-hwaccel', 'qsv', '-hwaccel_output_format', 'qsv', '-extra_hw_frames', '32'],
+    // Native-size transcoding avoids GPU readback. Resizing keeps the original
+    // decoder/scaler: GPU scaling changes the image; readback was slower.
+    filters: [],
+    pixelFormat: 'qsv',
+    accelerated: true
+  };
+}
+
+function getAvailableOutputPath(inputPath, outputDir) {
   const parsed = path.parse(inputPath);
   const destinationDir = outputDir || parsed.dir;
-  const baseName = `${parsed.name} - ${suffix}`;
+  const baseName = parsed.name;
   let candidate = path.join(destinationDir, `${baseName}.mp4`);
   let index = 2;
   while (fs.existsSync(candidate)) {
-    candidate = path.join(destinationDir, `${baseName} ${index}.mp4`);
+    candidate = path.join(destinationDir, `${baseName} (${index}).mp4`);
     index += 1;
   }
   return candidate;
 }
 
 class MediaService {
-  constructor(ffmpegPath) {
+  constructor(ffmpegPath, { processRunner = runProcess } = {}) {
     this.ffmpegPath = ffmpegPath;
+    this.runProcess = processRunner;
     this.hardwareEncoderPromise = null;
   }
 
   inspect(inputPath, signal) {
-    return inspectVideoFile(this.ffmpegPath, inputPath, signal);
+    return inspectVideoFile(this.ffmpegPath, inputPath, signal, this.runProcess);
   }
 
-  async detectHardwareEncoder() {
+  async detectHardwareEncoder(signal) {
     if (this.hardwareEncoderPromise) return this.hardwareEncoderPromise;
     this.hardwareEncoderPromise = (async () => {
       const candidates = HARDWARE_ENCODERS[process.platform] || [];
       if (!candidates.length) return null;
-      const { stdout } = await runProcess(this.ffmpegPath, ['-hide_banner', '-encoders']);
+      const { stdout } = await this.runProcess(this.ffmpegPath, ['-hide_banner', '-encoders'], { signal });
       for (const encoder of candidates) {
         if (!stdout.includes(encoder)) continue;
         try {
-          await runProcess(this.ffmpegPath, [
+          await this.runProcess(this.ffmpegPath, [
             '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'color=size=320x180:rate=30',
             '-t', '0.15', '-an', '-c:v', encoder, '-f', 'null', '-'
-          ], { outputLimit: 64 * 1024 });
+          ], { signal, outputLimit: 64 * 1024 });
           return encoder;
-        } catch {
+        } catch (error) {
+          if (signal?.aborted || error?.name === 'AbortError') throw error;
           // Try the next encoder exposed by this FFmpeg build.
         }
       }
       return null;
-    })();
+    })().catch((error) => {
+      this.hardwareEncoderPromise = null;
+      throw error;
+    });
     return this.hardwareEncoderPromise;
   }
 
-  encoderArgs(encoder, bitrate, softwarePreset) {
+  encoderArgs(encoder, bitrate, softwarePreset, pixelFormat = 'yuv420p') {
     if (!encoder) {
       return ['-c:v', 'libx264', '-preset', softwarePreset, '-b:v', String(bitrate), '-maxrate', String(Math.round(bitrate * 1.35)), '-bufsize', String(bitrate * 2), '-pix_fmt', 'yuv420p'];
     }
-    const common = ['-c:v', encoder, '-b:v', String(bitrate), '-maxrate', String(Math.round(bitrate * 1.35)), '-pix_fmt', 'yuv420p'];
+    const common = ['-c:v', encoder, '-b:v', String(bitrate), '-maxrate', String(Math.round(bitrate * 1.35)), '-pix_fmt', pixelFormat];
     if (encoder === 'h264_videotoolbox') return [...common, '-allow_sw', '1'];
     if (encoder === 'h264_nvenc') return [...common, '-preset', 'p2', '-tune', 'hq'];
     if (encoder === 'h264_amf') return [...common, '-quality', 'speed'];
     return [...common, '-preset', 'veryfast'];
   }
 
-  async convert({ inputPath, outputDir, targetHeight, profileId = 'fast', mediaInfo, signal, onProgress, outputPath, progressRange = [0, 100] }) {
+  async convert({ inputPath, outputDir, targetHeight, profileId = 'fast', mediaInfo, signal, onProgress, outputPath, progressRange = [0, 100], forceSoftware = false, forceSoftwareDecode = false, progressFloor = 0 }) {
     const speedProfile = getSpeedProfile(profileId);
     const destination = outputPath || getAvailableOutputPath(inputPath, outputDir);
     await fs.promises.mkdir(path.dirname(destination), { recursive: true });
     const temporaryPath = path.join(path.dirname(destination), `.${path.basename(destination, '.mp4')}.${process.pid}.${Date.now()}.tmp.mp4`);
     const effectiveHeight = targetHeight ? Math.min(targetHeight, mediaInfo.height) : mediaInfo.height;
     const bitrate = getTargetVideoBitrate(effectiveHeight, mediaInfo.bitrate, profileId);
-    const scaleArgs = targetHeight && mediaInfo.height > targetHeight ? ['-vf', `scale=-2:${targetHeight}`] : [];
-    const encoder = speedProfile.preferHardware ? await this.detectHardwareEncoder() : null;
-    const encoderArgs = this.encoderArgs(encoder, bitrate, speedProfile.softwarePreset);
+    const encoder = speedProfile.preferHardware && !forceSoftware ? await this.detectHardwareEncoder(signal).catch((error) => {
+      if (signal?.aborted || error?.name === 'AbortError') throw error;
+      return null;
+    }) : null;
+    const pipeline = conversionPipeline(encoder, mediaInfo, targetHeight, forceSoftwareDecode);
+    const scaleArgs = pipeline.filters.length ? ['-vf', pipeline.filters.join(',')] : [];
+    const encoderArgs = this.encoderArgs(encoder, bitrate, speedProfile.softwarePreset, pipeline.pixelFormat);
     const [rangeStart, rangeEnd] = progressRange;
     let stdoutBuffer = '';
     let progressValues = {};
     let stderr = '';
     let lastPercent = -1;
+    let encoded = false;
 
     const emitProgress = () => {
       const elapsed = parseFfmpegTime(progressValues.out_time);
       const ratio = elapsed !== null && mediaInfo.duration > 0 ? Math.min(0.99, elapsed / mediaInfo.duration) : 0;
-      const percent = Math.round(rangeStart + (ratio * (rangeEnd - rangeStart)));
+      const percent = Math.max(progressFloor, Math.round(rangeStart + (ratio * (rangeEnd - rangeStart))));
       if (percent === lastPercent) return;
       lastPercent = percent;
       const speed = progressValues.speed || null;
@@ -160,13 +200,14 @@ class MediaService {
         percent,
         speed,
         eta: remainingSeconds === null ? null : formatEta(remainingSeconds),
-        raw: encoder ? `Conversion accélérée (${encoder})…` : `Conversion CPU ${speedProfile.label.toLowerCase()}…`
+        stage: 'convert',
+        raw: encoder ? 'Conversion de la vidéo…' : 'Préparation du MP4…'
       });
     };
 
     try {
-      await runProcess(this.ffmpegPath, [
-        '-y', '-hide_banner', '-loglevel', 'warning', '-i', inputPath,
+      await this.runProcess(this.ffmpegPath, [
+        '-y', '-hide_banner', '-loglevel', 'warning', ...pipeline.input, '-i', inputPath,
         '-map', '0:v:0', '-map', '0:a:0?', ...scaleArgs, ...encoderArgs,
         '-tag:v', 'avc1', '-c:a', 'aac', '-b:a', String(conversionConfig.audioBitrate),
         '-movflags', '+faststart', '-progress', 'pipe:1', '-nostats', temporaryPath
@@ -190,10 +231,15 @@ class MediaService {
           }
         }
       });
+      encoded = true;
       await fs.promises.rename(temporaryPath, destination);
       return destination;
     } catch (error) {
       await fs.promises.unlink(temporaryPath).catch(() => {});
+      if (!encoded && encoder && !signal?.aborted && error?.name !== 'AbortError') {
+        onProgress?.({ percent: Math.max(progressFloor, lastPercent, rangeStart), stage: 'convert', speed: null, eta: null, raw: 'Poursuite de la conversion…' });
+        return this.convert({ inputPath, outputDir, targetHeight, profileId, mediaInfo, signal, onProgress, outputPath: destination, progressRange, forceSoftware: !pipeline.accelerated, forceSoftwareDecode: true, progressFloor: Math.max(progressFloor, lastPercent, rangeStart) });
+      }
       if (stderr && !error.message) error.message = stderr.trim();
       throw error;
     }
@@ -201,11 +247,11 @@ class MediaService {
 
   async remux(inputPath, signal, onProgress) {
     const parsed = path.parse(inputPath);
-    const destination = getAvailableOutputPath(inputPath, parsed.dir, 'compatible');
+    const destination = getAvailableOutputPath(inputPath, parsed.dir);
     const temporaryPath = path.join(parsed.dir, `.${parsed.name}.${process.pid}.${Date.now()}.faststart.mp4`);
     try {
-      onProgress?.({ percent: 98, speed: null, eta: null, raw: 'Finalisation MP4 rapide…' });
-      await runProcess(this.ffmpegPath, [
+      onProgress?.({ percent: 98, stage: 'finalize', speed: null, eta: null, raw: 'Finalisation du fichier MP4…' });
+      await this.runProcess(this.ffmpegPath, [
         '-y', '-hide_banner', '-loglevel', 'warning', '-i', inputPath,
         '-map', '0:v:0', '-map', '0:a:0?', '-c', 'copy', '-movflags', '+faststart', temporaryPath
       ], { signal, outputLimit: 128 * 1024 });

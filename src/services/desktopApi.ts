@@ -4,6 +4,7 @@ import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from
 import type { ProgressState } from "../types/progress";
 import type { VideoInfo } from "../types/video";
 import type { JobSnapshot } from "../types/job";
+import type { UpdateSnapshot } from "../types/update";
 
 function getApi() {
   if (!window.desktopAPI) {
@@ -23,6 +24,14 @@ export function checkDependencies(): Promise<DependencyInfo> {
 
 export function analyzeVideo(url: string): Promise<VideoInfo> {
   return getApi().analyzeVideo(url);
+}
+
+export function cancelVideoAnalysis(): Promise<{ ok: boolean }> {
+  return getApi().cancelVideoAnalysis();
+}
+
+export function readClipboard(): Promise<string> {
+  return getApi().readClipboard();
 }
 
 export function selectOutputDir(): Promise<string | null> {
@@ -64,3 +73,10 @@ export function onDownloadProgress(handler: (payload: ProgressState) => void) {
 export function onConversionProgress(handler: (payload: ProgressState) => void) {
   return getApi().onConversionProgress(handler);
 }
+
+export function getUpdateState(): Promise<UpdateSnapshot> { return getApi().getUpdateState(); }
+export function checkForUpdates(): Promise<UpdateSnapshot> { return getApi().checkForUpdates(); }
+export function downloadUpdate(): Promise<UpdateSnapshot> { return getApi().downloadUpdate(); }
+export function installUpdate(): Promise<UpdateSnapshot> { return getApi().installUpdate(); }
+export function openUpdateRelease(): Promise<{ ok: boolean }> { return getApi().openUpdateRelease(); }
+export function onUpdateState(handler: (payload: UpdateSnapshot) => void) { return getApi().onUpdateState(handler); }

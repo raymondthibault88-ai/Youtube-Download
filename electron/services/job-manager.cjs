@@ -24,7 +24,13 @@ class JobManager {
 
   update(jobId, patch) {
     if (this.current?.id !== jobId || this.current.state !== 'running') return;
-    this.emit(patch);
+    const next = { ...patch };
+    if (typeof next.percent === 'number' && Number.isFinite(next.percent)) {
+      next.percent = Math.max(this.current.percent, Math.min(99, next.percent));
+    } else {
+      delete next.percent;
+    }
+    this.emit(next);
   }
 
   async start(type, sender, executor) {
@@ -52,6 +58,8 @@ class JobManager {
     this.emit();
 
     const update = (patch) => this.update(id, patch);
+    const onDestroyed = () => controller.abort();
+    sender?.once?.('destroyed', onDestroyed);
     try {
       const result = await executor({ signal: controller.signal, update, jobId: id });
       this.emit({ state: 'completed', percent: 100, speed: null, eta: null, raw: type === 'download' ? 'Téléchargement terminé.' : 'Conversion terminée.', result });
@@ -66,6 +74,8 @@ class JobManager {
         error: cancelled ? null : String(error?.message || error)
       });
       throw error;
+    } finally {
+      sender?.removeListener?.('destroyed', onDestroyed);
     }
   }
 
@@ -74,6 +84,21 @@ class JobManager {
     this.emit({ state: 'cancelling', raw: 'Annulation en cours…' });
     this.current.controller.abort();
     return true;
+  }
+
+  async shutdown() {
+    this.cancel();
+    if (!this.current || !['running', 'cancelling'].includes(this.current.state)) return;
+    await new Promise((resolve) => {
+      const timer = setInterval(() => {
+        if (!this.current || !['running', 'cancelling'].includes(this.current.state)) {
+          clearInterval(timer);
+          clearTimeout(timeout);
+          resolve();
+        }
+      }, 50);
+      const timeout = setTimeout(() => { clearInterval(timer); resolve(); }, 5000);
+    });
   }
 }
 

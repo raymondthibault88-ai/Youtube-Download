@@ -3,17 +3,25 @@
     "startupInfo": "app:startupInfo",
     "depsCheck": "deps:check",
     "videoAnalyze": "video:analyze",
+    "videoCancelAnalyze": "video:cancelAnalyze",
+    "clipboardRead": "clipboard:readText",
     "dialogSelectVideo": "dialog:selectVideo",
     "dialogSelectOutput": "dialog:selectOutput",
     "downloadStart": "download:start",
     "conversionStart": "conversion:start",
     "jobCurrent": "job:current",
     "jobCancel": "job:cancel",
-    "revealPath": "dialog:revealPath"
+    "revealPath": "dialog:revealPath",
+    "updateCurrent": "update:current",
+    "updateCheck": "update:check",
+    "updateDownload": "update:download",
+    "updateInstall": "update:install",
+    "updateOpenRelease": "update:openRelease"
   },
   "events": {
     "downloadProgress": "download:progress",
     "conversionProgress": "conversion:progress",
-    "jobUpdate": "job:update"
+    "jobUpdate": "job:update",
+    "updateState": "update:state"
   }
 }

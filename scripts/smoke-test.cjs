@@ -28,7 +28,7 @@ assert(downloadConfig.initialProgress && typeof downloadConfig.initialProgress =
 
 assert(packageJson.scripts && packageJson.scripts.build, 'Script build manquant.');
 assert(packageJson.scripts && packageJson.scripts.dist, 'Script dist manquant.');
-assert(packageJson.version === '3.0.0', 'La version de l’application doit être 3.0.0.');
+assert(/^5\.\d+\.\d+$/.test(packageJson.version), 'La version de l’application doit être V5.');
 assert(ipc.invoke.dialogSelectVideo === 'dialog:selectVideo', 'Canal de sélection vidéo manquant.');
 assert(ipc.invoke.conversionStart === 'conversion:start', 'Canal de conversion manquant.');
 assert(ipc.events.conversionProgress === 'conversion:progress', 'Canal de progression de conversion manquant.');

@@ -1,72 +1,58 @@
-import { useCallback, useRef, useState } from "react";
-import type { Dispatch, SetStateAction, FormEvent } from "react";
-import type { VideoFormat, VideoInfo } from "../types/video";
-import { analyzeVideo } from "../services/desktopApi";
-import { getErrorMessage } from "../utils/errors";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { analyzeVideo, cancelVideoAnalysis } from "../services/desktopApi";
+import type { VideoFormat, VideoInfo } from "../types";
+import { getErrorMessage, isCancellationError } from "../utils/errors";
 
-interface UseVideoAnalyzeParams {
-  url: string;
-  setError: Dispatch<SetStateAction<string>>;
-}
-
-function pickDefaultFormat(formats?: VideoFormat[]) {
-  if (!Array.isArray(formats) || formats.length === 0) {
-    return null;
-  }
-
-  return formats.find((format) => format.quickTimeCompatible) || formats[0];
-}
-
-export default function useVideoAnalyze({ url, setError }: UseVideoAnalyzeParams) {
+export default function useVideoAnalyze({ setError }: { setError: Dispatch<SetStateAction<string>> }) {
+  const [url, setUrlState] = useState("");
   const [video, setVideo] = useState<VideoInfo | null>(null);
-  const [loadingVideo, setLoadingVideo] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<VideoFormat | null>(null);
-  const lastAnalyzeRef = useRef<{ url: string; data: VideoInfo | null }>({ url: "", data: null });
-
-  const analyze = useCallback(async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const normalizedUrl = url.trim();
-    if (!normalizedUrl) {
-      setError("Colle une URL YouTube valide.");
-      return;
+  const [loadingVideo, setLoadingVideo] = useState(false);
+  const request = useRef(0);
+  const pending = useRef(false);
+  const currentUrl = useRef("");
+  const cache = useRef<{ url: string; at: number; data: VideoInfo } | null>(null);
+  const cancelAnalysis = useCallback(() => {
+    request.current += 1;
+    setLoadingVideo(false);
+    if (pending.current) { pending.current = false; void cancelVideoAnalysis().catch(() => {}); }
+  }, []);
+  const setUrl = useCallback((next: string) => {
+    if (next.trim() !== currentUrl.current.trim()) {
+      cancelAnalysis(); setVideo(null); setSelectedFormat(null); setError("");
     }
-
-    setLoadingVideo(true);
-    setError("");
-
+    currentUrl.current = next;
+    setUrlState(next);
+  }, [cancelAnalysis, setError]);
+  useEffect(() => () => {
+    request.current += 1;
+    if (pending.current) void cancelVideoAnalysis().catch(() => {});
+  }, []);
+  const analyze = useCallback(async (event?: FormEvent) => {
+    event?.preventDefault();
+    const source = currentUrl.current.trim();
+    if (!source) return;
     try {
-      if (lastAnalyzeRef.current.url === normalizedUrl && lastAnalyzeRef.current.data) {
-        const cachedData = lastAnalyzeRef.current.data;
-        setVideo(cachedData);
-        const cachedBest = pickDefaultFormat(cachedData?.formats);
-        if (cachedBest) {
-          setSelectedFormat(cachedBest);
-        }
-        setLoadingVideo(false);
-        return;
-      }
-
-      const data = await analyzeVideo(normalizedUrl);
-      lastAnalyzeRef.current = { url: normalizedUrl, data };
+      const parsed = new URL(source);
+      if (parsed.protocol !== "https:" || !["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be", "www.youtu.be"].includes(parsed.hostname)) throw new Error();
+    } catch { setError("Utilisez un lien HTTPS provenant de youtube.com ou youtu.be."); return; }
+    const token = ++request.current;
+    pending.current = true;
+    setLoadingVideo(true); setVideo(null); setSelectedFormat(null); setError("");
+    try {
+      const cached = cache.current;
+      const data = cached?.url === source && Date.now() - cached.at < 600000 ? cached.data : await analyzeVideo(source);
+      if (request.current !== token || currentUrl.current.trim() !== source) return;
+      if (!data.formats?.length) throw new Error("Aucune qualité vidéo disponible pour ce lien.");
+      cache.current = { url: source, at: Date.now(), data };
       setVideo(data);
-      const bestFormat = pickDefaultFormat(data?.formats);
-      if (bestFormat) {
-        setSelectedFormat(bestFormat);
-      }
+      setSelectedFormat(data.formats.find((format) => format.quickTimeCompatible) || data.formats[0]);
     } catch (error) {
-      setVideo(null);
-      setSelectedFormat(null);
-      setError(getErrorMessage(error, "Erreur pendant l'analyse de la vidéo."));
+      if (request.current === token && !isCancellationError(error)) setError(getErrorMessage(error, "Impossible de lire les informations de cette vidéo."));
     } finally {
-      setLoadingVideo(false);
+      if (request.current === token) { pending.current = false; setLoadingVideo(false); }
     }
-  }, [setError, url]);
-
-  return {
-    video,
-    loadingVideo,
-    selectedFormat,
-    setSelectedFormat,
-    analyze
-  };
+  }, [setError]);
+  return { url, setUrl, video, selectedFormat, setSelectedFormat, loadingVideo, analyze, cancelAnalysis };
 }

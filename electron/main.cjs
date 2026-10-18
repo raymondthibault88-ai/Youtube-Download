@@ -1,9 +1,16 @@
-const { app, BrowserWindow, ipcMain, session } = require('electron');
+const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
+const { UpdateService } = require('./services/updates.cjs');
+const ipcChannels = require('../shared/ipc.json');
 const { registerHandlers } = require('./ipc/register-handlers.cjs');
 const { DependencyService } = require('./services/dependencies.cjs');
 const { createMainWindow } = require('./window.cjs');
+const { hasActiveProcesses, shutdownProcesses } = require('./services/process-runner.cjs');
 
 let mainWindow = null;
+let jobs = null;
+let updates = null;
+let finishingQuit = false;
 
 if (process.platform === 'win32') app.setAppUserModelId('com.thibs.youtubedownloader');
 app.enableSandbox();
@@ -14,7 +21,7 @@ function getDevUrl() {
   if (!raw) return null;
   try {
     const parsed = new URL(raw);
-    return ['localhost', '127.0.0.1'].includes(parsed.hostname) ? parsed.toString() : null;
+    return ['http:', 'https:'].includes(parsed.protocol) && ['localhost', '127.0.0.1'].includes(parsed.hostname) ? parsed.toString() : null;
   } catch {
     return null;
   }
@@ -39,12 +46,33 @@ if (!hasSingleInstanceLock) {
     session.defaultSession.setPermissionCheckHandler(() => false);
 
     const dependencies = new DependencyService(app);
-    registerHandlers({ app, ipcMain, dependencyService: dependencies, devOrigin });
+    updates = new UpdateService({
+      app,
+      updater: autoUpdater,
+      isBusy: () => ['running', 'cancelling'].includes(jobs?.snapshot()?.state) || hasActiveProcesses(),
+      openExternal: (url) => shell.openExternal(url),
+      notify: (snapshot) => {
+        for (const window of BrowserWindow.getAllWindows()) {
+          if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send(ipcChannels.events.updateState, snapshot);
+        }
+      }
+    });
+    jobs = registerHandlers({ app, ipcMain, dependencyService: dependencies, updateService: updates, devOrigin });
     mainWindow = createMainWindow({ devUrl });
     mainWindow.on('closed', () => { mainWindow = null; });
     setImmediate(() => { void dependencies.prewarm(); });
+    updates.start();
   });
 }
+
+app.on('before-quit', (event) => {
+  updates?.dispose();
+  const busy = jobs?.snapshot() && ['running', 'cancelling'].includes(jobs.snapshot().state);
+  if (finishingQuit || (!busy && !hasActiveProcesses())) return;
+  event.preventDefault();
+  finishingQuit = true;
+  void Promise.all([jobs?.shutdown(), shutdownProcesses()]).finally(() => app.quit());
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

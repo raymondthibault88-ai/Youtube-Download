@@ -5,11 +5,11 @@ function createMainWindow({ devUrl }) {
   Menu.setApplicationMenu(null);
   const icon = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
   const window = new BrowserWindow({
-    width: 1200,
-    height: 820,
-    minWidth: 1024,
-    minHeight: 680,
-    backgroundColor: '#f5f6f8',
+    width: 1040,
+    height: 720,
+    minWidth: 760,
+    minHeight: 580,
+    backgroundColor: '#f7f7f8',
     show: false,
     ...(process.platform === 'darwin' ? {} : { icon }),
     webPreferences: {

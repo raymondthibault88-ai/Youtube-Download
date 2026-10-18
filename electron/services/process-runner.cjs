@@ -1,6 +1,7 @@
 const { spawn } = require('node:child_process');
 
 const DEFAULT_OUTPUT_LIMIT = 1024 * 1024;
+const activeChildren = new Set();
 
 function appendTail(current, chunk, limit = DEFAULT_OUTPUT_LIMIT) {
   return `${current}${chunk.toString()}`.slice(-limit);
@@ -46,6 +47,9 @@ function runProcess(command, args, options = {}) {
     }
 
     const child = spawn(command, args, { cwd, env, windowsHide: true });
+    activeChildren.add(child);
+    child.once('close', () => activeChildren.delete(child));
+    child.once('error', () => activeChildren.delete(child));
     let stdout = '';
     let stderr = '';
     let settled = false;
@@ -84,4 +88,12 @@ function runProcess(command, args, options = {}) {
   });
 }
 
-module.exports = { appendTail, createAbortError, runProcess };
+async function shutdownProcesses() {
+  await Promise.all([...activeChildren].map((child) => new Promise((resolve) => {
+    const timer = setTimeout(resolve, 5000);
+    child.once('close', () => { clearTimeout(timer); resolve(); });
+    terminateChild(child);
+  })));
+}
+
+module.exports = { appendTail, createAbortError, runProcess, shutdownProcesses, hasActiveProcesses: () => activeChildren.size > 0 };

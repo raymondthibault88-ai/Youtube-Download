@@ -1,10 +1,14 @@
 {
   "name": "youtube-downloader-desktop",
-  "version": "3.0.0",
-  "description": "Téléchargeur et convertisseur vidéo MP4 performant pour Windows et macOS",
+  "version": "5.0.0",
+  "description": "Téléchargez et convertissez vos vidéos en MP4 simplement, sur Windows et macOS",
   "main": "electron/main.cjs",
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/raymondthibault88-ai/Youtube-Download.git"
+  },
   "engines": {
     "node": ">=22.12.0"
   },
@@ -12,23 +16,35 @@
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:5173 && node electron/dev-runner.cjs",
+    "prebuild": "node scripts/collect-licenses.cjs",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "node --test tests/*.test.cjs",
     "test:smoke": "node scripts/smoke-test.cjs",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run test:smoke && npm run build",
+    "test:ui": "playwright test",
+    "test:desktop": "node scripts/desktop-smoke.cjs",
+    "test:conversion": "node scripts/benchmark-conversion.cjs",
+    "test:download": "node scripts/benchmark-download.cjs",
+    "setup:desktop": "node node_modules/electron/install.js",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run test:smoke && npm run build && npm run test:ui",
     "preview": "vite preview",
-    "dist": "npm run verify && electron-builder",
-    "dist:mac": "npm run verify && electron-builder --mac",
-    "dist:win": "npm run verify && electron-builder --win"
+    "dist": "npm run verify && electron-builder --publish never",
+    "dist:mac": "npm run verify && electron-builder --mac --publish never",
+    "dist:win": "npm run verify && electron-builder --win --publish never"
   },
   "dependencies": {
-    "ffmpeg-static": "^5.3.0"
+    "@base-ui/react": "^1.9.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "electron-updater": "^6.8.9",
+    "ffmpeg-static": "^5.3.0",
+    "lucide-react": "^1.59.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@electron/notarize": "^3.1.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
@@ -48,11 +64,19 @@
   },
   "overrides": {
     "flatted": "^3.4.2",
-    "minimatch": "^3.1.5"
+    "minimatch": "^3.1.5",
+    "@electron/get": "^5.1.0"
   },
   "build": {
     "appId": "com.thibs.youtubedownloader",
     "productName": "YouTube Downloader",
+    "publish": {
+      "provider": "github",
+      "owner": "raymondthibault88-ai",
+      "repo": "Youtube-Download",
+      "releaseType": "draft"
+    },
+    "electronUpdaterCompatibility": ">=6.8.9",
     "icon": "build/icons/icon.png",
     "files": [
       "dist/**/*",
@@ -65,6 +89,8 @@
       "electron/ytDlp.cjs",
       "shared/**/*",
       "THIRD_PARTY_NOTICES.md",
+      "LICENSE",
+      "licenses/**/*",
       "package.json"
     ],
     "electronLanguages": [
@@ -86,7 +112,7 @@
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
       "minimumSystemVersion": "13.0",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "YouTube-Downloader-${version}-${arch}.${ext}"
     },
     "win": {
       "icon": "build/icons/icon.ico",
@@ -94,12 +120,16 @@
         "portable",
         "nsis"
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "YouTube-Downloader-${version}-${arch}.${ext}"
     },
     "nsis": {
+      "artifactName": "YouTube-Downloader-Setup-${version}-${arch}.${ext}",
       "installerIcon": "build/icons/icon.ico",
       "uninstallerIcon": "build/icons/icon.ico",
       "installerHeaderIcon": "build/icons/icon.ico"
+    },
+    "portable": {
+      "artifactName": "YouTube-Downloader-${version}-${arch}-portable.${ext}"
     },
     "directories": {
       "output": "release"

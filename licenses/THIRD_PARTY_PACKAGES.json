@@ -1,0 +1,628 @@
+[
+  {
+    "name": "@babel/runtime",
+    "version": "8.0.7",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/babel/babel.git",
+      "directory": "packages/babel-runtime"
+    },
+    "licenseFiles": [
+      "npm/@babel__runtime-8.0.7/LICENSE"
+    ]
+  },
+  {
+    "name": "@base-ui/react",
+    "version": "1.9.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/mui/base-ui.git",
+      "directory": "packages/react"
+    },
+    "licenseFiles": [
+      "npm/@base-ui__react-1.9.0/LICENSE"
+    ]
+  },
+  {
+    "name": "@base-ui/utils",
+    "version": "0.5.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/mui/base-ui.git",
+      "directory": "packages/utils"
+    },
+    "licenseFiles": [
+      "npm/@base-ui__utils-0.5.0/LICENSE"
+    ]
+  },
+  {
+    "name": "@derhuerst/http-basic",
+    "version": "8.2.4",
+    "license": "MIT",
+    "repository": "https://github.com/derhuerst/http-basic.git",
+    "licenseFiles": [
+      "npm/@derhuerst__http-basic-8.2.4/LICENSE"
+    ]
+  },
+  {
+    "name": "@electron-internal/extract-zip",
+    "version": "1.0.5",
+    "license": "BSD-2-Clause",
+    "repository": {
+      "url": "https://github.com/electron/extract-zip"
+    },
+    "licenseFiles": []
+  },
+  {
+    "name": "@electron/get",
+    "version": "5.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/electron/get",
+    "licenseFiles": [
+      "npm/@electron__get-5.1.0/LICENSE"
+    ]
+  },
+  {
+    "name": "@floating-ui/core",
+    "version": "1.8.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/core"
+    },
+    "licenseFiles": [
+      "npm/@floating-ui__core-1.8.0/LICENSE"
+    ]
+  },
+  {
+    "name": "@floating-ui/dom",
+    "version": "1.8.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/dom"
+    },
+    "licenseFiles": [
+      "npm/@floating-ui__dom-1.8.0/LICENSE"
+    ]
+  },
+  {
+    "name": "@floating-ui/react-dom",
+    "version": "2.1.9",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/react-dom"
+    },
+    "licenseFiles": [
+      "npm/@floating-ui__react-dom-2.1.9/LICENSE"
+    ]
+  },
+  {
+    "name": "@floating-ui/utils",
+    "version": "0.2.12",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/floating-ui/floating-ui.git",
+      "directory": "packages/utils"
+    },
+    "licenseFiles": [
+      "npm/@floating-ui__utils-0.2.12/LICENSE"
+    ]
+  },
+  {
+    "name": "@fontsource-variable/manrope",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/fontsource/font-files.git",
+      "directory": "fonts/variable/manrope"
+    },
+    "licenseFiles": [
+      "npm/@fontsource-variable__manrope-5.3.0/LICENSE"
+    ]
+  },
+  {
+    "name": "@types/node",
+    "version": "10.17.60",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/node"
+    },
+    "licenseFiles": [
+      "npm/@types__node-10.17.60/LICENSE"
+    ]
+  },
+  {
+    "name": "@types/node",
+    "version": "24.19.2",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "directory": "types/node"
+    },
+    "licenseFiles": [
+      "npm/@types__node-24.19.2/LICENSE"
+    ]
+  },
+  {
+    "name": "agent-base",
+    "version": "6.0.2",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/TooTallNate/node-agent-base.git"
+    },
+    "licenseFiles": []
+  },
+  {
+    "name": "argparse",
+    "version": "2.0.1",
+    "license": "Python-2.0",
+    "repository": "nodeca/argparse",
+    "licenseFiles": [
+      "npm/argparse-2.0.1/LICENSE"
+    ]
+  },
+  {
+    "name": "buffer-from",
+    "version": "1.1.2",
+    "license": "MIT",
+    "repository": "LinusU/buffer-from",
+    "licenseFiles": [
+      "npm/buffer-from-1.1.2/LICENSE"
+    ]
+  },
+  {
+    "name": "builder-util-runtime",
+    "version": "9.7.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/electron-userland/electron-builder.git",
+      "directory": "packages/builder-util-runtime"
+    },
+    "licenseFiles": [
+      "npm/builder-util-runtime-9.7.0/LICENSE"
+    ]
+  },
+  {
+    "name": "caseless",
+    "version": "0.12.0",
+    "license": "Apache-2.0",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/mikeal/caseless"
+    },
+    "licenseFiles": [
+      "npm/caseless-0.12.0/LICENSE"
+    ]
+  },
+  {
+    "name": "concat-stream",
+    "version": "2.0.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "http://github.com/maxogden/concat-stream.git"
+    },
+    "licenseFiles": [
+      "npm/concat-stream-2.0.0/LICENSE"
+    ]
+  },
+  {
+    "name": "debug",
+    "version": "4.4.3",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/debug-js/debug.git"
+    },
+    "licenseFiles": [
+      "npm/debug-4.4.3/LICENSE"
+    ]
+  },
+  {
+    "name": "electron",
+    "version": "44.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/electron/electron",
+    "licenseFiles": [
+      "npm/electron-44.0.0/LICENSE"
+    ]
+  },
+  {
+    "name": "electron-updater",
+    "version": "6.8.9",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/electron-userland/electron-builder.git",
+      "directory": "packages/electron-updater"
+    },
+    "licenseFiles": [
+      "npm/electron-updater-6.8.9/LICENSE"
+    ]
+  },
+  {
+    "name": "env-paths",
+    "version": "2.2.1",
+    "license": "MIT",
+    "repository": "sindresorhus/env-paths",
+    "licenseFiles": [
+      "npm/env-paths-2.2.1/license"
+    ]
+  },
+  {
+    "name": "env-paths",
+    "version": "3.0.0",
+    "license": "MIT",
+    "repository": "sindresorhus/env-paths",
+    "licenseFiles": [
+      "npm/env-paths-3.0.0/license"
+    ]
+  },
+  {
+    "name": "ffmpeg-static",
+    "version": "5.3.0",
+    "license": "GPL-3.0-or-later",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/eugeneware/ffmpeg-static"
+    },
+    "licenseFiles": [
+      "npm/ffmpeg-static-5.3.0/LICENSE"
+    ]
+  },
+  {
+    "name": "fs-extra",
+    "version": "10.1.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/jprichardson/node-fs-extra"
+    },
+    "licenseFiles": [
+      "npm/fs-extra-10.1.0/LICENSE"
+    ]
+  },
+  {
+    "name": "graceful-fs",
+    "version": "4.2.11",
+    "license": "ISC",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/isaacs/node-graceful-fs"
+    },
+    "licenseFiles": [
+      "npm/graceful-fs-4.2.11/LICENSE"
+    ]
+  },
+  {
+    "name": "http-response-object",
+    "version": "3.0.2",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/ForbesLindesay/http-response-object.git"
+    },
+    "licenseFiles": [
+      "npm/http-response-object-3.0.2/LICENSE"
+    ]
+  },
+  {
+    "name": "https-proxy-agent",
+    "version": "5.0.1",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/TooTallNate/node-https-proxy-agent.git"
+    },
+    "licenseFiles": []
+  },
+  {
+    "name": "inherits",
+    "version": "2.0.4",
+    "license": "ISC",
+    "repository": "git://github.com/isaacs/inherits",
+    "licenseFiles": [
+      "npm/inherits-2.0.4/LICENSE"
+    ]
+  },
+  {
+    "name": "js-yaml",
+    "version": "4.3.2",
+    "license": "MIT",
+    "repository": "nodeca/js-yaml",
+    "licenseFiles": [
+      "npm/js-yaml-4.3.2/LICENSE"
+    ]
+  },
+  {
+    "name": "jsonfile",
+    "version": "6.2.1",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git@github.com:jprichardson/node-jsonfile.git"
+    },
+    "licenseFiles": [
+      "npm/jsonfile-6.2.1/LICENSE"
+    ]
+  },
+  {
+    "name": "lazy-val",
+    "version": "1.0.5",
+    "license": "MIT",
+    "repository": "develar/lazy-val",
+    "licenseFiles": []
+  },
+  {
+    "name": "lodash.escaperegexp",
+    "version": "4.1.2",
+    "license": "MIT",
+    "repository": "lodash/lodash",
+    "licenseFiles": [
+      "npm/lodash.escaperegexp-4.1.2/LICENSE"
+    ]
+  },
+  {
+    "name": "lodash.isequal",
+    "version": "4.5.0",
+    "license": "MIT",
+    "repository": "lodash/lodash",
+    "licenseFiles": [
+      "npm/lodash.isequal-4.5.0/LICENSE"
+    ]
+  },
+  {
+    "name": "lucide-react",
+    "version": "1.59.0",
+    "license": "ISC",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/lucide-icons/lucide.git",
+      "directory": "packages/lucide-react"
+    },
+    "licenseFiles": [
+      "npm/lucide-react-1.59.0/LICENSE"
+    ]
+  },
+  {
+    "name": "ms",
+    "version": "2.1.3",
+    "license": "MIT",
+    "repository": "vercel/ms",
+    "licenseFiles": [
+      "npm/ms-2.1.3/license.md"
+    ]
+  },
+  {
+    "name": "parse-cache-control",
+    "version": "1.0.1",
+    "license": "Consulter le paquet source",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/roryf/parse-cache-control.git"
+    },
+    "licenseFiles": [
+      "npm/parse-cache-control-1.0.1/LICENSE"
+    ]
+  },
+  {
+    "name": "progress",
+    "version": "2.0.3",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/visionmedia/node-progress"
+    },
+    "licenseFiles": [
+      "npm/progress-2.0.3/LICENSE"
+    ]
+  },
+  {
+    "name": "react",
+    "version": "19.2.8",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/react"
+    },
+    "licenseFiles": [
+      "npm/react-19.2.8/LICENSE"
+    ]
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.8",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/react-dom"
+    },
+    "licenseFiles": [
+      "npm/react-dom-19.2.8/LICENSE"
+    ]
+  },
+  {
+    "name": "readable-stream",
+    "version": "3.6.2",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/nodejs/readable-stream"
+    },
+    "licenseFiles": [
+      "npm/readable-stream-3.6.2/LICENSE"
+    ]
+  },
+  {
+    "name": "reselect",
+    "version": "5.3.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/reduxjs/reselect.git"
+    },
+    "licenseFiles": [
+      "npm/reselect-5.3.0/LICENSE"
+    ]
+  },
+  {
+    "name": "safe-buffer",
+    "version": "5.1.2",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/feross/safe-buffer.git"
+    },
+    "licenseFiles": [
+      "npm/safe-buffer-5.1.2/LICENSE"
+    ]
+  },
+  {
+    "name": "sax",
+    "version": "1.6.1",
+    "license": "BlueOak-1.0.0",
+    "repository": {
+      "type": "git",
+      "url": "git+ssh://git@github.com/isaacs/sax-js.git"
+    },
+    "licenseFiles": [
+      "npm/sax-1.6.1/LICENSE.md"
+    ]
+  },
+  {
+    "name": "scheduler",
+    "version": "0.27.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/facebook/react.git",
+      "directory": "packages/scheduler"
+    },
+    "licenseFiles": [
+      "npm/scheduler-0.27.0/LICENSE"
+    ]
+  },
+  {
+    "name": "semver",
+    "version": "7.7.4",
+    "license": "ISC",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/npm/node-semver.git"
+    },
+    "licenseFiles": [
+      "npm/semver-7.7.4/LICENSE"
+    ]
+  },
+  {
+    "name": "string_decoder",
+    "version": "1.1.1",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/nodejs/string_decoder.git"
+    },
+    "licenseFiles": [
+      "npm/string_decoder-1.1.1/LICENSE"
+    ]
+  },
+  {
+    "name": "sumchecker",
+    "version": "3.0.1",
+    "license": "Apache-2.0",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/malept/sumchecker.git"
+    },
+    "licenseFiles": [
+      "npm/sumchecker-3.0.1/LICENSE"
+    ]
+  },
+  {
+    "name": "tiny-typed-emitter",
+    "version": "2.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/binier/tiny-typed-emitter.git",
+    "licenseFiles": [
+      "npm/tiny-typed-emitter-2.1.0/LICENSE"
+    ]
+  },
+  {
+    "name": "typedarray",
+    "version": "0.0.6",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/substack/typedarray.git"
+    },
+    "licenseFiles": [
+      "npm/typedarray-0.0.6/LICENSE"
+    ]
+  },
+  {
+    "name": "undici-types",
+    "version": "7.24.6",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/nodejs/undici.git"
+    },
+    "licenseFiles": [
+      "npm/undici-types-7.24.6/LICENSE"
+    ]
+  },
+  {
+    "name": "universalify",
+    "version": "2.0.1",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/RyanZim/universalify.git"
+    },
+    "licenseFiles": [
+      "npm/universalify-2.0.1/LICENSE"
+    ]
+  },
+  {
+    "name": "use-sync-external-store",
+    "version": "1.7.0",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/react/react.git",
+      "directory": "packages/use-sync-external-store"
+    },
+    "licenseFiles": [
+      "npm/use-sync-external-store-1.7.0/LICENSE"
+    ]
+  },
+  {
+    "name": "util-deprecate",
+    "version": "1.0.2",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/TooTallNate/util-deprecate.git"
+    },
+    "licenseFiles": [
+      "npm/util-deprecate-1.0.2/LICENSE"
+    ]
+  }
+]

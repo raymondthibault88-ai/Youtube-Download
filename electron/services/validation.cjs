@@ -1,4 +1,5 @@
 const path = require('node:path');
+const { fileURLToPath } = require('node:url');
 
 const YOUTUBE_HOSTS = new Set([
   'youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com',
@@ -33,9 +34,15 @@ function validateFormatId(value) {
 function validateSender(event, { appPath, devOrigin }) {
   const frameUrl = event.senderFrame?.url || event.sender?.getURL?.() || '';
   try {
+    if (event.senderFrame?.parent) throw new Error('Subframe');
     const parsed = new URL(frameUrl);
-    if (devOrigin && parsed.origin === devOrigin) return;
-    if (parsed.protocol === 'file:' && path.normalize(decodeURIComponent(parsed.pathname)).startsWith(path.normalize(appPath))) return;
+    if (devOrigin && ['http:', 'https:'].includes(parsed.protocol) && parsed.origin === devOrigin) return;
+    if (parsed.protocol === 'file:') {
+      const actual = path.normalize(fileURLToPath(parsed));
+      const expected = path.join(appPath, 'dist', 'index.html');
+      const normalizeCase = (value) => process.platform === 'win32' ? value.toLowerCase() : value;
+      if (normalizeCase(actual) === normalizeCase(path.normalize(expected))) return;
+    }
   } catch {
     // Rejected below.
   }

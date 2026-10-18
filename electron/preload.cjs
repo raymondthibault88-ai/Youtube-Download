@@ -5,6 +5,8 @@ const channels = {
   startupInfo: 'app:startupInfo',
   depsCheck: 'deps:check',
   videoAnalyze: 'video:analyze',
+  videoCancelAnalyze: 'video:cancelAnalyze',
+  clipboardRead: 'clipboard:readText',
   dialogSelectVideo: 'dialog:selectVideo',
   dialogSelectOutput: 'dialog:selectOutput',
   downloadStart: 'download:start',
@@ -12,9 +14,15 @@ const channels = {
   jobCurrent: 'job:current',
   jobCancel: 'job:cancel',
   revealPath: 'dialog:revealPath',
+  updateCurrent: 'update:current',
+  updateCheck: 'update:check',
+  updateDownload: 'update:download',
+  updateInstall: 'update:install',
+  updateOpenRelease: 'update:openRelease',
   downloadProgress: 'download:progress',
   conversionProgress: 'conversion:progress',
-  jobUpdate: 'job:update'
+  jobUpdate: 'job:update',
+  updateState: 'update:state'
 };
 
 function subscribe(channel, handler) {
@@ -27,6 +35,8 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   getStartupInfo: () => ipcRenderer.invoke(channels.startupInfo),
   checkDependencies: () => ipcRenderer.invoke(channels.depsCheck),
   analyzeVideo: (url) => ipcRenderer.invoke(channels.videoAnalyze, url),
+  cancelVideoAnalysis: () => ipcRenderer.invoke(channels.videoCancelAnalyze),
+  readClipboard: () => ipcRenderer.invoke(channels.clipboardRead),
   selectVideoFile: () => ipcRenderer.invoke(channels.dialogSelectVideo),
   selectOutputDir: () => ipcRenderer.invoke(channels.dialogSelectOutput),
   startDownload: (payload) => ipcRenderer.invoke(channels.downloadStart, payload),
@@ -34,6 +44,12 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   getCurrentJob: () => ipcRenderer.invoke(channels.jobCurrent),
   cancelJob: () => ipcRenderer.invoke(channels.jobCancel),
   revealPath: (targetPath) => ipcRenderer.invoke(channels.revealPath, targetPath),
+  getUpdateState: () => ipcRenderer.invoke(channels.updateCurrent),
+  checkForUpdates: () => ipcRenderer.invoke(channels.updateCheck),
+  downloadUpdate: () => ipcRenderer.invoke(channels.updateDownload),
+  installUpdate: () => ipcRenderer.invoke(channels.updateInstall),
+  openUpdateRelease: () => ipcRenderer.invoke(channels.updateOpenRelease),
+  onUpdateState: (handler) => subscribe(channels.updateState, handler),
   onDownloadProgress: (handler) => subscribe(channels.downloadProgress, handler),
   onConversionProgress: (handler) => subscribe(channels.conversionProgress, handler),
   onJobUpdate: (handler) => subscribe(channels.jobUpdate, handler)

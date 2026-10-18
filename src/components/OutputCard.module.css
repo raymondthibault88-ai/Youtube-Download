@@ -1,0 +1,21 @@
+.card { position: fixed; bottom: 0; left: 0; right: 0; z-index: 3; min-height: var(--export-dock-height); display: grid; grid-template-columns: minmax(130px, .8fr) minmax(180px, 1.5fr) auto; align-items: center; gap: 20px; padding: 15px var(--dock-inline); border-top: 1px solid var(--line); background: var(--surface); box-shadow: 0 -6px 24px #20212406; }
+.card :global(.output-info) { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.card :global(.output-icon) { display: grid; place-items: center; width: 36px; height: 40px; flex-shrink: 0; color: var(--accent); background: var(--accent-soft); border-radius: 8px; }
+.card :global(.output-summary) { min-width: 0; }
+.card :global(.output-summary h2) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; font-weight: 750; }
+.card :global(.output-summary h2 > span) { font-size: 11px; font-weight: 600; color: var(--muted); }
+.card :global(.output-summary p) { margin-top: 2px; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.card :global(.output-destination) { min-width: 0; }
+.card :global(.destination-label) { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.card :global(.destination-button) { width: 100%; min-height: 34px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line-strong); background: #fff; border-radius: 7px; padding: 7px 10px; color: var(--ink); text-align: left; }
+.card :global(.destination-button:hover:not(:disabled)) { border-color: var(--accent); }
+.card :global(.destination-button > span) { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
+.card :global(.output-action) { min-height: 40px; padding: 10px 16px; white-space: nowrap; }
+@media (max-width: 600px) {
+  .card { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px var(--dock-inline); }
+  .card :global(.output-info) { gap: 8px; }
+  .card :global(.output-icon) { width: 28px; height: 30px; }
+  .card :global(.output-summary) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+  .card :global(.output-summary p) { margin-top: 0; }
+  .card :global(.output-action) { width: 100%; }
+}
