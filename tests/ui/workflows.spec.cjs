@@ -139,8 +139,10 @@ test('keyboard tabs and dialogs keep focus and the selected file', async ({ page
 
 test('key states pass automated accessibility checks', async ({ page }) => {
   const check = async () => {
+    // Contrast must be measured after finite entry and dialog transitions.
+    await page.evaluate(() => Promise.all(document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity).map((animation) => animation.finished.catch(() => {}))));
     const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-    expect(result.violations.map(({ id, nodes }) => ({ id, targets: nodes.map((node) => node.target) }))).toEqual([]);
+    expect(result.violations.map(({ id, nodes }) => ({ id, nodes: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })) }))).toEqual([]);
   };
   await check();
   await analyze(page); await check();

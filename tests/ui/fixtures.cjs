@@ -91,6 +91,8 @@ const test = base.extend({
     await page.goto('http://video.test/');
     await expect(page.locator('body')).toHaveClass(/app-ready/);
     await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('#splash')).toHaveCount(0);
+    await expect(page.locator('.workflow-panel:visible')).toHaveCSS('opacity', '1');
     await use(page);
   }
 });
