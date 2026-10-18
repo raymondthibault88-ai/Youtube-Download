@@ -18,4 +18,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+        if: runner.os != 'Windows'
+      - name: Prepare Windows browser
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $chrome = Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'
+          if (Test-Path -LiteralPath $chrome) {
+            "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$chrome" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            npx playwright install --with-deps chromium
+          }
       - run: npm run verify

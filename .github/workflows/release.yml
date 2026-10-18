@@ -3,12 +3,21 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag existant à construire
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -20,23 +29,39 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - name: Check release version
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
         run: node -e "const v = require('./package.json').version; if (process.env.RELEASE_TAG !== 'v' + v || !/^\d+\.\d+\.\d+$/.test(v)) throw new Error('Le tag doit correspondre à la version stable de package.json.');"
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+        if: runner.os != 'Windows'
+      - name: Prepare Windows browser
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $chrome = Join-Path $env:ProgramFiles 'Google\Chrome\Application\chrome.exe'
+          if (Test-Path -LiteralPath $chrome) {
+            "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$chrome" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            npx playwright install --with-deps chromium
+          }
       - run: npm run verify
       - name: Build Windows
         if: runner.os == 'Windows'
+        shell: pwsh
         env:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: npx electron-builder --win --x64 --publish never
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
+            Remove-Item Env:WIN_CSC_LINK, Env:WIN_CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
+          }
+          npx electron-builder --win --x64 --publish never
       - name: Build macOS
         if: runner.os == 'macOS'
         shell: bash
@@ -55,6 +80,8 @@ jobs:
               exit 1
             fi
             args+=("--config.mac.identity=$MAC_SIGNING_IDENTITY")
+          else
+            unset CSC_LINK CSC_KEY_PASSWORD
           fi
           npx electron-builder "${args[@]}"
       - uses: actions/upload-artifact@v4
@@ -83,7 +110,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
           if gh release view "$RELEASE_TAG" --json isDraft > release-info.json 2>/dev/null; then
