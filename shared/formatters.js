@@ -1,4 +1,7 @@
-﻿export function formatDuration(value) {
+// @ts-check
+
+/** @param {number | null | undefined} value */
+export function formatDuration(value) {
   if (!value) return '-';
   const total = Number(value);
   const hours = Math.floor(total / 3600);
@@ -12,10 +15,7 @@
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-export function formatSize(sizeText) {
-  return sizeText || '-';
-}
-
+/** @param {number | null | undefined} bytes */
 export function formatBytes(bytes) {
   if (!bytes || Number.isNaN(bytes)) {
     return null;

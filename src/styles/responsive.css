@@ -1,0 +1,167 @@
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes panelIn {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes statusPulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes indeterminate {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(450%);
+  }
+}
+@media (max-width: 1050px) {
+  .app-header {
+    padding-inline: 24px;
+  }
+  .main-content {
+    padding-inline: 24px;
+  }
+  .app-status {
+    display: none;
+  }
+}
+@media (max-width: 780px) {
+  :root {
+    --dock-inline: 20px;
+  }
+  .app-header {
+    padding-inline: 20px;
+  }
+  .main-content {
+    padding-inline: 20px;
+  }
+  .job-status {
+    flex-wrap: wrap;
+  }
+  .job-actions {
+    margin-left: 46px;
+  }
+}
+@media (max-width: 600px) {
+  :root {
+    --export-dock-height: 184px;
+  }
+}
+@media (max-width: 480px) {
+  :root {
+    --dock-inline: 16px;
+  }
+  .app-header {
+    padding-inline: 16px;
+    gap: 10px;
+  }
+  .brand {
+    gap: 9px;
+  }
+  .brand-name {
+    font-size: 13px;
+  }
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+  .about-trigger span {
+    display: none;
+  }
+  .update-trigger span {
+    display: none;
+  }
+  .version-tag {
+    margin-left: -4px;
+  }
+  .main-content {
+    padding-inline: 16px;
+  }
+  .mode-tabs {
+    gap: 14px;
+  }
+  .mode-tab {
+    padding-inline: 0;
+    font-size: 12px;
+  }
+  .section-heading {
+    padding-inline: 16px;
+  }
+  .source-form {
+    padding-inline: 16px;
+  }
+  .source-entry {
+    flex-wrap: wrap;
+  }
+  .source-entry .analyze-button {
+    width: 100%;
+  }
+  .url-control {
+    flex-basis: 100%;
+  }
+  .url-control {
+    gap: 7px;
+  }
+  .paste-button {
+    padding-inline: 7px;
+  }
+  .paste-button svg {
+    display: none;
+  }
+  .setting-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .setting-help {
+    grid-column: 1;
+  }
+  .intent-options {
+    display: flex;
+    justify-self: stretch;
+  }
+  .intent-option {
+    flex: 1;
+    padding-inline: 8px;
+  }
+  .inline-options {
+    column-gap: 14px;
+  }
+  .source-video {
+    align-items: flex-start;
+  }
+  .source-thumbnail {
+    width: 62px;
+    height: 47px;
+  }
+  .job-status {
+    gap: 10px;
+  }
+  .job-actions {
+    margin-left: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.about-details h3 {
+  font-size: 13px;
+  margin-bottom: 6px;
+}

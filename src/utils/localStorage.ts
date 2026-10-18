@@ -1,6 +1,6 @@
 export const STORAGE_KEYS = {
-  depsCache: "depsCache",
-  outputDir: "outputDir"
+  depsCache: 'depsCache',
+  outputDir: 'outputDir'
 } as const;
 
 export function readJsonStorage<T>(key: string): T | null {
@@ -27,9 +27,9 @@ export function writeJsonStorage(key: string, value: unknown) {
 
 export function readTextStorage(key: string) {
   try {
-    return window.localStorage.getItem(key) || "";
+    return window.localStorage.getItem(key) || '';
   } catch {
-    return "";
+    return '';
   }
 }
 

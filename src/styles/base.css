@@ -1,0 +1,107 @@
+/* V5 foundations — shared tokens and interaction states. */
+:root {
+  color-scheme: light;
+  --canvas: #f7f7f8;
+  --surface: #ffffff;
+  --surface-soft: #f3f3f4;
+  --ink: #202124;
+  --muted: #62636a;
+  --line: #e2e2e6;
+  --line-strong: #bcbcc4;
+  --brand: #ff0033;
+  --accent: #d9002b;
+  --accent-hover: #bd0025;
+  --accent-soft: #fff0f3;
+  --danger: #a82035;
+  --danger-soft: #fff3f4;
+  --focus: #ce0029;
+  --control-border: #8e8f98;
+  --success: #217245;
+  --success-soft: #edf7f0;
+  --success-line: #bfdac7;
+  --radius: 14px;
+  --duration: 160ms;
+  --export-dock-height: 88px;
+  --dock-inline: max(24px, calc((100vw - 1016px) / 2));
+  scroll-padding-bottom: calc(var(--export-dock-height) + 24px);
+  font-family:
+    'Manrope Variable',
+    'Segoe UI',
+    -apple-system,
+    sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+:root:has(.job-status) {
+  scroll-padding-bottom: calc(var(--export-dock-height) + 176px);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+button,
+input,
+summary,
+[role='radio'],
+[tabindex] {
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+button:disabled,
+[role='radio'][data-disabled] {
+  opacity: 0.46;
+}
+button,
+input,
+[role='radio'] {
+  transition:
+    background var(--duration),
+    color var(--duration),
+    border-color var(--duration),
+    box-shadow var(--duration);
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+svg {
+  flex-shrink: 0;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+button svg {
+  pointer-events: none;
+}
+[hidden],
+.workflow-panel[data-hidden] {
+  display: none !important;
+}
+#root {
+  isolation: isolate;
+  min-height: 100vh;
+}

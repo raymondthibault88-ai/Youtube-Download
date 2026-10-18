@@ -14,15 +14,26 @@ function setup(t, options = {}) {
   const updater = new EventEmitter();
   const calls = { checks: 0, downloads: 0, installs: [], opened: [] };
   const states = [];
-  updater.checkForUpdates = async () => { calls.checks++; updater.emit('update-available', { version: '5.0.1' }); };
-  updater.downloadUpdate = async () => { calls.downloads++; updater.emit('update-downloaded', { version: '5.0.1' }); };
+  updater.checkForUpdates = async () => {
+    calls.checks++;
+    updater.emit('update-available', { version: '5.0.1' });
+  };
+  updater.downloadUpdate = async () => {
+    calls.downloads++;
+    updater.emit('update-downloaded', { version: '5.0.1' });
+  };
   updater.quitAndInstall = (...args) => calls.installs.push(args);
   const service = new UpdateService({
     app: { isPackaged: true, getVersion: () => '5.0.0' },
-    updater, resourcesPath, platform: 'win32', env: {},
+    updater,
+    resourcesPath,
+    platform: 'win32',
+    env: {},
     isBusy: () => false,
     notify: (state) => states.push(state),
-    openExternal: async (url) => { calls.opened.push(url); },
+    openExternal: async (url) => {
+      calls.opened.push(url);
+    },
     ...options
   });
   t.after(() => service.dispose());
@@ -30,7 +41,11 @@ function setup(t, options = {}) {
 }
 
 test('development and unpacked apps never check, download or install updates', async (t) => {
-  for (const options of [{ app: { isPackaged: false, getVersion: () => '5.0.0' } }, { resourcesPath: os.tmpdir() }, { platform: 'linux' }]) {
+  for (const options of [
+    { app: { isPackaged: false, getVersion: () => '5.0.0' } },
+    { resourcesPath: os.tmpdir() },
+    { platform: 'linux' }
+  ]) {
     const { service, calls } = setup(t, options);
     assert.equal(service.snapshot().status, 'disabled');
     service.start();
@@ -42,7 +57,11 @@ test('development and unpacked apps never check, download or install updates', a
 });
 
 test('portable Windows and ad hoc macOS offer manual updates; signed macOS enables installation', async (t) => {
-  for (const options of [{ env: { PORTABLE_EXECUTABLE_FILE: 'portable.exe' } }, { env: { PORTABLE_EXECUTABLE_DIR: 'C:\\Portable' } }, { platform: 'darwin', macSigned: () => false }]) {
+  for (const options of [
+    { env: { PORTABLE_EXECUTABLE_FILE: 'portable.exe' } },
+    { env: { PORTABLE_EXECUTABLE_DIR: 'C:\\Portable' } },
+    { platform: 'darwin', macSigned: () => false }
+  ]) {
     const { service, calls } = setup(t, options);
     assert.equal(service.snapshot().mode, 'manual');
     await service.check();
@@ -51,7 +70,10 @@ test('portable Windows and ad hoc macOS offer manual updates; signed macOS enabl
     assert.throws(() => service.install());
     assert.equal(calls.downloads, 0);
   }
-  assert.equal(setup(t, { platform: 'darwin', macSigned: () => true }).service.snapshot().mode, 'automatic');
+  assert.equal(
+    setup(t, { platform: 'darwin', macSigned: () => true }).service.snapshot().mode,
+    'automatic'
+  );
 });
 
 test('an update is checked and downloaded only on request, then installed only after an explicit restart', async (t) => {
@@ -76,13 +98,17 @@ test('an update is checked and downloaded only on request, then installed only a
   assert.throws(() => service.install());
   await tick();
   assert.deepEqual(calls.installs, [[false, true]]);
-  assert.deepEqual(states.map((state) => state.status), ['checking', 'available', 'downloading', 'downloaded', 'installing']);
+  assert.deepEqual(
+    states.map((state) => state.status),
+    ['checking', 'available', 'downloading', 'downloaded', 'installing']
+  );
 });
 
 test('an active media job prevents installation without discarding the downloaded update', async (t) => {
   let busy = true;
   const { service, calls } = setup(t, { isBusy: () => busy });
-  await service.check(); await service.download();
+  await service.check();
+  await service.download();
   assert.throws(() => service.install(), /fin du téléchargement ou de la conversion/);
   assert.equal(service.snapshot().status, 'downloaded');
   await tick();
@@ -96,7 +122,12 @@ test('an active media job prevents installation without discarding the downloade
 test('overlapping checks and downloads share the active operation and preserve progress', async (t) => {
   const { service, updater, calls } = setup(t);
   let finishCheck;
-  updater.checkForUpdates = () => { calls.checks++; return new Promise((resolve) => { finishCheck = resolve; }); };
+  updater.checkForUpdates = () => {
+    calls.checks++;
+    return new Promise((resolve) => {
+      finishCheck = resolve;
+    });
+  };
   const checking = service.check();
   const alsoChecking = service.check();
   assert.equal(calls.checks, 1);
@@ -104,7 +135,12 @@ test('overlapping checks and downloads share the active operation and preserve p
   finishCheck();
   await Promise.all([checking, alsoChecking]);
   let finishDownload;
-  updater.downloadUpdate = () => { calls.downloads++; return new Promise((resolve) => { finishDownload = resolve; }); };
+  updater.downloadUpdate = () => {
+    calls.downloads++;
+    return new Promise((resolve) => {
+      finishDownload = resolve;
+    });
+  };
   const downloading = service.download();
   const alsoDownloading = service.download();
   const checkDuringDownload = service.check();
@@ -113,7 +149,8 @@ test('overlapping checks and downloads share the active operation and preserve p
   updater.emit('download-progress', { percent: 12 });
   assert.equal(service.snapshot().percent, 48.5);
   assert.equal(service.snapshot().status, 'downloading');
-  updater.emit('update-downloaded', { version: '5.0.1' }); finishDownload();
+  updater.emit('update-downloaded', { version: '5.0.1' });
+  finishDownload();
   await Promise.all([downloading, alsoDownloading, checkDuringDownload]);
   assert.equal(calls.downloads, 1);
   assert.equal(service.snapshot().status, 'downloaded');
@@ -123,8 +160,11 @@ test('a checksum or signature failure can never reach the install command and ca
   const { service, updater, calls } = setup(t);
   await service.check();
   updater.downloadUpdate = async () => {
-    const error = Object.assign(new Error('sha512 checksum mismatch'), { code: 'ERR_UPDATER_CHECKSUM_MISMATCH' });
-    updater.emit('error', error); throw error;
+    const error = Object.assign(new Error('sha512 checksum mismatch'), {
+      code: 'ERR_UPDATER_CHECKSUM_MISMATCH'
+    });
+    updater.emit('error', error);
+    throw error;
   };
   await service.download();
   assert.equal(service.snapshot().status, 'error');
@@ -138,11 +178,15 @@ test('a checksum or signature failure can never reach the install command and ca
 
 test('network and missing release errors remain local to updates; a later check can succeed', async (t) => {
   const { service, updater } = setup(t);
-  updater.checkForUpdates = async () => { throw new Error('net::ERR_INTERNET_DISCONNECTED'); };
+  updater.checkForUpdates = async () => {
+    throw new Error('net::ERR_INTERNET_DISCONNECTED');
+  };
   await service.check();
   assert.match(service.snapshot().error, /connexion/);
   assert.doesNotThrow(() => service.assertCanStartJob());
-  updater.checkForUpdates = async () => { throw Object.assign(new Error('No release'), { code: 'ERR_UPDATER_NO_PUBLISHED_VERSIONS' }); };
+  updater.checkForUpdates = async () => {
+    throw Object.assign(new Error('No release'), { code: 'ERR_UPDATER_NO_PUBLISHED_VERSIONS' });
+  };
   await service.check();
   assert.match(service.snapshot().error, /Aucune version publique/);
   updater.checkForUpdates = async () => updater.emit('update-not-available', { version: '5.0.0' });
@@ -156,6 +200,7 @@ test('external navigation always uses the fixed project releases URL', async (t)
   await service.openReleasePage('https://attacker.example/');
   assert.deepEqual(calls.opened, [releasesUrl]);
   assert.equal(releasesUrl, 'https://github.com/raymondthibault88-ai/Youtube-Download/releases');
-  const snapshot = service.snapshot(); snapshot.status = 'downloaded';
+  const snapshot = service.snapshot();
+  snapshot.status = 'downloaded';
   assert.equal(service.snapshot().status, 'idle');
 });

@@ -29,6 +29,10 @@ La conversion présente deux objectifs : « Convertir en MP4 » utilise le profi
 
 ## Développement
 
+Les conventions, les hooks Git et les responsabilités des modules sont décrits dans [CONTRIBUTING.md](CONTRIBUTING.md).
+
+L’[audit de maintenance](docs/maintainability-audit.md) détaille les corrections de structure, de typage et de conventions, ainsi que leur validation.
+
 Prérequis : Node.js 22.12 ou supérieur et npm.
 
 ```bash
@@ -57,7 +61,7 @@ Les profils, les débits, les préréglages des encodeurs, l’AAC à 160 kbit/s
 
 Si le nouveau parcours échoue, la conversion réessaie avec le décodage CPU et le même encodeur matériel ; si celui-ci échoue aussi, elle utilise libx264. L’annulation ne déclenche aucune reprise. Les fichiers temporaires sont nettoyés et la progression ne recule pas.
 
-`npm run test:conversion` compare le moteur courant avec une copie du moteur avant modification. Définir `V5_BENCHMARK_BASELINE` avec le chemin absolu de cette copie de `electron/services/media.cjs`, en conservant son `process-runner.cjs` voisin et son fichier `shared/conversion-config.json` à la même position relative. `V5_BENCHMARK_DIR` choisit le dossier des sources, exports et rapports ; le défaut est `test-results/conversion/`.
+`npm run test:conversion` compare le moteur courant avec une copie du moteur avant modification. Définir `V5_BENCHMARK_BASELINE` avec le chemin absolu de cette copie de `electron/services/media.cjs`, en conservant tout `electron/services/` et `shared/` à la même position relative pour inclure les sous-modules du moteur. `V5_BENCHMARK_DIR` choisit le dossier des sources, exports et rapports ; le défaut est `test-results/conversion/`.
 
 Le benchmark crée des sources synthétiques animées avec audio, de 30 secondes à 30 images/s en 1920×1080 et 3840×2160, ainsi qu’une source HEVC 4K de 8 secondes. Il compare les trois profils, la conservation de résolution et la réduction 4K vers 1080p. Les cas Rapide H.264 sont répétés trois fois avec ordre avant/après alterné ; la médiane inclut l’encodage, l’écriture et `faststart`, mais sépare la détection initiale de l’encodeur. `V5_BENCHMARK_SECONDS` et `V5_BENCHMARK_REPETITIONS` permettent d’adapter la durée et les répétitions. `node scripts/benchmark-conversion.cjs prepare` génère seulement les sources.
 
@@ -73,7 +77,7 @@ Les transferts fragmentés DASH/HLS utilisent huit fragments simultanés, après
 
 Une vidéo déjà en H.264 SDR 8 bits 4:2:0 avec son AAC peut être placée dans un MP4 par copie des flux, même si son conteneur initial diffère. Les codecs incompatibles conservent la conversion précédente et ses réglages. Un échec de cette copie reprend la conversion normale ; une annulation reste une annulation.
 
-`npm run test:download` compare le moteur actuel à une copie du moteur précédent, avec le véritable yt-dlp et FFmpeg. Définir `V5_DOWNLOAD_BASELINE` avec le chemin de la copie de `electron/services/youtube.cjs`, accompagnée de `media.cjs`, `process-runner.cjs` et des fichiers `shared/` à la même position relative ; définir `V5_YTDLP_PATH` avec le chemin du binaire vérifié. `V5_DOWNLOAD_DIR` choisit les artefacts. `V5_DOWNLOAD_SOURCE_DIR` permet de réutiliser les vidéos 1080p/4K du benchmark de conversion ; sinon des sources animées avec audio sont créées.
+`npm run test:download` compare le moteur actuel à une copie du moteur précédent, avec le véritable yt-dlp et FFmpeg. Définir `V5_DOWNLOAD_BASELINE` avec le chemin de la copie de `electron/services/youtube.cjs`, en conservant tout `electron/services/` et `shared/` à la même position relative ; définir `V5_YTDLP_PATH` avec le chemin du binaire vérifié. `V5_DOWNLOAD_DIR` choisit les artefacts. `V5_DOWNLOAD_SOURCE_DIR` permet de réutiliser les vidéos 1080p/4K du benchmark de conversion ; sinon des sources animées avec audio sont créées.
 
 Le banc local sert les mêmes médias fragmentés avec une latence et un débit par connexion contrôlés. Il compare trois fois le moteur précédent, le cache avec quatre fragments et le cache avec huit fragments, en alternant l’ordre. Il vérifie les empreintes de tous les paquets vidéo et audio, le décodage intégral des premières sorties, les dimensions, la durée, les originaux et l’annulation réelle. Les cas de conteneur compatible comparent séparément la conversion et la copie des flux. Les résultats locaux ne prédisent pas le débit de YouTube ; les essais réseau réels doivent préciser leur vidéo, leurs formats et distinguer l’analyse, le transfert et la conversion éventuelle.
 

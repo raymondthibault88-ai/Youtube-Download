@@ -72,7 +72,8 @@ async function downloadFile(url, destination, redirectCount = 0) {
   }
 
   const parsedUrl = new URL(url);
-  const trustedHost = parsedUrl.hostname === 'github.com' || parsedUrl.hostname.endsWith('.githubusercontent.com');
+  const trustedHost =
+    parsedUrl.hostname === 'github.com' || parsedUrl.hostname.endsWith('.githubusercontent.com');
   if (parsedUrl.protocol !== 'https:' || !trustedHost) {
     throw new Error('Téléchargement yt-dlp bloqué: hôte non autorisé.');
   }
@@ -84,7 +85,9 @@ async function downloadFile(url, destination, redirectCount = 0) {
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         response.destroy();
         const nextUrl = new URL(response.headers.location, url).toString();
-        downloadFile(nextUrl, destination, redirectCount + 1).then(resolve).catch(reject);
+        downloadFile(nextUrl, destination, redirectCount + 1)
+          .then(resolve)
+          .catch(reject);
         return;
       }
 
@@ -106,12 +109,15 @@ async function downloadFile(url, destination, redirectCount = 0) {
       const sizeGuard = new Transform({
         transform(chunk, _encoding, callback) {
           receivedBytes += chunk.length;
-          callback(receivedBytes > MAX_DOWNLOAD_BYTES ? new Error('Téléchargement yt-dlp trop volumineux.') : null, chunk);
+          callback(
+            receivedBytes > MAX_DOWNLOAD_BYTES
+              ? new Error('Téléchargement yt-dlp trop volumineux.')
+              : null,
+            chunk
+          );
         }
       });
-      streamPipeline(response, sizeGuard, fileStream)
-        .then(resolve)
-        .catch(reject);
+      streamPipeline(response, sizeGuard, fileStream).then(resolve).catch(reject);
     });
 
     request.setTimeout(DOWNLOAD_TIMEOUT_MS, () => {

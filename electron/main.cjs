@@ -21,7 +21,10 @@ function getDevUrl() {
   if (!raw) return null;
   try {
     const parsed = new URL(raw);
-    return ['http:', 'https:'].includes(parsed.protocol) && ['localhost', '127.0.0.1'].includes(parsed.hostname) ? parsed.toString() : null;
+    return ['http:', 'https:'].includes(parsed.protocol) &&
+      ['localhost', '127.0.0.1'].includes(parsed.hostname)
+      ? parsed.toString()
+      : null;
   } catch {
     return null;
   }
@@ -42,25 +45,39 @@ if (!hasSingleInstanceLock) {
   app.whenReady().then(() => {
     const devUrl = getDevUrl();
     const devOrigin = devUrl ? new URL(devUrl).origin : null;
-    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) =>
+      callback(false)
+    );
     session.defaultSession.setPermissionCheckHandler(() => false);
 
     const dependencies = new DependencyService(app);
     updates = new UpdateService({
       app,
       updater: autoUpdater,
-      isBusy: () => ['running', 'cancelling'].includes(jobs?.snapshot()?.state) || hasActiveProcesses(),
+      isBusy: () =>
+        ['running', 'cancelling'].includes(jobs?.snapshot()?.state) || hasActiveProcesses(),
       openExternal: (url) => shell.openExternal(url),
       notify: (snapshot) => {
         for (const window of BrowserWindow.getAllWindows()) {
-          if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send(ipcChannels.events.updateState, snapshot);
+          if (!window.isDestroyed() && !window.webContents.isDestroyed())
+            window.webContents.send(ipcChannels.events.updateState, snapshot);
         }
       }
     });
-    jobs = registerHandlers({ app, ipcMain, dependencyService: dependencies, updateService: updates, devOrigin });
+    jobs = registerHandlers({
+      app,
+      ipcMain,
+      dependencyService: dependencies,
+      updateService: updates,
+      devOrigin
+    });
     mainWindow = createMainWindow({ devUrl });
-    mainWindow.on('closed', () => { mainWindow = null; });
-    setImmediate(() => { void dependencies.prewarm(); });
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
+    setImmediate(() => {
+      void dependencies.prewarm();
+    });
     updates.start();
   });
 }
@@ -81,6 +98,8 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     mainWindow = createMainWindow({ devUrl: getDevUrl() });
-    mainWindow.on('closed', () => { mainWindow = null; });
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
   }
 });

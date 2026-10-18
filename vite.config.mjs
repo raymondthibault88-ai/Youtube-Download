@@ -9,17 +9,23 @@ export default defineConfig(({ command, isPreview }) => {
   return {
     base: './',
     html: nonce ? { cspNonce: nonce } : undefined,
-    plugins: [react(), {
-      name: 'development-csp',
-      apply: 'serve',
-      transformIndexHtml: {
-        order: 'pre',
-        handler(html, context) {
-          if (!context.server || !nonce) return html;
-          return html.replace(/(?:script-src|style-src) 'self'/g, (directive) => `${directive} 'nonce-${nonce}'`);
+    plugins: [
+      react(),
+      {
+        name: 'development-csp',
+        apply: 'serve',
+        transformIndexHtml: {
+          order: 'pre',
+          handler(html, context) {
+            if (!context.server || !nonce) return html;
+            return html.replace(
+              /(?:script-src|style-src) 'self'/g,
+              (directive) => `${directive} 'nonce-${nonce}'`
+            );
+          }
         }
       }
-    }],
+    ],
     build: {
       target: 'es2020',
       sourcemap: false,

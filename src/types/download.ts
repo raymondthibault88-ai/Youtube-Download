@@ -1,3 +1,8 @@
+export interface DownloadResult {
+  ok: boolean;
+  outputPath: string;
+}
+
 export interface StartDownloadPayload {
   url: string;
   outputDir: string;

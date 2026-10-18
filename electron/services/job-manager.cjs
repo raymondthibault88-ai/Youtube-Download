@@ -35,7 +35,9 @@ class JobManager {
 
   async start(type, sender, executor) {
     if (this.current && ['running', 'cancelling'].includes(this.current.state)) {
-      throw new Error(`Une tâche ${this.current.type === 'download' ? 'de téléchargement' : 'de conversion'} est déjà en cours.`);
+      throw new Error(
+        `Une tâche ${this.current.type === 'download' ? 'de téléchargement' : 'de conversion'} est déjà en cours.`
+      );
     }
 
     const controller = new AbortController();
@@ -62,7 +64,14 @@ class JobManager {
     sender?.once?.('destroyed', onDestroyed);
     try {
       const result = await executor({ signal: controller.signal, update, jobId: id });
-      this.emit({ state: 'completed', percent: 100, speed: null, eta: null, raw: type === 'download' ? 'Téléchargement terminé.' : 'Conversion terminée.', result });
+      this.emit({
+        state: 'completed',
+        percent: 100,
+        speed: null,
+        eta: null,
+        raw: type === 'download' ? 'Téléchargement terminé.' : 'Conversion terminée.',
+        result
+      });
       return result;
     } catch (error) {
       const cancelled = controller.signal.aborted || error?.name === 'AbortError';
@@ -97,7 +106,10 @@ class JobManager {
           resolve();
         }
       }, 50);
-      const timeout = setTimeout(() => { clearInterval(timer); resolve(); }, 5000);
+      const timeout = setTimeout(() => {
+        clearInterval(timer);
+        resolve();
+      }, 5000);
     });
   }
 }

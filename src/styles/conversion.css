@@ -1,0 +1,137 @@
+.file-picker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px 12px;
+}
+.file-picker-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 52px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.file-picker-content {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.file-picker .button {
+  justify-self: start;
+}
+.supported-formats {
+  font-size: 11px;
+  color: var(--muted);
+}
+.local-file {
+  margin: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.local-file-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.local-file > div {
+  min-width: 0;
+  flex: 1;
+}
+.local-file h3 {
+  font-size: 13px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.local-file p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.conversion-settings {
+  display: grid;
+  gap: 8px;
+  padding: 16px 20px;
+}
+.intent-options {
+  display: inline-flex;
+  justify-self: start;
+  min-width: 0;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.intent-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  cursor: pointer;
+}
+.intent-option:hover:not([data-disabled]) {
+  color: var(--accent);
+}
+.intent-option[data-checked] {
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 1px 3px #20212414;
+}
+.setting-help {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--muted);
+}
+.size-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 0 20px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--line);
+}
+.size-preview > div {
+  display: grid;
+  gap: 1px;
+}
+.size-preview > div > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.size-preview strong {
+  font-size: 14px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+}
+.size-preview > svg {
+  color: var(--muted);
+}
+.size-change {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.compression-no-gain {
+  margin: 8px 20px 0;
+  font-size: 11px;
+  color: var(--muted);
+}

@@ -11,7 +11,11 @@ module.exports = defineConfig({
   use: {
     viewport: { width: 1200, height: 760 },
     reducedMotion: 'reduce',
-    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || (!process.env.CI && fs.existsSync(localChrome) ? localChrome : undefined) },
+    launchOptions: {
+      executablePath:
+        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
+        (!process.env.CI && fs.existsSync(localChrome) ? localChrome : undefined)
+    },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure'
   }

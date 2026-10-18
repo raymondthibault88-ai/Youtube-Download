@@ -1,10 +1,4 @@
 {
   "concurrentFragments": 8,
-  "outputTemplate": "%(title).200B.%(ext)s",
-  "initialProgress": {
-    "percent": 0,
-    "speed": null,
-    "eta": null,
-    "raw": ""
-  }
+  "outputTemplate": "%(title).200B.%(ext)s"
 }

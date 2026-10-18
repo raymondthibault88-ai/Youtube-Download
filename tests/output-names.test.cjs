@@ -20,7 +20,10 @@ test('conversion keeps the original name and only numbers existing destinations'
   assert.equal(path.basename(destination), 'Mes vacances.mp4');
   fs.writeFileSync(destination, 'first export');
   assert.equal(path.basename(getAvailableOutputPath(source, directory)), 'Mes vacances (2).mp4');
-  assert.equal(path.basename(getAvailableOutputPath(destination, directory)), 'Mes vacances (2).mp4');
+  assert.equal(
+    path.basename(getAvailableOutputPath(destination, directory)),
+    'Mes vacances (2).mp4'
+  );
   assert.equal(fs.readFileSync(source, 'utf8'), 'original');
   assert.equal(fs.readFileSync(destination, 'utf8'), 'first export');
 });
@@ -45,22 +48,46 @@ for (const operation of ['merge', 'recode', 'remux']) {
         return output;
       }
     };
-    const service = new YouTubeService({ ytDlpPath: '/yt-dlp', ffmpegPath: '/ffmpeg', mediaService, processRunner: async (_command, args, options) => {
-      const stagingDir = args[args.indexOf('-P') + 1];
-      assert.equal(path.dirname(stagingDir), directory);
-      const downloaded = path.join(stagingDir, `Été à Dijon.${operation === 'recode' ? 'webm' : 'mp4'}`);
-      fs.writeFileSync(downloaded, 'downloaded');
-      const printed = Buffer.from(`__YTDLP_FILE__:${downloaded}\n`);
-      const split = printed.indexOf(Buffer.from('É')) + 1;
-      options.onStdout(printed.subarray(0, split));
-      options.onStdout(printed.subarray(split));
-      return { stdout: '', stderr: '' };
-    } });
-    const result = await service.download({ formatId: '137', outputDir: directory, url: 'https://youtu.be/test', mergeAudioIfNeeded: operation === 'merge', shouldRecodeToMp4: operation === 'recode' }, new AbortController().signal, () => {});
-    assert.equal(path.basename(result.outputPath), operation === 'merge' ? 'Été à Dijon (2).mp4' : 'Été à Dijon.mp4');
-    assert.equal(fs.readFileSync(result.outputPath, 'utf8'), { merge: 'downloaded', recode: 'encoded', remux: 'remuxed' }[operation]);
+    const service = new YouTubeService({
+      ytDlpPath: '/yt-dlp',
+      ffmpegPath: '/ffmpeg',
+      mediaService,
+      processRunner: async (_command, args, options) => {
+        const stagingDir = args[args.indexOf('-P') + 1];
+        assert.equal(path.dirname(stagingDir), directory);
+        const downloaded = path.join(
+          stagingDir,
+          `Été à Dijon.${operation === 'recode' ? 'webm' : 'mp4'}`
+        );
+        fs.writeFileSync(downloaded, 'downloaded');
+        const printed = Buffer.from(`__YTDLP_FILE__:${downloaded}\n`);
+        const split = printed.indexOf(Buffer.from('É')) + 1;
+        options.onStdout(printed.subarray(0, split));
+        options.onStdout(printed.subarray(split));
+        return { stdout: '', stderr: '' };
+      }
+    });
+    const result = await service.download(
+      {
+        formatId: '137',
+        outputDir: directory,
+        url: 'https://youtu.be/test',
+        mergeAudioIfNeeded: operation === 'merge',
+        shouldRecodeToMp4: operation === 'recode'
+      },
+      new AbortController().signal,
+      () => {}
+    );
+    assert.equal(
+      path.basename(result.outputPath),
+      operation === 'merge' ? 'Été à Dijon (2).mp4' : 'Été à Dijon.mp4'
+    );
+    assert.equal(
+      fs.readFileSync(result.outputPath, 'utf8'),
+      { merge: 'downloaded', recode: 'encoded', remux: 'remuxed' }[operation]
+    );
     if (operation === 'merge') assert.equal(fs.readFileSync(previous, 'utf8'), 'existing export');
-    assert.ok(fs.readdirSync(directory).every(name => name.endsWith('.mp4')));
+    assert.ok(fs.readdirSync(directory).every((name) => name.endsWith('.mp4')));
   });
 }
 
@@ -68,11 +95,25 @@ test('cancelling a download removes only its partial working files', async (t) =
   const directory = createDirectory(t);
   const previous = path.join(directory, 'Mes vacances.mp4');
   fs.writeFileSync(previous, 'existing export');
-  const service = new YouTubeService({ ytDlpPath: '/yt-dlp', ffmpegPath: '/ffmpeg', mediaService: {}, processRunner: async (_command, args) => {
-    fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], 'partial.mp4.part'), 'partial');
-    const error = new Error('Cancelled'); error.name = 'AbortError'; throw error;
-  } });
-  await assert.rejects(service.download({ formatId: '137', outputDir: directory, url: 'https://youtu.be/test' }, new AbortController().signal, () => {}), { name: 'AbortError' });
+  const service = new YouTubeService({
+    ytDlpPath: '/yt-dlp',
+    ffmpegPath: '/ffmpeg',
+    mediaService: {},
+    processRunner: async (_command, args) => {
+      fs.writeFileSync(path.join(args[args.indexOf('-P') + 1], 'partial.mp4.part'), 'partial');
+      const error = new Error('Cancelled');
+      error.name = 'AbortError';
+      throw error;
+    }
+  });
+  await assert.rejects(
+    service.download(
+      { formatId: '137', outputDir: directory, url: 'https://youtu.be/test' },
+      new AbortController().signal,
+      () => {}
+    ),
+    { name: 'AbortError' }
+  );
   assert.deepEqual(fs.readdirSync(directory), ['Mes vacances.mp4']);
   assert.equal(fs.readFileSync(previous, 'utf8'), 'existing export');
 });

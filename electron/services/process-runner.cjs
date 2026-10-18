@@ -17,7 +17,9 @@ function terminateChild(child) {
   if (!child || child.exitCode !== null || child.killed) return;
 
   if (process.platform === 'win32') {
-    const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+    const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+      windowsHide: true
+    });
     killer.unref();
     return;
   }
@@ -89,11 +91,25 @@ function runProcess(command, args, options = {}) {
 }
 
 async function shutdownProcesses() {
-  await Promise.all([...activeChildren].map((child) => new Promise((resolve) => {
-    const timer = setTimeout(resolve, 5000);
-    child.once('close', () => { clearTimeout(timer); resolve(); });
-    terminateChild(child);
-  })));
+  await Promise.all(
+    [...activeChildren].map(
+      (child) =>
+        new Promise((resolve) => {
+          const timer = setTimeout(resolve, 5000);
+          child.once('close', () => {
+            clearTimeout(timer);
+            resolve();
+          });
+          terminateChild(child);
+        })
+    )
+  );
 }
 
-module.exports = { appendTail, createAbortError, runProcess, shutdownProcesses, hasActiveProcesses: () => activeChildren.size > 0 };
+module.exports = {
+  appendTail,
+  createAbortError,
+  runProcess,
+  shutdownProcesses,
+  hasActiveProcesses: () => activeChildren.size > 0
+};

@@ -1,8 +1,11 @@
-export type JobState = "running" | "cancelling" | "completed" | "cancelled" | "failed";
+import type { ConversionResult } from './conversion';
+import type { DownloadResult } from './download';
 
-export interface JobSnapshot {
+export type MediaOperation = 'download' | 'conversion';
+export type JobState = 'running' | 'cancelling' | 'completed' | 'cancelled' | 'failed';
+
+interface JobDetails {
   id: string;
-  type: "download" | "conversion";
   state: JobState;
   percent: number;
   speed: string | null;
@@ -11,5 +14,10 @@ export interface JobSnapshot {
   startedAt: number;
   updatedAt: number;
   error: string | null;
-  result: unknown;
 }
+
+export type JobSnapshot = JobDetails &
+  (
+    | { type: 'download'; result: DownloadResult | null }
+    | { type: 'conversion'; result: ConversionResult | null }
+  );

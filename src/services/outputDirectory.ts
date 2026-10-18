@@ -1,5 +1,5 @@
-import { selectOutputDir } from "./desktopApi";
-import { readTextStorage, STORAGE_KEYS, writeTextStorage } from "../utils/localStorage";
+import { selectOutputDir } from './desktopApi';
+import { readTextStorage, STORAGE_KEYS, writeTextStorage } from '../utils/localStorage';
 
 export function getStoredOutputDir() {
   return readTextStorage(STORAGE_KEYS.outputDir);

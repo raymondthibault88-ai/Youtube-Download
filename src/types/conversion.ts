@@ -1,3 +1,5 @@
+export type ConversionProfile = 'fast' | 'balanced' | 'compact';
+
 export interface SelectedVideoFile {
   path: string;
   name: string;
@@ -9,7 +11,7 @@ export interface SelectedVideoFile {
   outputOptions: Array<{
     height: number | null;
     label: string;
-    estimates: Record<"fast" | "balanced" | "compact", number | null>;
+    estimates: Record<ConversionProfile, number | null>;
   }>;
 }
 
@@ -17,7 +19,7 @@ export interface StartConversionPayload {
   inputPath: string;
   outputDir?: string;
   targetHeight?: number | null;
-  profileId?: "fast" | "balanced" | "compact";
+  profileId?: ConversionProfile;
 }
 
 export interface ConversionResult {

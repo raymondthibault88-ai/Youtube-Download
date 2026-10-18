@@ -2,10 +2,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { clipboard, dialog, shell } = require('electron');
 const ipcChannels = require('../../shared/ipc.json');
+const conversionConfig = require('../../shared/conversion-config.json');
 const { JobManager } = require('../services/job-manager.cjs');
 const { MediaService, buildOutputOptions } = require('../services/media.cjs');
 const { YouTubeService } = require('../services/youtube.cjs');
-const { requireAbsolutePath, validateFormatId, validateSender, validateYouTubeUrl } = require('../services/validation.cjs');
+const {
+  requireAbsolutePath,
+  validateFormatId,
+  validateSender,
+  validateYouTubeUrl
+} = require('../services/validation.cjs');
 
 function registerHandlers({ app, ipcMain, dependencyService, updateService, devOrigin }) {
   const jobs = new JobManager({ channel: ipcChannels.events.jobUpdate });
@@ -18,17 +24,31 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
   const assertSender = (event) => validateSender(event, { appPath: app.getAppPath(), devOrigin });
   const getMedia = async () => {
     if (!mediaPromise) {
-      mediaPromise = dependencyService.getFfmpegInfo().then((info) => new MediaService(info.ffmpegPath)).catch((error) => {
-        mediaPromise = null;
-        throw error;
-      });
+      mediaPromise = dependencyService
+        .getFfmpegInfo()
+        .then((info) => new MediaService(info.ffmpegPath))
+        .catch((error) => {
+          mediaPromise = null;
+          throw error;
+        });
     }
     return mediaPromise;
   };
   const getYoutube = async () => {
     if (!youtubePromise) {
-      youtubePromise = Promise.all([dependencyService.getYtDlpInfo(), dependencyService.getFfmpegInfo(), getMedia()])
-        .then(([ytDlp, ffmpeg, media]) => new YouTubeService({ ytDlpPath: ytDlp.ytDlpPath, ffmpegPath: ffmpeg.ffmpegPath, mediaService: media }))
+      youtubePromise = Promise.all([
+        dependencyService.getYtDlpInfo(),
+        dependencyService.getFfmpegInfo(),
+        getMedia()
+      ])
+        .then(
+          ([ytDlp, ffmpeg, media]) =>
+            new YouTubeService({
+              ytDlpPath: ytDlp.ytDlpPath,
+              ffmpegPath: ffmpeg.ffmpegPath,
+              mediaService: media
+            })
+        )
         .catch((error) => {
           youtubePromise = null;
           throw error;
@@ -48,7 +68,9 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
   handle(ipcChannels.invoke.depsCheck, async () => dependencyService.getInfo());
   handle(ipcChannels.invoke.jobCurrent, async () => jobs.snapshot());
   handle(ipcChannels.invoke.jobCancel, async () => ({ ok: jobs.cancel() }));
-  handle(ipcChannels.invoke.clipboardRead, async () => (await clipboard.readText()).slice(0, 16384).trim());
+  handle(ipcChannels.invoke.clipboardRead, async () =>
+    (await clipboard.readText()).slice(0, 16384).trim()
+  );
   handle(ipcChannels.invoke.updateCurrent, async () => updateService.snapshot());
   handle(ipcChannels.invoke.updateCheck, async () => updateService.check());
   handle(ipcChannels.invoke.updateDownload, async () => updateService.download());
@@ -74,14 +96,21 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
   });
 
   handle(ipcChannels.invoke.dialogSelectOutput, async () => {
-    const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory']
+    });
     return canceled ? null : filePaths[0] || null;
   });
 
   handle(ipcChannels.invoke.dialogSelectVideo, async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       properties: ['openFile'],
-      filters: [{ name: 'Fichiers vidéo', extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm', 'm4v', 'mts', 'm2ts', 'wmv'] }]
+      filters: [
+        {
+          name: 'Fichiers vidéo',
+          extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm', 'm4v', 'mts', 'm2ts', 'wmv']
+        }
+      ]
     });
     if (canceled || !filePaths[0]) return null;
     const filePath = path.normalize(filePaths[0]);
@@ -100,11 +129,19 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
   handle(ipcChannels.invoke.conversionStart, async (event, payload) => {
     updateService.assertCanStartJob();
     const inputPath = requireAbsolutePath(payload?.inputPath, 'Fichier source');
-    if (!selectedInputs.has(inputPath) || !fs.existsSync(inputPath)) throw new Error('Sélectionne à nouveau le fichier source.');
-    const outputDir = payload?.outputDir ? requireAbsolutePath(payload.outputDir, 'Dossier de sortie') : path.dirname(inputPath);
+    if (!selectedInputs.has(inputPath) || !fs.existsSync(inputPath))
+      throw new Error('Sélectionne à nouveau le fichier source.');
+    const outputDir = payload?.outputDir
+      ? requireAbsolutePath(payload.outputDir, 'Dossier de sortie')
+      : path.dirname(inputPath);
     const targetHeight = payload?.targetHeight == null ? null : Number(payload.targetHeight);
-    if (targetHeight !== null && ![2160, 1440, 1080, 720, 480].includes(targetHeight)) throw new Error('Résolution de sortie invalide.');
-    const profileId = ['fast', 'balanced', 'compact'].includes(payload?.profileId) ? payload.profileId : 'fast';
+    if (targetHeight !== null && !conversionConfig.resolutions.includes(targetHeight))
+      throw new Error('Résolution de sortie invalide.');
+    const profileId = conversionConfig.speedProfiles.some(
+      (profile) => profile.id === payload?.profileId
+    )
+      ? payload.profileId
+      : conversionConfig.speedProfiles[0].id;
     const media = await getMedia();
     updateService.assertCanStartJob();
     return jobs.start('conversion', event.sender, async ({ signal, update }) => {
@@ -113,9 +150,18 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
       const mediaInfo = await media.inspect(inputPath, signal);
       const onProgress = (progress) => {
         update(progress);
-        if (!event.sender.isDestroyed()) event.sender.send(ipcChannels.events.conversionProgress, progress);
+        if (!event.sender.isDestroyed())
+          event.sender.send(ipcChannels.events.conversionProgress, progress);
       };
-      const outputPath = await media.convert({ inputPath, outputDir, targetHeight, profileId, mediaInfo, signal, onProgress });
+      const outputPath = await media.convert({
+        inputPath,
+        outputDir,
+        targetHeight,
+        profileId,
+        mediaInfo,
+        signal,
+        onProgress
+      });
       const outputStats = await fs.promises.stat(outputPath);
       revealablePaths.add(outputPath);
       return { ok: true, outputPath, inputSize: inputStats.size, outputSize: outputStats.size };
@@ -139,7 +185,8 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
     return jobs.start('download', event.sender, async ({ signal, update }) => {
       const result = await youtube.download(cleanPayload, signal, (progress) => {
         update(progress);
-        if (!event.sender.isDestroyed()) event.sender.send(ipcChannels.events.downloadProgress, progress);
+        if (!event.sender.isDestroyed())
+          event.sender.send(ipcChannels.events.downloadProgress, progress);
       });
       revealablePaths.add(result.outputPath);
       return result;
@@ -150,7 +197,8 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
     const targetPath = requireAbsolutePath(rawPath, 'Chemin');
     const downloadsPath = path.normalize(app.getPath('downloads'));
     const allowed = revealablePaths.has(targetPath) || targetPath === downloadsPath;
-    if (!allowed || !fs.existsSync(targetPath)) throw new Error('Ce fichier ne peut pas être affiché.');
+    if (!allowed || !fs.existsSync(targetPath))
+      throw new Error('Ce fichier ne peut pas être affiché.');
     const stats = await fs.promises.stat(targetPath);
     if (stats.isDirectory()) {
       const error = await shell.openPath(targetPath);

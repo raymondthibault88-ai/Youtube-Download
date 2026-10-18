@@ -1,0 +1,12 @@
+{
+  "allowedHosts": [
+    "youtube.com",
+    "www.youtube.com",
+    "m.youtube.com",
+    "music.youtube.com",
+    "youtu.be",
+    "www.youtu.be"
+  ],
+  "analysisCacheTtlMs": 600000,
+  "urlExpiryMarginMs": 60000
+}

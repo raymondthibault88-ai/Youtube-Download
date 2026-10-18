@@ -5,7 +5,14 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['dist/**', 'release/**', 'node_modules/**', 'test-results/**', 'playwright-report/**']
+    ignores: [
+      'dist/**',
+      'release/**',
+      'node_modules/**',
+      'graphify-out/**',
+      'test-results/**',
+      'playwright-report/**'
+    ]
   },
   js.configs.recommended,
   ...tseslint.configs.recommended.map((config) => ({
@@ -23,7 +30,7 @@ export default [
         }
       },
       globals: globals.browser
-    },
+    }
   },
   {
     files: ['src/**/*.{js,jsx,ts,tsx}'],

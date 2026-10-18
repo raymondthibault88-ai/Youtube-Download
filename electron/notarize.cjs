@@ -7,11 +7,21 @@ module.exports = async function notarizeAfterSign(context) {
   const { APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID } = process.env;
   if (!APPLE_ID || !APPLE_APP_SPECIFIC_PASSWORD || !APPLE_TEAM_ID) {
     try {
-      execFileSync('/usr/bin/codesign', ['--verify', '--deep', '--strict', appPath], { stdio: 'pipe' });
+      execFileSync('/usr/bin/codesign', ['--verify', '--deep', '--strict', appPath], {
+        stdio: 'pipe'
+      });
     } catch {
-      console.log('Signature de développement non distribuable détectée, application d’une signature locale ad hoc valide.');
-      execFileSync('/usr/bin/codesign', ['--force', '--deep', '--sign', '-', '--options', 'runtime', '--timestamp=none', appPath], { stdio: 'inherit' });
-      execFileSync('/usr/bin/codesign', ['--verify', '--deep', '--strict', appPath], { stdio: 'inherit' });
+      console.log(
+        'Signature de développement non distribuable détectée, application d’une signature locale ad hoc valide.'
+      );
+      execFileSync(
+        '/usr/bin/codesign',
+        ['--force', '--deep', '--sign', '-', '--options', 'runtime', '--timestamp=none', appPath],
+        { stdio: 'inherit' }
+      );
+      execFileSync('/usr/bin/codesign', ['--verify', '--deep', '--strict', appPath], {
+        stdio: 'inherit'
+      });
     }
     console.log('Notarisation ignorée: identifiants Apple absents.');
     return;

@@ -25,7 +25,8 @@ function collect(name, from) {
   const directory = path.dirname(manifestPath);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const key = `${manifest.name.replaceAll('/', '__')}-${manifest.version}`;
-  const licenseFiles = fs.readdirSync(directory, { withFileTypes: true })
+  const licenseFiles = fs
+    .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /^(licen[cs]e|copying|notice)([.-]|$)/i.test(entry.name))
     .map((entry) => entry.name);
   for (const file of licenseFiles) {
@@ -33,18 +34,33 @@ function collect(name, from) {
     fs.mkdirSync(target, { recursive: true });
     fs.copyFileSync(path.join(directory, file), path.join(target, file));
   }
-  packages.push({ name: manifest.name, version: manifest.version, license: manifest.license || 'Consulter le paquet source', repository: manifest.repository || null, licenseFiles: licenseFiles.map((file) => `npm/${key}/${file}`) });
+  packages.push({
+    name: manifest.name,
+    version: manifest.version,
+    license: manifest.license || 'Consulter le paquet source',
+    repository: manifest.repository || null,
+    licenseFiles: licenseFiles.map((file) => `npm/${key}/${file}`)
+  });
   for (const dependency of Object.keys(manifest.dependencies || {})) collect(dependency, directory);
 }
 
-for (const name of [...Object.keys(project.dependencies), 'react', 'react-dom', 'electron']) collect(name, root);
-packages.sort((left, right) => left.name.localeCompare(right.name) || left.version.localeCompare(right.version));
+for (const name of [...Object.keys(project.dependencies), 'react', 'react-dom', 'electron'])
+  collect(name, root);
+packages.sort(
+  (left, right) => left.name.localeCompare(right.name) || left.version.localeCompare(right.version)
+);
 fs.mkdirSync(destination, { recursive: true });
-fs.writeFileSync(path.join(root, 'licenses', 'THIRD_PARTY_PACKAGES.json'), `${JSON.stringify(packages, null, 2)}\n`);
+fs.writeFileSync(
+  path.join(root, 'licenses', 'THIRD_PARTY_PACKAGES.json'),
+  `${JSON.stringify(packages, null, 2)}\n`
+);
 
 // Keep the provider's build configuration next to the binary's full licence.
 const ffmpeg = require('ffmpeg-static');
-for (const [extension, target] of [['LICENSE', 'FFmpeg-binary-LICENSE.txt'], ['README', `FFmpeg-${process.platform}-${process.arch}-BUILD.txt`]]) {
+for (const [extension, target] of [
+  ['LICENSE', 'FFmpeg-binary-LICENSE.txt'],
+  ['README', `FFmpeg-${process.platform}-${process.arch}-BUILD.txt`]
+]) {
   const source = `${ffmpeg}.${extension}`;
   if (fs.existsSync(source)) fs.copyFileSync(source, path.join(root, 'licenses', target));
 }

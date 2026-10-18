@@ -47,7 +47,8 @@ class DependencyService {
     if (this.ffmpegPromise) return this.ffmpegPromise;
     this.ffmpegPromise = (async () => {
       const ffmpegPath = this.resolveFfmpegPath();
-      if (!ffmpegPath || !fs.existsSync(ffmpegPath)) throw new Error('FFmpeg est introuvable. Réinstalle l’application.');
+      if (!ffmpegPath || !fs.existsSync(ffmpegPath))
+        throw new Error('FFmpeg est introuvable. Réinstalle l’application.');
       const { stdout } = await runProcess(ffmpegPath, ['-version']);
       this.ffmpegInfo = { ffmpegPath, ffmpegVersion: (stdout.split('\n')[0] || '').trim() };
       return this.ffmpegInfo;

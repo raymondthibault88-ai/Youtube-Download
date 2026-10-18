@@ -1,10 +1,10 @@
-import type { DependencyInfo } from "./deps";
-import type { StartDownloadPayload } from "./download";
-import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from "./conversion";
-import type { ProgressState } from "./progress";
-import type { JobSnapshot } from "./job";
-import type { VideoInfo } from "./video";
-import type { UpdateSnapshot } from "./update";
+import type { DependencyInfo } from './deps';
+import type { DownloadResult, StartDownloadPayload } from './download';
+import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from './conversion';
+import type { ProgressState } from './progress';
+import type { JobSnapshot } from './job';
+import type { VideoInfo } from './video';
+import type { UpdateSnapshot } from './update';
 
 interface DesktopAPI {
   getStartupInfo: () => Promise<{ downloadsPath?: string }>;
@@ -14,7 +14,7 @@ interface DesktopAPI {
   readClipboard: () => Promise<string>;
   selectVideoFile: () => Promise<SelectedVideoFile | null>;
   selectOutputDir: () => Promise<string | null>;
-  startDownload: (payload: StartDownloadPayload) => Promise<{ ok: boolean; outputPath: string }>;
+  startDownload: (payload: StartDownloadPayload) => Promise<DownloadResult>;
   startConversion: (payload: StartConversionPayload) => Promise<ConversionResult>;
   getCurrentJob: () => Promise<JobSnapshot | null>;
   cancelJob: () => Promise<{ ok: boolean }>;

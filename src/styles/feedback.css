@@ -1,0 +1,142 @@
+.notice {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin-top: 18px;
+  padding: 15px 18px;
+  border: 1px solid #ebc2c9;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.notice > svg {
+  margin-top: 1px;
+}
+.notice > div {
+  flex: 1;
+  min-width: 0;
+}
+.notice .icon-button {
+  color: var(--danger);
+  margin-top: -6px;
+}
+.notice details {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.notice summary {
+  cursor: pointer;
+}
+.notice pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 160px;
+  overflow: auto;
+  font-size: 12px;
+}
+.job-status {
+  position: fixed;
+  bottom: var(--export-dock-height);
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px var(--dock-inline);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  max-height: min(220px, 35vh);
+  overflow: auto;
+}
+.job-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #fff0f3;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.job-content {
+  flex: 1;
+  min-width: 0;
+}
+.job-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.job-title-row h2 {
+  font-size: 13px;
+  font-weight: 750;
+}
+.job-percent {
+  font-size: 13px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.job-content > p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.job-progress {
+  margin-top: 13px;
+}
+.progress-track {
+  height: 5px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #e8e8ec;
+}
+.progress-indicator {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 240ms ease;
+}
+.job-progress[data-status='indeterminate'] .progress-indicator {
+  width: 30%;
+  animation: indeterminate 1.5s ease-in-out infinite;
+}
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.job-path {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 5px;
+}
+.job-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.job-actions .button {
+  min-height: 34px;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.job-status.is-complete {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+}
+.job-status.is-complete .job-icon {
+  background: var(--success);
+  color: white;
+}

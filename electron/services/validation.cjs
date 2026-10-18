@@ -1,10 +1,8 @@
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 
-const YOUTUBE_HOSTS = new Set([
-  'youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com',
-  'youtu.be', 'www.youtu.be'
-]);
+const { allowedHosts } = require('../../shared/youtube-config.json');
+const YOUTUBE_HOSTS = new Set(allowedHosts);
 
 function validateYouTubeUrl(value) {
   let parsed;
@@ -36,11 +34,12 @@ function validateSender(event, { appPath, devOrigin }) {
   try {
     if (event.senderFrame?.parent) throw new Error('Subframe');
     const parsed = new URL(frameUrl);
-    if (devOrigin && ['http:', 'https:'].includes(parsed.protocol) && parsed.origin === devOrigin) return;
+    if (devOrigin && ['http:', 'https:'].includes(parsed.protocol) && parsed.origin === devOrigin)
+      return;
     if (parsed.protocol === 'file:') {
       const actual = path.normalize(fileURLToPath(parsed));
       const expected = path.join(appPath, 'dist', 'index.html');
-      const normalizeCase = (value) => process.platform === 'win32' ? value.toLowerCase() : value;
+      const normalizeCase = (value) => (process.platform === 'win32' ? value.toLowerCase() : value);
       if (normalizeCase(actual) === normalizeCase(path.normalize(expected))) return;
     }
   } catch {
