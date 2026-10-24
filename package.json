@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader-desktop",
-  "version": "5.2.0",
+  "version": "5.1.1",
   "description": "Téléchargez et convertissez vos vidéos en MP4 simplement, sur Windows et macOS",
   "main": "electron/main.cjs",
   "author": "",
@@ -26,7 +26,6 @@
     "test:smoke": "node scripts/smoke-test.cjs",
     "test:ui": "playwright test",
     "test:desktop": "node scripts/desktop-smoke.cjs",
-    "test:launch": "node scripts/launch-test.cjs",
     "test:conversion": "node scripts/benchmark-conversion.cjs",
     "test:download": "node scripts/benchmark-download.cjs",
     "setup:desktop": "node node_modules/electron/install.js",

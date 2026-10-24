@@ -1,18 +1,6 @@
-# YouTube Downloader V5.2
+# YouTube Downloader V5.1
 
 Application Electron 44 + React 19 pour télécharger une vidéo YouTube ou convertir un fichier local en MP4 H.264/AAC compatible QuickTime et Dartfish.
-
-## Bibliothèque V5.2
-
-L’onglet **Bibliothèque** importe les vidéos d’une playlist ou d’une chaîne publique depuis son lien. Il propose une liste compacte, une recherche, la sélection des vidéos affichées et un téléchargement par lot séquentiel. Aucune vidéo n’est sélectionnée ou téléchargée automatiquement. Un import public affiche au maximum 500 vidéos, avec indication si la liste est plus longue ; un lot contient au maximum 500 vidéos.
-
-La qualité du lot reprend la recommandation existante ou la définition choisie, avec une définition inférieure si nécessaire. **Choisir la qualité** permet de sélectionner un format précis pour une vidéo, avec la liste complète des formats déjà disponible. Le moteur, les règles audio, les conversions, les noms de fichiers et les réglages MP4 restent identiques. Un échec n’interrompt pas les vidéos suivantes ; l’annulation arrête la sélection restante et conserve les exports terminés. Les échecs peuvent être sélectionnés pour une nouvelle tentative.
-
-La connexion Google utilise OAuth dans le navigateur système pour consulter les vidéos de la chaîne et les playlists possédées par le compte. Elle nécessite un client OAuth Google de type Desktop configuré une fois pour l’application : voir [Configurer la connexion Google](docs/google-connection.md). La version test n’embarque aucun client Google par défaut. Les jetons restent dans Electron, avec chiffrement du jeton de renouvellement par le stockage sécurisé du système. La déconnexion efface les données affichées et la session locale, puis demande la révocation à Google.
-
-Les vidéos privées peuvent apparaître dans le catalogue autorisé mais restent désactivées : cette connexion au catalogue n’authentifie pas le moteur de téléchargement existant. Les playlists privées contenant des vidéos publiques peuvent être consultées après connexion. L’historique et « À regarder plus tard » ne sont pas disponibles via cette API.
-
-Après `npm run build`, `npm run test:launch` ouvre la V5.2 dans un profil isolé sous `test-results/v5.2/preview-user-data`, sans installer ni modifier l’application distribuée. Le test complet `npm run verify` inclut les parcours bibliothèque et les contrôles OAuth simulant Google sur un callback local. La vérification de connexion réelle nécessite la configuration Google et le consentement de son propriétaire.
 
 ## Interface V5.1
 

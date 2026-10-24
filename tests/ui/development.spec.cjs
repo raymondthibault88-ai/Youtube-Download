@@ -50,15 +50,7 @@ test('development loads global styles, CSS modules and fonts under the content s
         checkedAt: null
       }),
       onUpdateState: () => () => {},
-      onJobUpdate: () => () => {},
-      getYouTubeAccount: async () => ({
-        configured: false,
-        connected: false,
-        connecting: false,
-        channel: null,
-        error: null
-      }),
-      onYouTubeAccount: () => () => {}
+      onJobUpdate: () => () => {}
     };
   });
   await page.goto(devUrl);

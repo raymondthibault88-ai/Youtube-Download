@@ -55,11 +55,7 @@ function createMainWindow({ devUrl }) {
   });
 
   if (devUrl) window.loadURL(devUrl);
-  else
-    window.loadFile(
-      path.join(__dirname, '..', 'dist', 'index.html'),
-      process.argv.includes('--library-preview') ? { hash: 'library' } : {}
-    );
+  else window.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   return window;
 }
 

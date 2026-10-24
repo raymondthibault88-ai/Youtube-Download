@@ -5,14 +5,12 @@ export default function FormatsTable({
   formats,
   selected,
   onSelect,
-  disabled,
-  groupName = 'advanced-format'
+  disabled
 }: {
   formats: VideoFormat[];
   selected: string | null;
   onSelect: (format: VideoFormat) => void;
   disabled: boolean;
-  groupName?: string;
 }) {
   return (
     <div className="formats-scroll" role="region" aria-label="Tous les formats source" tabIndex={0}>
@@ -42,7 +40,7 @@ export default function FormatsTable({
               <td>
                 <input
                   type="radio"
-                  name={groupName}
+                  name="advanced-format"
                   checked={selected === format.id}
                   disabled={disabled}
                   onChange={() => onSelect(format)}

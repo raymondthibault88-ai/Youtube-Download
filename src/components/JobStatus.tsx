@@ -26,18 +26,15 @@ export default function JobStatus({
   const completed = job?.state === 'completed';
   const result = job?.result;
   const conversion = job?.type === 'conversion' ? job.result : null;
-  const batch = job?.type === 'batch' ? job.result : null;
   const outputPath = result?.outputPath;
   const title = active
     ? job?.state === 'cancelling'
       ? 'Annulation en cours…'
-      : type !== 'conversion'
+      : type === 'download'
         ? 'Téléchargement en cours'
         : 'Traitement en cours'
     : completed
-      ? batch
-        ? `${batch.completed} vidéo${batch.completed > 1 ? 's' : ''} enregistrée${batch.completed > 1 ? 's' : ''}`
-        : 'Fichier enregistré'
+      ? 'Fichier enregistré'
       : 'Traitement annulé';
   const percent = job ? Math.max(0, Math.min(100, Math.round(job.percent || 0))) : null;
   return (
@@ -64,24 +61,12 @@ export default function JobStatus({
           )}
         </div>
         {active && <p>{job?.raw || 'Préparation…'}</p>}
-        {active && job?.batch && (
-          <p>
-            {job.batch.index} / {job.batch.total} · {job.batch.currentTitle}
-          </p>
-        )}
-        {!active && batch && (
-          <p>
-            {batch.completed} réussie{batch.completed > 1 ? 's' : ''}
-            {batch.failed > 0 ? ` · ${batch.failed} en échec` : ''}
-            {batch.cancelled > 0 ? ` · ${batch.cancelled} annulée(s)` : ''}
-          </p>
-        )}
         {active && (
           <Progress.Root
             value={percent}
             className="job-progress"
             aria-label={
-              type !== 'conversion' ? 'Progression du téléchargement' : 'Progression du traitement'
+              type === 'download' ? 'Progression du téléchargement' : 'Progression du traitement'
             }
           >
             <Progress.Track className="progress-track">
@@ -91,14 +76,10 @@ export default function JobStatus({
         )}
         {active && (job?.eta || job?.speed) && (
           <div className="job-meta">
-            {job.eta && (
-              <span>
-                {type === 'batch' ? 'Vidéo actuelle' : 'Temps restant'} : {job.eta}
-              </span>
-            )}
+            {job.eta && <span>Temps restant : {job.eta}</span>}
             {job.speed && (
               <span>
-                {type !== 'conversion' ? 'Débit' : 'Vitesse'} : {job.speed}
+                {type === 'download' ? 'Débit' : 'Vitesse'} : {job.speed}
               </span>
             )}
           </div>
@@ -140,7 +121,7 @@ export default function JobStatus({
                 onClick={() => onReveal(outputPath)}
               >
                 <FolderOpen size={16} aria-hidden="true" />
-                {type === 'batch' ? 'Afficher les fichiers' : 'Afficher le fichier'}
+                Afficher le fichier
               </button>
             )}
             <button

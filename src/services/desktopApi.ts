@@ -8,7 +8,6 @@ import type {
 import type { VideoInfo } from '../types/video';
 import type { JobSnapshot } from '../types/job';
 import type { UpdateSnapshot } from '../types/update';
-import type { YouTubeAccountSnapshot, StartBatchDownloadPayload } from '../types/library';
 
 function getApi() {
   if (!window.desktopAPI) {
@@ -87,38 +86,4 @@ export function openUpdateRelease(): Promise<{ ok: boolean }> {
 }
 export function onUpdateState(handler: (payload: UpdateSnapshot) => void) {
   return getApi().onUpdateState(handler);
-}
-
-export function importLibrary(source: string) {
-  return getApi().importLibrary(source);
-}
-export function cancelLibraryImport() {
-  return getApi().cancelLibraryImport();
-}
-export function startBatchDownload(payload: StartBatchDownloadPayload) {
-  return getApi().startBatchDownload(payload);
-}
-export function getYouTubeAccount() {
-  return getApi().getYouTubeAccount();
-}
-export function connectYouTubeAccount() {
-  return getApi().connectYouTubeAccount();
-}
-export function cancelYouTubeAccount() {
-  return getApi().cancelYouTubeAccount();
-}
-export function configureYouTubeAccount() {
-  return getApi().configureYouTubeAccount();
-}
-export function disconnectYouTubeAccount() {
-  return getApi().disconnectYouTubeAccount();
-}
-export function getAccountPlaylists(pageToken?: string) {
-  return getApi().getAccountPlaylists(pageToken);
-}
-export function getAccountVideos(playlistId: string, pageToken?: string) {
-  return getApi().getAccountVideos(playlistId, pageToken);
-}
-export function onYouTubeAccount(handler: (payload: YouTubeAccountSnapshot) => void) {
-  return getApi().onYouTubeAccount(handler);
 }

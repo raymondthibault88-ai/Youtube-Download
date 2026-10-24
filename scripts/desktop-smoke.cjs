@@ -387,57 +387,12 @@ async function main() {
         realPackagedIpc: Boolean(process.env.V5_EXECUTABLE)
       };
     }
-    const accountState = await page.evaluate(() => window.desktopAPI.getYouTubeAccount());
-    assert.equal(typeof accountState.configured, 'boolean');
-    assert.equal(Object.hasOwn(accountState, 'accessToken'), false);
-    assert.equal(Object.hasOwn(accountState, 'refreshToken'), false);
-    let libraryImport = null;
-    if (process.env.V52_LIBRARY_SMOKE_URL) {
-      await page.getByRole('tab', { name: 'Bibliothèque', exact: true }).click();
-      await page
-        .getByLabel('Playlist ou chaîne YouTube', { exact: true })
-        .fill(process.env.V52_LIBRARY_SMOKE_URL);
-      await page.getByRole('button', { name: 'Importer', exact: true }).click();
-      const list = page.getByRole('list', { name: 'Vidéos de la bibliothèque' });
-      await list.waitFor({ timeout: 90000 });
-      const rows = await list.getByRole('listitem').count();
-      assert.ok(rows > 0 && rows <= 500);
-      const checkboxes = list.getByRole('checkbox');
-      let selected = false;
-      for (let index = 0; index < Math.min(rows, 20); index++) {
-        if (await checkboxes.nth(index).isEnabled()) {
-          await checkboxes.nth(index).check();
-          selected = true;
-          break;
-        }
-      }
-      assert.equal(selected, true);
-      await page.getByRole('radio', { name: '1080p pour le lot', exact: true }).click();
-      assert.equal(
-        await page.getByRole('button', { name: 'Télécharger 1 vidéo', exact: true }).isEnabled(),
-        true
-      );
-      await page.screenshot({
-        path: path.join(artifactDir, 'v52-library-native.png'),
-        fullPage: false
-      });
-      libraryImport = {
-        source: process.env.V52_LIBRARY_SMOKE_URL,
-        rows,
-        selected: 1,
-        targetHeight: 1080,
-        realIpc: true,
-        noVideoDownloadStarted: true
-      };
-    }
     const report = {
       version: require('../package.json').version,
       rendererProtocol: new URL(page.url()).protocol,
       rendererStyles,
       ipcFileProtocol: page.url().startsWith('file:'),
       clipboardBridge: true,
-      accountStateBridge: true,
-      libraryImport,
       unicodeDownloadFilename: true,
       revealFileIpc: true,
       conversion: {

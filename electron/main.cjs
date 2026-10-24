@@ -1,7 +1,6 @@
-const { app, BrowserWindow, ipcMain, session, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { UpdateService } = require('./services/updates.cjs');
-const { YouTubeAccountService } = require('./services/youtube-account.cjs');
 const ipcChannels = require('../shared/ipc.json');
 const { registerHandlers } = require('./ipc/register-handlers.cjs');
 const { DependencyService } = require('./services/dependencies.cjs');
@@ -12,7 +11,6 @@ let mainWindow = null;
 let jobs = null;
 let updates = null;
 let finishingQuit = false;
-let youtubeAccount = null;
 
 if (process.platform === 'win32') app.setAppUserModelId('com.thibs.youtubedownloader');
 app.enableSandbox();
@@ -53,26 +51,11 @@ if (!hasSingleInstanceLock) {
     session.defaultSession.setPermissionCheckHandler(() => false);
 
     const dependencies = new DependencyService(app);
-    youtubeAccount = new YouTubeAccountService({
-      app,
-      safeStorage,
-      openExternal: (url) => shell.openExternal(url),
-      notify: (snapshot) => {
-        for (const window of BrowserWindow.getAllWindows()) {
-          if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
-            window.webContents.send(ipcChannels.events.accountState, snapshot);
-          }
-        }
-      }
-    });
-    const accountReady = youtubeAccount.init().catch(() => youtubeAccount.snapshot());
     updates = new UpdateService({
       app,
       updater: autoUpdater,
       isBusy: () =>
-        ['running', 'cancelling'].includes(jobs?.snapshot()?.state) ||
-        youtubeAccount?.snapshot().connecting ||
-        hasActiveProcesses(),
+        ['running', 'cancelling'].includes(jobs?.snapshot()?.state) || hasActiveProcesses(),
       openExternal: (url) => shell.openExternal(url),
       notify: (snapshot) => {
         for (const window of BrowserWindow.getAllWindows()) {
@@ -86,9 +69,7 @@ if (!hasSingleInstanceLock) {
       ipcMain,
       dependencyService: dependencies,
       updateService: updates,
-      devOrigin,
-      accountService: youtubeAccount,
-      accountReady
+      devOrigin
     });
     mainWindow = createMainWindow({ devUrl });
     mainWindow.on('closed', () => {
@@ -103,7 +84,6 @@ if (!hasSingleInstanceLock) {
 
 app.on('before-quit', (event) => {
   updates?.dispose();
-  youtubeAccount?.dispose();
   const busy = jobs?.snapshot() && ['running', 'cancelling'].includes(jobs.snapshot().state);
   if (finishingQuit || (!busy && !hasActiveProcesses())) return;
   event.preventDefault();
