@@ -322,6 +322,201 @@ test('changing the video stops unused metadata preparation from the previous lin
   assert.equal(service.preparingAnalyses.size, 0);
 });
 
+test('returning to a cached video rearms cancelled preparation without extracting its visible formats again', async (t) => {
+  const { service, payload } = setup(t);
+  const delegate = service.runProcess;
+  const preparations = [];
+  let fastExtractions = 0;
+  service.runProcess = async (command, args, options) => {
+    if (args.includes('-J') && !args.includes('--extractor-args')) {
+      return new Promise((resolve, reject) => {
+        const abort = () => {
+          const error = new Error('Cancelled');
+          error.name = 'AbortError';
+          reject(error);
+        };
+        options.signal.addEventListener('abort', abort, { once: true });
+        preparations.push({
+          signal: options.signal,
+          complete: () => {
+            options.signal.removeEventListener('abort', abort);
+            resolve({ stdout: JSON.stringify(metadata()) });
+          }
+        });
+      });
+    }
+    if (args.includes('-J')) {
+      fastExtractions++;
+      const info = metadata();
+      info.formats.push(
+        { ...info.formats[0], format_id: '136', height: 720 },
+        { ...info.formats[2], format_id: '258', audio_channels: 6 }
+      );
+      return { stdout: JSON.stringify(info) };
+    }
+    assert.equal(args.includes('--load-info-json'), true);
+    assert.equal(args[args.indexOf('-f') + 1], '137+bestaudio[ext=m4a]/137+bestaudio/137');
+    return delegate(command, args, options);
+  };
+  const visible = await service.analyze(url);
+  const original = service.cache.get(url);
+  const originalAt = original.at;
+  await service.analyze('https://youtu.be/lmnopqrstuv');
+  await original.preparingInfo;
+  assert.equal(preparations[0].signal.aborted, true);
+  assert.deepEqual(await service.analyze(url), visible);
+  assert.equal(preparations[1].signal.aborted, true);
+  assert.equal(preparations.length, 3);
+  assert.equal(fastExtractions, 2);
+  assert.equal(service.cache.get(url).at, originalAt);
+  await service.analyze(url);
+  assert.equal(preparations.length, 3, 'An active retry must not start another extraction.');
+  preparations[2].complete();
+  await service.cache.get(url).preparingInfo;
+  assert.ok(visible.formats.some((format) => format.id === '136'));
+  assert.equal(
+    service.cache.get(url).info.formats.some((format) => format.format_id === '258'),
+    false,
+    'Retry keeps the standard audio inventory instead of adding fast-client 5.1 audio.'
+  );
+  assert.equal(service.cache.get(url).visibleInfo, undefined);
+  await service.download(payload);
+  assert.equal(service.preparingAnalyses.size, 0);
+});
+
+test('a failed preparation is retried once on a cache hit while preserving its original age', async (t) => {
+  const { service, payload, calls } = setup(t);
+  const delegate = service.runProcess;
+  let standardExtractions = 0;
+  let fastExtractions = 0;
+  service.runProcess = async (command, args, options) => {
+    if (args.includes('-J')) {
+      if (args.includes('--extractor-args')) fastExtractions++;
+      else if (++standardExtractions === 1) throw new Error('Temporary default-client failure');
+    }
+    return delegate(command, args, options);
+  };
+  const visible = await service.analyze(url);
+  await service.cache.get(url).preparingInfo;
+  const originalAt = service.cache.get(url).at;
+  assert.equal(service.cache.get(url).info, null);
+  assert.deepEqual(await service.analyze(url), visible);
+  await service.cache.get(url).preparingInfo;
+  assert.equal(standardExtractions, 2);
+  assert.equal(fastExtractions, 1);
+  assert.equal(service.cache.get(url).at, originalAt);
+  await service.analyze(url);
+  assert.equal(standardExtractions, 2, 'Completed metadata must not be extracted again.');
+  await service.download(payload);
+  assert.equal(calls.at(-1).includes('--load-info-json'), true);
+});
+
+test('cancelling a download waiting on rearmed preparation aborts the new extraction without transferring', async (t) => {
+  const { service, payload, directory } = setup(t);
+  const delegate = service.runProcess;
+  let standardExtractions = 0;
+  let preparingSignal;
+  let transfers = 0;
+  service.runProcess = async (command, args, options) => {
+    if (args.includes('-J') && !args.includes('--extractor-args')) {
+      if (++standardExtractions === 1) throw new Error('Temporary default-client failure');
+      preparingSignal = options.signal;
+      return new Promise((_resolve, reject) =>
+        options.signal.addEventListener(
+          'abort',
+          () => {
+            const error = new Error('Cancelled');
+            error.name = 'AbortError';
+            reject(error);
+          },
+          { once: true }
+        )
+      );
+    }
+    if (!args.includes('-J')) transfers++;
+    return delegate(command, args, options);
+  };
+  await service.analyze(url);
+  await service.cache.get(url).preparingInfo;
+  await service.analyze(url);
+  const controller = new AbortController();
+  const operation = service.download(payload, controller.signal);
+  controller.abort();
+  await assert.rejects(operation, { name: 'AbortError' });
+  assert.equal(preparingSignal.aborted, true);
+  assert.equal(standardExtractions, 2);
+  assert.equal(transfers, 0);
+  assert.deepEqual(fs.readdirSync(directory), []);
+});
+
+test(
+  'an expired entry never delays a fresh download for unfinished background metadata',
+  { timeout: 5000 },
+  async (t) => {
+    const { service, payload, directory } = setup(t);
+    const delegate = service.runProcess;
+    let preparingSignal;
+    let transfers = 0;
+    service.runProcess = async (command, args, options) => {
+      if (args.includes('-J') && !args.includes('--extractor-args')) {
+        preparingSignal = options.signal;
+        return new Promise((_resolve, reject) =>
+          options.signal.addEventListener(
+            'abort',
+            () => {
+              const error = new Error('Cancelled');
+              error.name = 'AbortError';
+              reject(error);
+            },
+            { once: true }
+          )
+        );
+      }
+      if (!args.includes('-J')) {
+        transfers++;
+        assert.equal(preparingSignal.aborted, true);
+        assert.equal(args.includes('--load-info-json'), false);
+        assert.equal(args.includes('--extractor-args'), false);
+        assert.equal(args.at(-1), url);
+        assert.equal(args[args.indexOf('-f') + 1], '137+bestaudio[ext=m4a]/137+bestaudio/137');
+      }
+      return delegate(command, args, options);
+    };
+    await service.analyze(url);
+    service.cache.get(url).at = Date.now() - 600001;
+    const result = await service.download(payload, AbortSignal.timeout(1000));
+    await service.cache.get(url).preparingInfo;
+    assert.equal(transfers, 1);
+    assert.equal(service.preparingAnalyses.size, 0);
+    assert.equal(fs.readFileSync(result.outputPath, 'utf8'), 'original streams');
+    assert.deepEqual(fs.readdirSync(directory), ['Été à Dijon.mp4']);
+  }
+);
+
+test('a late result from abandoned preparation cannot replace the rearmed metadata', async (t) => {
+  const { service } = setup(t);
+  const preparations = [];
+  service.runProcess = async (_command, args) => {
+    if (args.includes('--extractor-args')) return { stdout: JSON.stringify(metadata()) };
+    return new Promise((resolve) => preparations.push(resolve));
+  };
+  await service.analyze(url);
+  const abandoned = service.cache.get(url).preparingInfo;
+  await service.analyze('https://youtu.be/lmnopqrstuv');
+  await service.analyze(url);
+  assert.equal(preparations.length, 3);
+  const fresh = metadata();
+  fresh.title = 'Fresh standard metadata';
+  preparations[2]({ stdout: JSON.stringify(fresh) });
+  await service.cache.get(url).preparingInfo;
+  preparations[0]({ stdout: JSON.stringify(metadata()) });
+  preparations[1]({ stdout: JSON.stringify(metadata()) });
+  await abandoned;
+  await Promise.all([...service.cache.values()].map((entry) => entry.preparingInfo));
+  assert.equal(service.cache.get(url).info.title, fresh.title);
+  assert.equal(service.preparingAnalyses.size, 0);
+});
+
 test('only known compatible H.264/AAC SDR media bypasses encoding', () => {
   const compatible = { codec: 'h264', pixelFormat: 'yuv420p', audioCodec: 'aac', hasAudio: true };
   assert.equal(canRemuxCompatibleMp4(compatible), true);

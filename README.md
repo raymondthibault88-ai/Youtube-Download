@@ -1,6 +1,12 @@
-# YouTube Downloader V5.1
+# YouTube Downloader V5.1.2
 
 Application Electron 44 + React 19 pour télécharger une vidéo YouTube ou convertir un fichier local en MP4 H.264/AAC compatible QuickTime et Dartfish.
+
+## Maintenance V5.1.2
+
+Cette version actualise les bibliothèques et yt-dlp, supprime un lancement de processus inutile pendant la préparation des outils et diffère le chargement du module de mise à jour jusqu'au premier contrôle. Elle corrige aussi la reprise des préparations d'analyse annulées ou échouées et l'expiration du cache de l'interface. Base UI, les formats, les réglages de conversion et la sélection audio sont conservés.
+
+La validation comprend 89 tests unitaires, 18 parcours UI, un test réel Electron sous Windows et des comparaisons 1080p/4K avec identité des images décodées et de l'audio avant/après. Les mesures locales ne démontrent pas de gain stable de conversion ni de débit Internet.
 
 ## Interface V5.1
 
@@ -33,7 +39,7 @@ Les conventions, les hooks Git et les responsabilités des modules sont décrits
 
 L’[audit de maintenance](docs/maintainability-audit.md) détaille les corrections de structure, de typage et de conventions, ainsi que leur validation.
 
-Prérequis : Node.js 22.12 ou supérieur et npm.
+Prérequis : Node.js 22.13 ou supérieur dans la branche 22, ou Node.js 24 et supérieur, avec npm. Node.js 24 est utilisé par la CI et recommandé pour le développement.
 
 ```bash
 npm ci
@@ -61,7 +67,7 @@ Les profils, les débits, les préréglages des encodeurs, l’AAC à 160 kbit/s
 
 Si le nouveau parcours échoue, la conversion réessaie avec le décodage CPU et le même encodeur matériel ; si celui-ci échoue aussi, elle utilise libx264. L’annulation ne déclenche aucune reprise. Les fichiers temporaires sont nettoyés et la progression ne recule pas.
 
-`npm run test:conversion` compare le moteur courant avec une copie du moteur avant modification. Définir `V5_BENCHMARK_BASELINE` avec le chemin absolu de cette copie de `electron/services/media.cjs`, en conservant tout `electron/services/` et `shared/` à la même position relative pour inclure les sous-modules du moteur. `V5_BENCHMARK_DIR` choisit le dossier des sources, exports et rapports ; le défaut est `test-results/conversion/`.
+`npm run test:conversion` compare le moteur courant avec une copie du moteur avant modification. Définir `V5_BENCHMARK_BASELINE` avec le chemin absolu de cette copie de `electron/services/media.cjs`, en conservant tout `electron/services/` et `shared/` à la même position relative pour inclure les sous-modules du moteur. `V5_BASELINE_FFMPEG_PATH` permet d'utiliser le binaire FFmpeg de référence ; sans cette variable, les deux moteurs utilisent le binaire courant. Le rapport conserve les chemins, versions et empreintes des binaires et des modules comparés. `V5_BENCHMARK_DIR` choisit le dossier des sources, exports et rapports ; le défaut est `test-results/conversion/`.
 
 Le benchmark crée des sources synthétiques animées avec audio, de 30 secondes à 30 images/s en 1920×1080 et 3840×2160, ainsi qu’une source HEVC 4K de 8 secondes. Il compare les trois profils, la conservation de résolution et la réduction 4K vers 1080p. Les cas Rapide H.264 sont répétés trois fois avec ordre avant/après alterné ; la médiane inclut l’encodage, l’écriture et `faststart`, mais sépare la détection initiale de l’encodeur. `V5_BENCHMARK_SECONDS` et `V5_BENCHMARK_REPETITIONS` permettent d’adapter la durée et les répétitions. `node scripts/benchmark-conversion.cjs prepare` génère seulement les sources.
 
@@ -81,9 +87,21 @@ Une vidéo déjà en H.264 SDR 8 bits 4:2:0 avec son AAC peut être placée dans
 
 Le banc local sert les mêmes médias fragmentés avec une latence et un débit par connexion contrôlés. Il compare trois fois le moteur précédent, le cache avec quatre fragments et le cache avec huit fragments, en alternant l’ordre. Il vérifie les empreintes de tous les paquets vidéo et audio, le décodage intégral des premières sorties, les dimensions, la durée, les originaux et l’annulation réelle. Les cas de conteneur compatible comparent séparément la conversion et la copie des flux. Les résultats locaux ne prédisent pas le débit de YouTube ; les essais réseau réels doivent préciser leur vidéo, leurs formats et distinguer l’analyse, le transfert et la conversion éventuelle.
 
+Pour comparer la V5.1.1 actuelle avec une maintenance de ses dépendances, définir `V5_DOWNLOAD_COMPARE_CURRENT=1` : les deux côtés conservent leurs réglages réels de fragments. `V5_BASELINE_YTDLP_PATH` permet d'utiliser l'ancien yt-dlp, tandis que `V5_YTDLP_PATH` désigne le nouveau. Les empreintes des deux moteurs et binaires sont incluses dans le rapport. Ce mode évite d'attribuer une seconde fois à la maintenance le passage historique de quatre à huit fragments.
+
+`V5_DOWNLOAD_RESUME` peut désigner un rapport interrompu pour reprendre ses cas terminés. La reprise exige les mêmes empreintes de moteurs, sous-modules, configurations, sources et binaires, les mêmes répétitions et conditions de mesure, ainsi que des essais complets avec qualité validée. Les anciens rapports sans ces informations sont refusés afin de ne pas attribuer des résultats historiques à un nouveau moteur.
+
 Pour ajouter un téléchargement réseau 1080p au test de la véritable application Windows, définir `V5_YOUTUBE_SMOKE_URL` avec une vidéo YouTube publique disposant d’un format H.264 1080p, puis lancer `test:desktop`. Le test utilise les IPC et le moteur réels et enregistre les empreintes des paquets audio/vidéo ; il reste désactivé par défaut pour les vérifications hors réseau.
 
 Sur une machine Linux de CI, installer les dépendances système avec `npx playwright install --with-deps chromium`. Les tests UI ne valident pas un téléchargement réseau réel : celui-ci dépend aussi des restrictions de YouTube et de la version de yt-dlp.
+
+### Démarrage et maintenance des dépendances
+
+Le module de mise à jour est chargé au premier contrôle, huit secondes après le démarrage ou à la demande depuis « À propos ». Il n'est pas chargé dans les builds de développement. Après vérification SHA256 du binaire yt-dlp épinglé, sa version est connue sans lancer un processus supplémentaire. Les contrôles d'intégrité et la vérification FFmpeg sont conservés.
+
+Réutiliser le même résultat en cache dans l'interface ne renouvelle plus son délai d'expiration. Le moteur contrôle également l'âge de ses propres métadonnées avant chaque téléchargement. Une préparation de téléchargement annulée ou échouée peut reprendre lorsque la vidéo est analysée de nouveau ; une préparation périmée ne retarde plus une extraction fraîche. Les formats, la sélection audio et les réglages de conversion restent identiques.
+
+`npm run test:startup` mesure cinq lancements instrumentés de la véritable application Electron, dans un profil de test isolé, avec les outils déjà en cache. Définir `V5_YTDLP_PATH` avec le binaire vérifié attendu par le code testé ; `V5_STARTUP_APP_DIR` cible une copie de référence, `V5_STARTUP_DIR` choisit les rapports et `V5_STARTUP_REPETITIONS` adapte les répétitions. Chaque copie doit disposer de son build `dist/` et de dépendances compatibles. Les médianes portent sur les lancements suivant le premier ; le rapport distingue l'interface disponible et les outils prêts. Ce test inclut la surcharge de Playwright et ne mesure ni un cache système froid ni l'installateur.
 
 ## Distribution
 
@@ -142,7 +160,7 @@ Sans ces identifiants, un DMG local non notarisé peut être produit sur macOS. 
 
 ## Dépendances binaires
 
-- yt-dlp 2026.08.19 est téléchargé au premier lancement, limité à des hôtes GitHub HTTPS et vérifié par SHA256.
+- yt-dlp 2026.10.21 est téléchargé au premier lancement, limité à des hôtes GitHub HTTPS et vérifié par SHA256. La version affichée provient de cette publication vérifiée, sans lancer un processus supplémentaire pour la relire.
 - FFmpeg est fourni par `ffmpeg-static`. L’application teste l’encodeur matériel avant la conversion et repasse automatiquement sur libx264 si nécessaire.
 
 ## Légal

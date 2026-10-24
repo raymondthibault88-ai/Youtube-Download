@@ -2,7 +2,6 @@ const path = require('node:path');
 const { BrowserWindow, Menu } = require('electron');
 
 function createMainWindow({ devUrl }) {
-  Menu.setApplicationMenu(null);
   const icon = path.join(
     __dirname,
     'assets',

@@ -3,3 +3,5 @@
 *.ico binary
 *.icns binary
 *.woff2 binary
+# Preserve upstream license text, including its final blank lines.
+licenses/npm/** whitespace=-blank-at-eof

@@ -7,6 +7,9 @@ const { MediaService } = require('../electron/services/media.cjs');
 const { runProcess } = require('../electron/services/process-runner.cjs');
 
 const ffmpeg = require('ffmpeg-static');
+const baselineFfmpeg = process.env.V5_BASELINE_FFMPEG_PATH
+  ? path.resolve(process.env.V5_BASELINE_FFMPEG_PATH)
+  : ffmpeg;
 const directory = path.resolve(process.env.V5_BENCHMARK_DIR || 'test-results/conversion');
 const duration = Number(process.env.V5_BENCHMARK_SECONDS || 30);
 const repetitions = Number(process.env.V5_BENCHMARK_REPETITIONS || 3);
@@ -19,6 +22,30 @@ const run = (args, options = {}) =>
     signal: AbortSignal.timeout(600_000),
     ...options
   });
+
+function engineHashes(entryPath) {
+  const serviceDirectory = path.dirname(entryPath);
+  const files = { 'media.cjs': hash(entryPath) };
+  const visit = (relativeDirectory) => {
+    const absoluteDirectory = path.join(serviceDirectory, relativeDirectory);
+    for (const entry of fs
+      .readdirSync(absoluteDirectory, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name))) {
+      const relativePath = path.join(relativeDirectory, entry.name);
+      if (entry.isDirectory()) visit(relativePath);
+      else if (entry.isFile() && entry.name.endsWith('.cjs')) {
+        files[relativePath.split(path.sep).join('/')] = hash(
+          path.join(serviceDirectory, relativePath)
+        );
+      }
+    }
+  };
+  if (fs.existsSync(path.join(serviceDirectory, 'media'))) visit('media');
+  files['shared/conversion-config.json'] = hash(
+    path.resolve(serviceDirectory, '../../shared/conversion-config.json')
+  );
+  return files;
+}
 
 async function prepare() {
   assert.ok(Number.isFinite(duration) && duration >= 3 && duration <= 300);
@@ -243,6 +270,8 @@ async function compare() {
     'V5_BENCHMARK_BASELINE doit désigner le moteur conservé avant modification.'
   );
   const baselinePath = path.resolve(process.env.V5_BENCHMARK_BASELINE);
+  const optimizedPath = path.resolve(__dirname, '../electron/services/media.cjs');
+  assert.ok(fs.statSync(baselineFfmpeg).isFile(), 'Le binaire FFmpeg de référence est absent.');
   const baselineModule = require(baselinePath);
   let commands = [];
   const runner = (command, args, options) => {
@@ -250,7 +279,7 @@ async function compare() {
     return runProcess(command, args, options);
   };
   const services = {
-    baseline: new baselineModule.MediaService(ffmpeg, { processRunner: runner }),
+    baseline: new baselineModule.MediaService(baselineFfmpeg, { processRunner: runner }),
     optimized: new MediaService(ffmpeg, { processRunner: runner })
   };
   const probe = {};
@@ -261,18 +290,38 @@ async function compare() {
       milliseconds: performance.now() - start
     };
   }
+  const ffmpegBinaries = {};
+  for (const [name, executable] of Object.entries({
+    baseline: baselineFfmpeg,
+    optimized: ffmpeg
+  })) {
+    const { stdout } = await runProcess(executable, ['-hide_banner', '-version'], {
+      signal: AbortSignal.timeout(20_000)
+    });
+    ffmpegBinaries[name] = {
+      path: executable,
+      version: stdout.split(/\r?\n/, 1)[0],
+      sha256: hash(executable)
+    };
+  }
   const report = {
     createdAt: new Date().toISOString(),
     platform: process.platform,
     arch: process.arch,
     cpu: os.cpus()[0]?.model,
     logicalCpus: os.cpus().length,
-    ffmpeg: (await run(['-version'])).stdout.split('\n')[0],
+    ffmpeg: ffmpegBinaries.optimized.version,
+    ffmpegBinaries,
+    ffmpegBinariesIdentical: ffmpegBinaries.baseline.sha256 === ffmpegBinaries.optimized.sha256,
+    engineFiles: {
+      baseline: engineHashes(baselinePath),
+      optimized: engineHashes(optimizedPath)
+    },
     baselineSha256: hash(baselinePath),
-    optimizedSha256: hash(path.resolve(__dirname, '../electron/services/media.cjs')),
+    optimizedSha256: hash(optimizedPath),
     conversionConfigSha256: hash(path.resolve(__dirname, '../shared/conversion-config.json')),
     methodology:
-      'Sources synthétiques animées H.264 8 bits à 30 i/s, son AAC ; 1080p et 4K. HEVC supplémentaire. Temps mural, disque et faststart inclus, détection initiale séparée. Ordre avant/après alterné. Qualité sur toutes les images, VMAF 4K pour les sorties 4K. Ne prédit pas les performances sur tous les médias réels.',
+      'Sources synthétiques animées H.264 8 bits à 30 i/s, son AAC ; 1080p et 4K. HEVC supplémentaire. Temps mural, disque et faststart inclus, détection initiale séparée. Ordre avant/après alterné. Binaires FFmpeg et modules des deux moteurs identifiés par empreintes. Qualité sur toutes les images, VMAF 4K pour les sorties 4K. Ne prédit pas les performances sur tous les médias réels.',
     probe,
     cases: []
   };

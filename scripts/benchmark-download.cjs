@@ -8,14 +8,39 @@ const ffmpeg = require('ffmpeg-static');
 const { runProcess } = require('../electron/services/process-runner.cjs');
 const { MediaService } = require('../electron/services/media.cjs');
 const { YouTubeService } = require('../electron/services/youtube.cjs');
+const {
+  median,
+  validateResumeCompatibility,
+  validateResumeCases
+} = require('./download-benchmark-resume.cjs');
 
 const directory = path.resolve(process.env.V5_DOWNLOAD_DIR || 'test-results/download');
 const baselinePath = process.env.V5_DOWNLOAD_BASELINE;
 const ytDlpPath = process.env.V5_YTDLP_PATH;
+const baselineYtDlpPath = process.env.V5_BASELINE_YTDLP_PATH || ytDlpPath;
+const compareCurrent = process.env.V5_DOWNLOAD_COMPARE_CURRENT === '1';
 const repetitions = Number(process.env.V5_DOWNLOAD_REPETITIONS || 3);
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
-const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const hash = (file) => nodeCrypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+function engineHashes(entryPath) {
+  const serviceDirectory = path.dirname(entryPath);
+  const files = { 'youtube.cjs': hash(entryPath) };
+  const visit = (relative) => {
+    const absolute = path.join(serviceDirectory, relative);
+    if (fs.statSync(absolute).isDirectory()) {
+      for (const name of fs.readdirSync(absolute).sort()) visit(path.join(relative, name));
+    } else if (relative.endsWith('.cjs')) {
+      files[relative.split(path.sep).join('/')] = hash(absolute);
+    }
+  };
+  for (const relative of ['youtube', 'media.cjs', 'media', 'process-runner.cjs'])
+    if (fs.existsSync(path.join(serviceDirectory, relative))) visit(relative);
+  for (const name of ['download-config.json', 'youtube-config.json', 'conversion-config.json']) {
+    const filename = path.resolve(serviceDirectory, '../../shared', name);
+    if (fs.existsSync(filename)) files[`shared/${name}`] = hash(filename);
+  }
+  return files;
+}
 const runFfmpeg = (args, options = {}) =>
   runProcess(ffmpeg, ['-hide_banner', ...args], {
     signal: AbortSignal.timeout(600000),
@@ -86,18 +111,19 @@ async function streamHashes(file) {
   return stdout.trim();
 }
 
-async function validate(file, source, height, decode = true) {
+async function validate(file, source, height, decode = true, exactStreams = true) {
   const media = await new MediaService(ffmpeg).inspect(file);
   assert.equal(media.height, height);
   assert.equal(media.codec, 'h264');
   assert.equal(media.audioCodec, 'aac');
   assert.ok(Math.abs(media.duration - source.duration) < 0.1);
   const streams = await streamHashes(file);
-  assert.equal(
-    streams,
-    source.streamHashes,
-    'Video and audio compressed packets must be unchanged.'
-  );
+  if (exactStreams)
+    assert.equal(
+      streams,
+      source.streamHashes,
+      'Video and audio compressed packets must be unchanged.'
+    );
   let frames;
   if (decode) {
     const { stdout } = await runFfmpeg([
@@ -117,10 +143,13 @@ async function validate(file, source, height, decode = true) {
     assert.equal(frames, Math.round(source.duration * 30));
   }
   return {
+    validated: true,
     height,
+    codec: media.codec,
+    audioCodec: media.audioCodec,
     duration: media.duration,
     frames,
-    compressedStreamsIdentical: true,
+    compressedStreamsIdentical: streams === source.streamHashes,
     streamHashes: streams,
     bytes: fs.statSync(file).size
   };
@@ -251,16 +280,49 @@ async function localBenchmark() {
     baselinePath && fs.existsSync(baselinePath),
     'Set V5_DOWNLOAD_BASELINE to the saved original youtube.cjs.'
   );
+  assert.ok(baselineYtDlpPath && fs.existsSync(baselineYtDlpPath));
   assert.ok(Number.isInteger(repetitions) && repetitions > 0 && repetitions <= 10);
   fs.mkdirSync(directory, { recursive: true });
   const previous = process.env.V5_DOWNLOAD_RESUME
     ? JSON.parse(fs.readFileSync(process.env.V5_DOWNLOAD_RESUME, 'utf8'))
     : null;
-  if (previous) report.resumedFragmentedFrom = path.resolve(process.env.V5_DOWNLOAD_RESUME);
+  const BaselineService = require(path.resolve(baselinePath)).YouTubeService;
+  const baselineFragments = compareCurrent
+    ? require(path.resolve(path.dirname(baselinePath), '../../shared/download-config.json'))
+        .concurrentFragments
+    : 4;
+  const currentFragments = require('../shared/download-config.json').concurrentFragments;
+  const variantDefinitions = compareCurrent
+    ? [
+        ['baseline', BaselineService, baselineFragments, baselineYtDlpPath],
+        ['optimized', YouTubeService, currentFragments, ytDlpPath]
+      ]
+    : [
+        ['baseline', BaselineService, 4, baselineYtDlpPath],
+        ['cached-4', YouTubeService, 4, ytDlpPath],
+        ['cached-8', YouTubeService, 8, ytDlpPath]
+      ];
+  report.comparison = {
+    mode: compareCurrent ? 'current-baseline-versus-updated' : 'historical-fragment-comparison',
+    baselineEngineSha256: hash(baselinePath),
+    updatedEngineSha256: hash(path.resolve(__dirname, '../electron/services/youtube.cjs')),
+    baselineEngineFiles: engineHashes(path.resolve(baselinePath)),
+    updatedEngineFiles: engineHashes(path.resolve(__dirname, '../electron/services/youtube.cjs')),
+    baselineBinarySha256: hash(baselineYtDlpPath),
+    updatedBinarySha256: hash(ytDlpPath),
+    ffmpegBinarySha256: hash(ffmpeg),
+    fragments: Object.fromEntries(
+      variantDefinitions.map(([name, , fragments]) => [name, fragments])
+    )
+  };
+  if (previous) validateResumeCompatibility(previous, report);
   const { sources, fixtures } = await prepare();
   report.sources = sources;
+  if (previous) {
+    validateResumeCases(previous, report);
+    report.resumedFragmentedFrom = path.resolve(process.env.V5_DOWNLOAD_RESUME);
+  }
   save();
-  const BaselineService = require(path.resolve(baselinePath)).YouTubeService;
   let requestLog = [];
   const server = http.createServer((request, response) => {
     const relative = decodeURIComponent(new URL(request.url, 'http://localhost').pathname).replace(
@@ -320,13 +382,9 @@ async function localBenchmark() {
         );
       const trials = completed?.trials || [];
       for (let repetition = 0; !completed && repetition < repetitions; repetition++) {
-        const variants = [
-          ['baseline', BaselineService, 4],
-          ['cached-4', YouTubeService, 4],
-          ['cached-8', YouTubeService, 8]
-        ];
+        const variants = [...variantDefinitions];
         if (repetition % 2) variants.reverse();
-        for (const [variant, Service, concurrentFragments] of variants) {
+        for (const [variant, Service, concurrentFragments, binary] of variants) {
           const outputDir = path.join(
             directory,
             'outputs',
@@ -336,7 +394,7 @@ async function localBenchmark() {
           );
           fs.mkdirSync(outputDir, { recursive: true });
           const service = new Service({
-            ytDlpPath,
+            ytDlpPath: binary,
             ffmpegPath: ffmpeg,
             mediaService: new MediaService(ffmpeg),
             concurrentFragments,
@@ -404,7 +462,7 @@ async function localBenchmark() {
         id: `${source.label}-fragmented`,
         trials,
         medians: Object.fromEntries(
-          ['baseline', 'cached-4', 'cached-8'].map((variant) => [
+          variantDefinitions.map(([variant]) => [
             variant,
             {
               seconds: median(
@@ -424,9 +482,9 @@ async function localBenchmark() {
         (entry) => entry.id === `${source.label}-compatible-container`
       );
       const remuxTrials = completedContainer?.trials || [];
-      for (const [variant, Service] of [
-        ['baseline', BaselineService],
-        ['optimized', YouTubeService]
+      for (const [variant, Service, binary] of [
+        ['baseline', BaselineService, baselineYtDlpPath],
+        ['optimized', YouTubeService, ytDlpPath]
       ]) {
         if (completedContainer) break;
         const outputDir = path.join(
@@ -438,7 +496,7 @@ async function localBenchmark() {
         );
         fs.mkdirSync(outputDir, { recursive: true });
         const service = new Service({
-          ytDlpPath,
+          ytDlpPath: binary,
           ffmpegPath: ffmpeg,
           mediaService: new MediaService(ffmpeg),
           processRunner: loggedProcess
@@ -458,10 +516,13 @@ async function localBenchmark() {
           () => {}
         );
         const seconds = (performance.now() - started) / 1000;
-        const quality =
-          variant === 'optimized'
-            ? await validate(result.outputPath, source, source.height)
-            : { height: (await service.mediaService.inspect(result.outputPath)).height };
+        const quality = await validate(
+          result.outputPath,
+          source,
+          source.height,
+          true,
+          variant === 'optimized' || compareCurrent
+        );
         remuxTrials.push({ variant, seconds, outputPath: result.outputPath, quality });
       }
       report.cases.push({ id: `${source.label}-compatible-container`, trials: remuxTrials });

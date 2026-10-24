@@ -45,6 +45,7 @@ class UpdateService {
   constructor({
     app,
     updater,
+    createUpdater = () => updater,
     notify,
     isBusy,
     openExternal,
@@ -54,7 +55,10 @@ class UpdateService {
     macSigned = () => hasMacDistributionSignature(path.resolve(app.getAppPath(), '../../..'))
   }) {
     this.app = app;
-    this.updater = updater;
+    this.createUpdater = createUpdater;
+    this.updater = null;
+    this.listeners = null;
+    this.disposed = false;
     this.notify = notify;
     this.isBusy = isBusy;
     this.openExternal = openExternal;
@@ -71,42 +75,64 @@ class UpdateService {
     };
     if (this.state.mode === 'disabled') {
       this.state.status = 'disabled';
-      return;
     }
+  }
+
+  getUpdater() {
+    if (this.updater) return this.updater;
+    if (this.disposed || this.state.mode === 'disabled')
+      throw new Error('La vérification des mises à jour est indisponible.');
+    const updater = this.createUpdater();
 
     updater.autoDownload = false;
     updater.autoInstallOnAppQuit = false;
     updater.allowPrerelease = false;
     updater.allowDowngrade = false;
     updater.disableWebInstaller = true;
-    updater.on('error', (error) => this.fail(error));
-    updater.on('update-available', (info) =>
-      this.emit({
-        status: 'available',
-        version: info.version,
-        percent: 0,
-        error: null,
-        checkedAt: Date.now()
-      })
-    );
-    updater.on('update-not-available', () =>
-      this.emit({
-        status: 'not-available',
-        version: null,
-        percent: 0,
-        error: null,
-        checkedAt: Date.now()
-      })
-    );
-    updater.on('download-progress', (progress) => {
-      if (this.state.status !== 'downloading') return;
-      const percent = Number(progress.percent);
-      if (Number.isFinite(percent))
-        this.emit({ percent: Math.max(this.state.percent, Math.min(100, Math.max(0, percent))) });
-    });
-    updater.on('update-downloaded', (info) =>
-      this.emit({ status: 'downloaded', version: info.version, percent: 100, error: null })
-    );
+    const listeners = {
+      error: (error) => this.fail(error),
+      'update-available': (info) =>
+        this.emit({
+          status: 'available',
+          version: info.version,
+          percent: 0,
+          error: null,
+          checkedAt: Date.now()
+        }),
+      'update-not-available': () =>
+        this.emit({
+          status: 'not-available',
+          version: null,
+          percent: 0,
+          error: null,
+          checkedAt: Date.now()
+        }),
+      'download-progress': (progress) => {
+        if (this.state.status !== 'downloading') return;
+        const percent = Number(progress.percent);
+        if (Number.isFinite(percent))
+          this.emit({ percent: Math.max(this.state.percent, Math.min(100, Math.max(0, percent))) });
+      },
+      'update-downloaded': (info) =>
+        this.emit({ status: 'downloaded', version: info.version, percent: 100, error: null })
+    };
+    try {
+      for (const [event, listener] of Object.entries(listeners)) updater.on(event, listener);
+    } catch (error) {
+      for (const [event, listener] of Object.entries(listeners))
+        updater.removeListener(event, listener);
+      throw error;
+    }
+    this.updater = updater;
+    this.listeners = listeners;
+    return updater;
+  }
+
+  removeListeners() {
+    if (!this.listeners) return;
+    for (const [event, listener] of Object.entries(this.listeners))
+      this.updater.removeListener(event, listener);
+    this.listeners = null;
   }
 
   snapshot() {
@@ -114,6 +140,7 @@ class UpdateService {
   }
 
   emit(patch) {
+    if (this.disposed) return;
     Object.assign(this.state, patch);
     this.notify(this.snapshot());
   }
@@ -123,7 +150,7 @@ class UpdateService {
   }
 
   start() {
-    if (this.state.mode === 'disabled' || this.timer) return;
+    if (this.disposed || this.state.mode === 'disabled' || this.timer) return;
     this.timer = setTimeout(() => {
       this.timer = null;
       void this.check();
@@ -132,18 +159,25 @@ class UpdateService {
   }
 
   dispose() {
+    this.disposed = true;
     clearTimeout(this.timer);
     this.timer = null;
+    // Keep the error listener until a pending request settles during app shutdown.
+    if (!this.operation) this.removeListeners();
   }
 
   async check() {
-    if (this.state.mode === 'disabled' || ['downloaded', 'installing'].includes(this.state.status))
+    if (
+      this.disposed ||
+      this.state.mode === 'disabled' ||
+      ['downloaded', 'installing'].includes(this.state.status)
+    )
       return this.snapshot();
     if (this.operation) return this.operation;
     this.emit({ status: 'checking', error: null, percent: 0 });
     this.operation = (async () => {
       try {
-        await this.updater.checkForUpdates();
+        await this.getUpdater().checkForUpdates();
       } catch (error) {
         this.fail(error);
       }
@@ -153,10 +187,12 @@ class UpdateService {
       return await this.operation;
     } finally {
       this.operation = null;
+      if (this.disposed) this.removeListeners();
     }
   }
 
   async download() {
+    if (this.disposed) throw new Error('L’application est en cours de fermeture.');
     if (this.operation) return this.operation;
     if (this.state.mode !== 'automatic' || this.state.status !== 'available')
       throw new Error('Vérifiez d’abord si une mise à jour est disponible.');
@@ -173,6 +209,7 @@ class UpdateService {
       return await this.operation;
     } finally {
       this.operation = null;
+      if (this.disposed) this.removeListeners();
     }
   }
 
@@ -184,12 +221,14 @@ class UpdateService {
   }
 
   install() {
+    if (this.disposed) throw new Error('L’application est en cours de fermeture.');
     if (this.state.mode !== 'automatic' || this.state.status !== 'downloaded')
       throw new Error('Téléchargez d’abord la mise à jour.');
     if (this.isBusy())
       throw new Error('Attendez la fin du téléchargement ou de la conversion avant de redémarrer.');
     this.emit({ status: 'installing', error: null });
     setImmediate(() => {
+      if (this.disposed) return;
       try {
         this.updater.quitAndInstall(false, true);
       } catch (error) {

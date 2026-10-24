@@ -64,10 +64,10 @@ class DependencyService {
     if (this.ytDlpInfo) return this.ytDlpInfo;
     if (this.ytDlpPromise) return this.ytDlpPromise;
     this.ytDlpPromise = (async () => {
-      const { ensureYtDlp } = require('../ytDlp.cjs');
+      const { ensureYtDlp, RELEASE_VERSION } = require('../ytDlp.cjs');
       const ytDlpPath = await ensureYtDlp(this.app.getPath('userData'));
-      const { stdout } = await runProcess(ytDlpPath, ['--version']);
-      this.ytDlpInfo = { ytDlpPath, ytDlpVersion: stdout.trim() };
+      // The complete SHA256 verification identifies this exact pinned release.
+      this.ytDlpInfo = { ytDlpPath, ytDlpVersion: RELEASE_VERSION };
       return this.ytDlpInfo;
     })();
     try {

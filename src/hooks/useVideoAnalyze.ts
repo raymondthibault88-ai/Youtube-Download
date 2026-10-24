@@ -67,13 +67,14 @@ export default function useVideoAnalyze({
       setError('');
       try {
         const cached = cache.current;
-        const data =
+        const reusable =
           cached?.url === source && Date.now() - cached.at < youtubeConfig.analysisCacheTtlMs
-            ? cached.data
-            : await analyzeVideo(source);
+            ? cached
+            : null;
+        const data = reusable ? reusable.data : await analyzeVideo(source);
         if (request.current !== token || currentUrl.current.trim() !== source) return;
         if (!data.formats?.length) throw new Error('Aucune qualité vidéo disponible pour ce lien.');
-        cache.current = { url: source, at: Date.now(), data };
+        cache.current = reusable || { url: source, at: Date.now(), data };
         setVideo(data);
         setSelectedFormat(
           data.formats.find((format) => format.quickTimeCompatible) || data.formats[0]

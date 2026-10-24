@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader-desktop",
-  "version": "5.1.1",
+  "version": "5.1.2",
   "description": "Téléchargez et convertissez vos vidéos en MP4 simplement, sur Windows et macOS",
   "main": "electron/main.cjs",
   "author": "",
@@ -10,7 +10,7 @@
     "url": "https://github.com/raymondthibault88-ai/Youtube-Download.git"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.13.0 || >=24.0.0"
   },
   "scripts": {
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
@@ -26,6 +26,7 @@
     "test:smoke": "node scripts/smoke-test.cjs",
     "test:ui": "playwright test",
     "test:desktop": "node scripts/desktop-smoke.cjs",
+    "test:startup": "node scripts/benchmark-startup.cjs",
     "test:conversion": "node scripts/benchmark-conversion.cjs",
     "test:download": "node scripts/benchmark-download.cjs",
     "setup:desktop": "node node_modules/electron/install.js",
@@ -39,32 +40,32 @@
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/manrope": "^5.3.0",
-    "electron-updater": "^6.8.9",
+    "electron-updater": "^6.8.11",
     "ffmpeg-static": "^5.3.0",
-    "lucide-react": "^1.59.0"
+    "lucide-react": "^1.61.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@electron/notarize": "^3.1.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "@vitejs/plugin-react": "^6.1.1",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.5",
-    "electron": "^44.0.0",
-    "electron-builder": "^26.15.3",
-    "eslint": "^10.9.1",
+    "electron": "^44.9.3",
+    "electron-builder": "^26.18.0",
+    "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.11.0",
+    "globals": "^17.13.0",
     "prettier": "3.9.10",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.68.0",
-    "vite": "^8.2.2",
-    "wait-on": "^9.1.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vite": "^8.3.5",
+    "wait-on": "^9.5.1"
   },
   "overrides": {
     "flatted": "^3.4.2",

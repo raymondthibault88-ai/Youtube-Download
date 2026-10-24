@@ -1,5 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
-const { autoUpdater } = require('electron-updater');
+const { app, BrowserWindow, ipcMain, session, shell, Menu } = require('electron');
 const { UpdateService } = require('./services/updates.cjs');
 const ipcChannels = require('../shared/ipc.json');
 const { registerHandlers } = require('./ipc/register-handlers.cjs');
@@ -13,6 +12,7 @@ let updates = null;
 let finishingQuit = false;
 
 if (process.platform === 'win32') app.setAppUserModelId('com.thibs.youtubedownloader');
+Menu.setApplicationMenu(null);
 app.enableSandbox();
 
 function getDevUrl() {
@@ -53,7 +53,7 @@ if (!hasSingleInstanceLock) {
     const dependencies = new DependencyService(app);
     updates = new UpdateService({
       app,
-      updater: autoUpdater,
+      createUpdater: () => require('electron-updater').autoUpdater,
       isBusy: () =>
         ['running', 'cancelling'].includes(jobs?.snapshot()?.state) || hasActiveProcesses(),
       openExternal: (url) => shell.openExternal(url),

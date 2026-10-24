@@ -34,56 +34,82 @@ class YouTubeService {
     return { ...process.env, ELECTRON_RUN_AS_NODE: '1' };
   }
 
+  async extractInfo(url, fast, signal) {
+    const result = await this.runProcess(this.ytDlpPath, buildAnalyzeArgs(url, fast), {
+      env: this.env(),
+      signal,
+      outputLimit: 16 * 1024 * 1024
+    });
+    const value = JSON.parse(result.stdout);
+    if (!Array.isArray(value.formats) || !value.formats.length)
+      throw new Error('Aucun format exploitable.');
+    return value;
+  }
+
+  startPreparation(url, signal) {
+    const preparation = { url, controller: new AbortController(), claimed: false, failed: false };
+    const abort = () => preparation.controller.abort();
+    this.preparingAnalyses.add(preparation);
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) abort();
+    preparation.result = this.extractInfo(url, false, preparation.controller.signal)
+      .then(
+        (info) => ({ info }),
+        (error) => {
+          preparation.failed = true;
+          return { error };
+        }
+      )
+      .finally(() => {
+        this.preparingAnalyses.delete(preparation);
+        signal?.removeEventListener('abort', abort);
+      });
+    return preparation;
+  }
+
+  attachPreparation(entry, preparation) {
+    entry.preparation = preparation;
+    entry.preparingInfo = preparation.result.then((result) => {
+      if (result.info && entry.preparation === preparation) {
+        entry.info = buildCachedDownloadInfo(result.info, entry.visibleInfo);
+        // Only unsuccessful preparation needs the fast transport for a later retry.
+        delete entry.visibleInfo;
+      }
+    });
+    delete preparation.result;
+  }
+
   async analyze(url, signal) {
     if (signal?.aborted) throw createAbortError();
     for (const preparation of this.preparingAnalyses) {
       if (preparation.url !== url && !preparation.claimed) preparation.controller.abort();
     }
     const cached = this.cache.get(url);
-    if (cached && Date.now() - cached.at < ANALYSIS_TTL_MS) return cached.data;
+    if (cached && Date.now() - cached.at < ANALYSIS_TTL_MS) {
+      if (
+        !cached.info &&
+        cached.visibleInfo &&
+        (cached.preparation?.failed || cached.preparation?.controller.signal.aborted)
+      )
+        this.attachPreparation(cached, this.startPreparation(url, signal));
+      return cached.data;
+    }
     let info;
     let fastExtraction = true;
-    const extract = async (fast, extractionSignal = signal) => {
-      const result = await this.runProcess(this.ytDlpPath, buildAnalyzeArgs(url, fast), {
-        env: this.env(),
-        signal: extractionSignal,
-        outputLimit: 16 * 1024 * 1024
-      });
-      const value = JSON.parse(result.stdout);
-      if (!Array.isArray(value.formats) || !value.formats.length)
-        throw new Error('Aucun format exploitable.');
-      return value;
-    };
     // Keep the current fast-client format list, but cache the default client's
     // download metadata too: its best audio can differ (e.g. stereo vs 5.1).
     // Prepare download metadata while the user chooses a format and folder;
     // returning the visible analysis does not wait for this preparation.
     const isYouTube = /^https?:\/\/(?:[\w-]+\.)?(?:youtube\.com|youtu\.be)\//i.test(url);
-    const preparation = isYouTube
-      ? { url, controller: new AbortController(), claimed: false }
-      : null;
-    const abortPreparation = () => preparation?.controller.abort();
-    if (preparation) {
-      this.preparingAnalyses.add(preparation);
-      signal?.addEventListener('abort', abortPreparation, { once: true });
-    }
-    const standard = preparation
-      ? extract(false, preparation.controller.signal)
-          .then(
-            (info) => ({ info }),
-            (error) => ({ error })
-          )
-          .finally(() => {
-            this.preparingAnalyses.delete(preparation);
-            signal?.removeEventListener('abort', abortPreparation);
-          })
-      : null;
+    const preparation = isYouTube ? this.startPreparation(url, signal) : null;
     try {
-      info = await extract(true);
+      info = await this.extractInfo(url, true, signal);
     } catch (fastError) {
       if (fastError?.name === 'AbortError') throw fastError;
       fastExtraction = false;
-      const fallback = standard ? await standard : { info: await extract(false) };
+      const fallback = preparation
+        ? await preparation.result
+        : { info: await this.extractInfo(url, false, signal) };
       if (fallback.error) throw fallback.error;
       info = fallback.info;
     }
@@ -100,14 +126,11 @@ class YouTubeService {
     const entry = {
       at: Date.now(),
       data,
-      info: standard ? null : info,
-      fastExtraction: standard ? false : fastExtraction,
-      preparation
+      info: preparation ? null : info,
+      fastExtraction: preparation ? false : fastExtraction,
+      ...(preparation ? { visibleInfo: info } : {})
     };
-    if (standard)
-      entry.preparingInfo = standard.then((result) => {
-        if (result.info) entry.info = buildCachedDownloadInfo(result.info, info);
-      });
+    if (preparation) this.attachPreparation(entry, preparation);
     this.cache.set(url, entry);
     if (this.cache.size > 20) this.cache.delete(this.cache.keys().next().value);
     return data;
@@ -118,7 +141,10 @@ class YouTubeService {
     const selector = buildFormatSelector(payload);
     const recode = payload.shouldRecodeToMp4 === true;
     const cached = this.cache.get(payload.url);
-    if (cached?.preparingInfo) {
+    const fresh = cached && Date.now() - cached.at < ANALYSIS_TTL_MS;
+    if (!fresh && cached?.preparation && !cached.preparation.claimed)
+      cached.preparation.controller.abort();
+    if (fresh && cached.preparingInfo) {
       cached.preparation.claimed = true;
       const abortPreparation = () => cached.preparation.controller.abort();
       signal?.addEventListener('abort', abortPreparation, { once: true });

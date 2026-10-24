@@ -91,6 +91,35 @@ test('editing a link invalidates the old formats and a late analysis cannot repl
   ).not.toBeVisible();
 });
 
+test('reusing visible formats does not postpone the original analysis expiry', async ({ page }) => {
+  const started = Date.UTC(2026, 0, 1);
+  const ttl = require('../../shared/youtube-config.json').analysisCacheTtlMs;
+  await page.clock.setFixedTime(started);
+  await analyze(page);
+  const refresh = page.getByRole('button', { name: 'Actualiser', exact: true });
+  const requests = () =>
+    page.evaluate(() => window.__test.calls.filter((entry) => entry.type === 'analyze').length);
+  expect(await requests()).toBe(1);
+  await page.clock.setFixedTime(started + ttl - 1);
+  await refresh.click();
+  expect(await requests()).toBe(1);
+  await expect(
+    page.getByRole('radio', { name: '1080p, recommandée, format 137', exact: true })
+  ).toBeChecked();
+  await page.clock.setFixedTime(started + ttl);
+  await refresh.click();
+  expect(await requests()).toBe(2);
+  await page.clock.setFixedTime(started + 2 * ttl - 1);
+  await refresh.click();
+  expect(await requests()).toBe(2);
+  await page.clock.setFixedTime(started + 2 * ttl);
+  await refresh.click();
+  expect(await requests()).toBe(3);
+  await expect(
+    page.getByRole('radio', { name: '1080p, recommandée, format 137', exact: true })
+  ).toBeChecked();
+});
+
 test('all source formats remain available, with descriptive labels and original recode rules', async ({
   page
 }) => {
