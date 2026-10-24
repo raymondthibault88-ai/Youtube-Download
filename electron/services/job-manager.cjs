@@ -1,4 +1,6 @@
 const nodeCrypto = require('node:crypto');
+const { createAbortError } = require('./process-runner.cjs');
+const { notifyRenderer } = require('./notify-renderer.cjs');
 
 class JobManager {
   constructor({ channel }) {
@@ -19,7 +21,7 @@ class JobManager {
     Object.assign(this.current, patch, { updatedAt: Date.now() });
     const snapshot = this.snapshot();
     const sender = this.current.sender;
-    if (sender && !sender.isDestroyed()) sender.send(this.channel, snapshot);
+    notifyRenderer(sender, this.channel, snapshot);
   }
 
   update(jobId, patch) {
@@ -34,6 +36,7 @@ class JobManager {
   }
 
   async start(type, sender, executor) {
+    if (sender?.isDestroyed?.()) throw createAbortError();
     if (this.current && ['running', 'cancelling'].includes(this.current.state)) {
       throw new Error(
         `Une tâche ${this.current.type === 'download' ? 'de téléchargement' : 'de conversion'} est déjà en cours.`
@@ -57,12 +60,12 @@ class JobManager {
       controller,
       sender
     };
-    this.emit();
-
     const update = (patch) => this.update(id, patch);
     const onDestroyed = () => controller.abort();
     sender?.once?.('destroyed', onDestroyed);
     try {
+      this.emit();
+      if (controller.signal.aborted || sender?.isDestroyed?.()) throw createAbortError();
       const result = await executor({ signal: controller.signal, update, jobId: id });
       this.emit({
         state: 'completed',

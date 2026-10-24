@@ -86,6 +86,192 @@ test('Quick Sync keeps native frames in GPU memory without changing compression,
   assert.ok(!command.includes('-vf'));
   assert.equal(path.basename(output), 'Vidéo originale é (2).mp4');
   assert.equal(fs.readFileSync(inputPath, 'utf8'), 'original');
+  for (const codec of ['h264', 'hevc']) {
+    await service.convert({
+      ...request,
+      targetHeight: 1080,
+      mediaInfo: { ...mediaInfo, codec, width: 1920, height: 1080 }
+    });
+    assert.ok(command.includes('-hwaccel'));
+    assert.equal(command[command.indexOf('-pix_fmt') + 1], 'qsv');
+    assert.equal(command[command.indexOf('-c:v') + 1], 'h264_qsv');
+    assert.equal(command.filter((value) => value === '-c:v').length, 1);
+    assert.ok(!command.includes('-vf'));
+  }
+});
+
+for (const codec of ['av1']) {
+  test(`${codec} 4K uses an input QSV decoder and preserves the output encoder, profiles and native resolution`, async (t) => {
+    let command;
+    const { service, request } = setup(t, async (_ffmpeg, args) => {
+      command = args;
+      return complete(args);
+    });
+    for (const targetHeight of [null, 2160]) {
+      for (const profileId of ['fast', 'balanced']) {
+        await service.convert({
+          ...request,
+          targetHeight,
+          profileId,
+          mediaInfo: { ...mediaInfo, codec }
+        });
+        const inputIndex = command.indexOf('-i');
+        const decoderIndex = command.indexOf('-c:v');
+        const encoderIndex = command.lastIndexOf('-c:v');
+        assert.ok(decoderIndex < inputIndex && encoderIndex > inputIndex);
+        assert.equal(command[decoderIndex + 1], `${codec}_qsv`);
+        assert.equal(command[encoderIndex + 1], 'h264_qsv');
+        assert.equal(command.filter((value) => value === '-c:v').length, 2);
+        assert.equal(command[command.indexOf('-hwaccel') + 1], 'qsv');
+        assert.equal(command[command.indexOf('-hwaccel_output_format') + 1], 'qsv');
+        assert.equal(command[command.indexOf('-pix_fmt') + 1], 'qsv');
+        assert.equal(command[command.indexOf('-preset') + 1], 'veryfast');
+        assert.equal(
+          command[command.indexOf('-b:v') + 1],
+          String(getTargetVideoBitrate(2160, mediaInfo.bitrate, profileId))
+        );
+        assert.equal(command[command.indexOf('-c:a') + 1], 'aac');
+        assert.equal(command[command.indexOf('-b:a') + 1], '160000');
+        assert.equal(command[command.indexOf('-tag:v') + 1], 'avc1');
+        assert.ok(command.includes('+faststart'));
+        assert.ok(!command.includes('-vf'));
+      }
+    }
+  });
+
+  test(`${codec} keeps the existing CPU reader for unsupported colour, transforms, profiles and encoders`, async (t) => {
+    let expectedEncoder = 'h264_qsv';
+    let expectedScale = null;
+    const { service, request } = setup(t, async (_ffmpeg, args) => {
+      assert.ok(!args.includes('-hwaccel'));
+      assert.ok(!args.includes(`${codec}_qsv`));
+      assert.equal(args.filter((value) => value === '-c:v').length, 1);
+      assert.equal(args[args.indexOf('-c:v') + 1], expectedEncoder);
+      assert.equal(args[args.indexOf('-pix_fmt') + 1], 'yuv420p');
+      if (expectedScale) assert.equal(args[args.indexOf('-vf') + 1], expectedScale);
+      else assert.ok(!args.includes('-vf'));
+      return complete(args);
+    });
+    for (const testCase of [
+      { media: { width: 1920, height: 1080 } },
+      { media: { width: 2560, height: 1440 } },
+      { media: { pixelFormat: 'yuv420p10le' } },
+      { media: { pixelFormat: 'yuvj420p' } },
+      { media: { pixelFormat: 'yuv422p' } },
+      { media: { highDynamicRange: true } },
+      { media: { rotation: -90 } },
+      { media: { interlaced: true } },
+      { request: { targetHeight: 1080 }, scale: 'scale=-2:1080' },
+      { request: { forceSoftwareDecode: true } },
+      { request: { profileId: 'compact' }, encoder: 'libx264' },
+      { encoder: 'h264_nvenc' },
+      { encoder: 'h264_amf' },
+      { encoder: 'h264_videotoolbox' }
+    ]) {
+      expectedEncoder = testCase.encoder || 'h264_qsv';
+      expectedScale = testCase.scale || null;
+      service.detectHardwareEncoder = async () => expectedEncoder;
+      await service.convert({
+        ...request,
+        ...testCase.request,
+        mediaInfo: { ...mediaInfo, codec, ...testCase.media }
+      });
+    }
+  });
+
+  test(`${codec} decoder failure clears input decoder arguments before the existing hardware and software retries`, async (t) => {
+    const attempts = [];
+    const progress = [];
+    const { inputPath, directory, service, request } = setup(t, async (_ffmpeg, args, options) => {
+      attempts.push(args);
+      options.onStdout(
+        Buffer.from(
+          `out_time=00:00:0${attempts.length === 1 ? 7 : 3}.00\nspeed=2.0x\nprogress=continue\n`
+        )
+      );
+      fs.writeFileSync(args.at(-1), 'partial');
+      if (attempts.length < 3) throw new Error('Unsupported decoder or unavailable device');
+      return complete(args);
+    });
+    const output = await service.convert({
+      ...request,
+      mediaInfo: { ...mediaInfo, codec },
+      profileId: 'balanced',
+      onProgress: ({ percent }) => progress.push(percent)
+    });
+    assert.equal(attempts[0][attempts[0].indexOf('-c:v') + 1], `${codec}_qsv`);
+    assert.deepEqual(
+      attempts.map((args) => args[args.lastIndexOf('-c:v') + 1]),
+      ['h264_qsv', 'h264_qsv', 'libx264']
+    );
+    assert.deepEqual(
+      attempts.map((args) => args.includes('-hwaccel')),
+      [true, false, false]
+    );
+    for (const args of attempts.slice(1)) {
+      assert.ok(!args.includes(`${codec}_qsv`));
+      assert.equal(args.filter((value) => value === '-c:v').length, 1);
+    }
+    assert.equal(attempts[2][attempts[2].indexOf('-preset') + 1], 'faster');
+    assert.ok(progress.every((value, index) => !index || value >= progress[index - 1]));
+    assert.equal(fs.readFileSync(inputPath, 'utf8'), 'original');
+    assert.equal(fs.readFileSync(output, 'utf8'), 'converted');
+    assert.ok(!fs.readdirSync(directory).some((name) => name.includes('.tmp.')));
+  });
+
+  test(`${codec} hardware decoding cancellation cleans its partial output and never retries`, async (t) => {
+    const controller = new AbortController();
+    let attempts = 0;
+    const { directory, service, request } = setup(t, async (_ffmpeg, args) => {
+      attempts++;
+      assert.ok(args.includes(`${codec}_qsv`));
+      fs.writeFileSync(args.at(-1), 'partial');
+      controller.abort();
+      const error = new Error('Cancelled');
+      error.name = 'AbortError';
+      throw error;
+    });
+    await assert.rejects(
+      service.convert({
+        ...request,
+        mediaInfo: { ...mediaInfo, codec },
+        signal: controller.signal
+      }),
+      { name: 'AbortError' }
+    );
+    assert.equal(attempts, 1);
+    assert.deepEqual(fs.readdirSync(directory), ['Vidéo originale é.mp4']);
+  });
+}
+
+test('VP9 keeps the original CPU reader at native resolutions including 4K', async (t) => {
+  let command;
+  const { service, request } = setup(t, async (_ffmpeg, args) => {
+    command = args;
+    return complete(args);
+  });
+  for (const height of [1080, 2160, 4320]) {
+    for (const profileId of ['fast', 'balanced', 'compact']) {
+      await service.convert({
+        ...request,
+        profileId,
+        mediaInfo: { ...mediaInfo, codec: 'vp9', width: (height * 16) / 9, height }
+      });
+      assert.ok(!command.includes('-hwaccel'));
+      assert.ok(!command.includes('vp9_qsv'));
+      assert.equal(command.filter((value) => value === '-c:v').length, 1);
+      assert.equal(
+        command[command.indexOf('-c:v') + 1],
+        profileId === 'compact' ? 'libx264' : 'h264_qsv'
+      );
+      assert.equal(command[command.indexOf('-pix_fmt') + 1], 'yuv420p');
+      assert.equal(
+        command[command.indexOf('-b:v') + 1],
+        String(getTargetVideoBitrate(height, mediaInfo.bitrate, profileId))
+      );
+      assert.ok(!command.includes('-vf'));
+    }
+  }
 });
 
 test('resizing preserves the original CPU decoder and resampling algorithm', async (t) => {
@@ -205,7 +391,7 @@ test('cancelling the accelerated decoder cleans partial files and starts no retr
   assert.deepEqual(fs.readdirSync(directory), ['Vidéo originale é.mp4']);
 });
 
-test('a final rename error cleans the temporary file without repeating an already successful encode', async (t) => {
+test('a final publication error cleans the temporary file without repeating an already successful encode', async (t) => {
   let attempts = 0;
   const { directory, inputPath, service, request } = setup(t, async (_ffmpeg, args) => {
     attempts++;

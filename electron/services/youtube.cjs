@@ -3,7 +3,7 @@ const path = require('node:path');
 const { StringDecoder } = require('node:string_decoder');
 const downloadConfig = require('../../shared/download-config.json');
 const { runProcess, createAbortError } = require('./process-runner.cjs');
-const { getAvailableOutputPath } = require('./media.cjs');
+const { getAvailableOutputPath, publishOutputFile } = require('./output-files.cjs');
 const { toFormats, buildFormatSelector, canRemuxCompatibleMp4 } = require('./youtube/formats.cjs');
 const { buildAnalyzeArgs, buildDownloadArgs } = require('./youtube/arguments.cjs');
 const { parseDownloadProgress, createDownloadProgressTracker } = require('./youtube/progress.cjs');
@@ -274,8 +274,8 @@ class YouTubeService {
       }
       if (signal?.aborted) throw createAbortError();
       const destination = getAvailableOutputPath(downloadedPath, payload.outputDir);
-      await fs.promises.rename(outputPath, destination);
-      return { ok: true, outputPath: destination };
+      const published = await publishOutputFile(outputPath, destination, downloadedPath);
+      return { ok: true, outputPath: published };
     } finally {
       // This directory was created exclusively for this job; existing exports
       // stay outside it and are never touched by cleanup or yt-dlp overwrites.

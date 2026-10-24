@@ -46,6 +46,11 @@ async function main() {
       'yuv420p',
       '-c:a',
       'aac',
+      // Metadata text must not be mistaken for actual streams or rotation.
+      '-metadata',
+      'title=Video: vp9, yuv420p10le(bt2020), 320x240',
+      '-metadata',
+      'comment=Audio: opus | Duration: 00:00:01.00, bitrate: 700 kb/s | rotate: 90',
       inputPath
     ],
     { windowsHide: true }
@@ -233,86 +238,103 @@ async function main() {
       fastJob.result.outputPath
     );
     const largeConversions = [];
+    const largeFixtures = [];
     if (process.env.V5_LARGE_FIXTURES_DIR) {
       for (const [filename, expectedHeight] of [
         ['Mouvement 1080p é.mp4', 1080],
         ['Mouvement 4K é.mp4', 2160]
       ]) {
-        const sourcePath = path.resolve(process.env.V5_LARGE_FIXTURES_DIR, filename);
-        const sourceHash = hash(sourcePath);
-        await electronApp.evaluate((_electron, selectedPath) => {
-          globalThis.smokeInputPath = selectedPath;
-        }, sourcePath);
-        await page.getByRole('button', { name: 'Changer', exact: true }).click();
-        await page.getByRole('heading', { name: filename, exact: true }).waitFor();
-        await page
-          .getByRole('radio', { name: `Conserver la définition, ${expectedHeight}p`, exact: true })
-          .click();
-        const previous = await page.evaluate(() => window.desktopAPI.getCurrentJob());
-        const started = performance.now();
-        await page.getByRole('button', { name: 'Convertir en MP4' }).click();
-        // waitForFunction's page predicate is synchronous. Await IPC on the
-        // Node side so a Promise cannot be mistaken for a completed job.
-        let current;
-        while (performance.now() - started < 120000) {
-          const snapshot = await page.evaluate(() => window.desktopAPI.getCurrentJob());
-          if (
-            snapshot &&
-            snapshot.id !== previous?.id &&
-            !['running', 'cancelling'].includes(snapshot.state)
-          ) {
-            const name = snapshot.result?.outputPath
-              ?.split(/[\\/]/)
-              .pop()
-              .replace(/ \(\d+\)(?=\.mp4$)/, '');
-            if (snapshot.state !== 'completed' || name === filename) {
-              current = snapshot;
-              break;
-            }
-          }
-          await new Promise((resolve) => setTimeout(resolve, 150));
-        }
-        assert.ok(current, `Conversion native ${filename} : délai dépassé.`);
-        assert.equal(
-          current.state,
-          'completed',
-          current.error || 'La conversion native doit réussir.'
-        );
-        const elapsedSeconds = (performance.now() - started) / 1000;
-        const info = await new MediaService(ffmpeg).inspect(current.result.outputPath);
-        assert.equal(info.height, expectedHeight);
-        assert.equal(info.codec, 'h264');
-        assert.equal(info.pixelFormat, 'yuv420p');
-        assert.equal(
-          path.basename(current.result.outputPath).replace(/ \(\d+\)(?=\.mp4$)/, ''),
-          filename
-        );
-        execFileSync(
-          ffmpeg,
-          [
-            '-hide_banner',
-            '-loglevel',
-            'error',
-            '-xerror',
-            '-i',
-            current.result.outputPath,
-            '-f',
-            'null',
-            '-'
-          ],
-          { windowsHide: true, timeout: 120000, stdio: ['ignore', 'pipe', 'pipe'] }
-        );
-        assert.equal(hash(sourcePath), sourceHash);
-        largeConversions.push({
-          sourcePath,
-          outputPath: current.result.outputPath,
-          height: info.height,
-          duration: info.duration,
-          elapsedSeconds,
-          decodingSucceeded: true,
-          originalPreserved: true
-        });
+        largeFixtures.push([
+          path.resolve(process.env.V5_LARGE_FIXTURES_DIR, filename),
+          expectedHeight
+        ]);
       }
+    }
+    if (process.env.V5_CODEC_FIXTURES_DIR) {
+      for (const codec of ['VP9', 'AV1'])
+        largeFixtures.push([
+          path.resolve(process.env.V5_CODEC_FIXTURES_DIR, `Mouvement 4K ${codec} é.mp4`),
+          2160
+        ]);
+    }
+    if (process.env.V5_REAL_AV1_SOURCE)
+      largeFixtures.push([path.resolve(process.env.V5_REAL_AV1_SOURCE), 2160]);
+    for (const [sourcePath, expectedHeight] of largeFixtures) {
+      const filename = path.basename(sourcePath);
+      const outputFilename = `${path.parse(filename).name}.mp4`;
+      const sourceHash = hash(sourcePath);
+      await electronApp.evaluate((_electron, selectedPath) => {
+        globalThis.smokeInputPath = selectedPath;
+      }, sourcePath);
+      await page.getByRole('button', { name: 'Changer', exact: true }).click();
+      await page.getByRole('heading', { name: filename, exact: true }).waitFor();
+      await page
+        .getByRole('radio', { name: `Conserver la définition, ${expectedHeight}p`, exact: true })
+        .click();
+      const previous = await page.evaluate(() => window.desktopAPI.getCurrentJob());
+      const started = performance.now();
+      await page.getByRole('button', { name: 'Convertir en MP4' }).click();
+      // waitForFunction's page predicate is synchronous. Await IPC on the
+      // Node side so a Promise cannot be mistaken for a completed job.
+      let current;
+      while (performance.now() - started < 120000) {
+        const snapshot = await page.evaluate(() => window.desktopAPI.getCurrentJob());
+        if (
+          snapshot &&
+          snapshot.id !== previous?.id &&
+          !['running', 'cancelling'].includes(snapshot.state)
+        ) {
+          const name = snapshot.result?.outputPath
+            ?.split(/[\\/]/)
+            .pop()
+            .replace(/ \(\d+\)(?=\.mp4$)/, '');
+          if (snapshot.state !== 'completed' || name === outputFilename) {
+            current = snapshot;
+            break;
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      assert.ok(current, `Conversion native ${filename} : délai dépassé.`);
+      assert.equal(
+        current.state,
+        'completed',
+        current.error || 'La conversion native doit réussir.'
+      );
+      const elapsedSeconds = (performance.now() - started) / 1000;
+      const info = await new MediaService(ffmpeg).inspect(current.result.outputPath);
+      assert.equal(info.height, expectedHeight);
+      assert.equal(info.codec, 'h264');
+      assert.equal(info.pixelFormat, 'yuv420p');
+      assert.equal(
+        path.basename(current.result.outputPath).replace(/ \(\d+\)(?=\.mp4$)/, ''),
+        outputFilename
+      );
+      execFileSync(
+        ffmpeg,
+        [
+          '-hide_banner',
+          '-loglevel',
+          'error',
+          '-xerror',
+          '-i',
+          current.result.outputPath,
+          '-f',
+          'null',
+          '-'
+        ],
+        { windowsHide: true, timeout: 120000, stdio: ['ignore', 'pipe', 'pipe'] }
+      );
+      assert.equal(hash(sourcePath), sourceHash);
+      largeConversions.push({
+        sourcePath,
+        outputPath: current.result.outputPath,
+        height: info.height,
+        duration: info.duration,
+        elapsedSeconds,
+        decodingSucceeded: true,
+        originalPreserved: true
+      });
     }
     await page.screenshot({
       path: path.join(artifactDir, 'v5-06-electron-conversion-reelle.png'),

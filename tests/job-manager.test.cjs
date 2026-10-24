@@ -82,3 +82,110 @@ test('destroying the source window aborts its running process', async () => {
   assert.equal(manager.snapshot().state, 'cancelled');
   assert.equal(windowSender.listenerCount('destroyed'), 0);
 });
+
+test('an already destroyed source cannot start an executor or replace the last job', async () => {
+  for (const completedBefore of [false, true]) {
+    const manager = new JobManager({ channel: 'update' });
+    if (completedBefore)
+      await manager.start('conversion', sender(), async () => ({ outputPath: '/preserved.mp4' }));
+    const previous = manager.snapshot();
+    const closed = Object.assign(sender(), { isDestroyed: () => true });
+    let executed = false;
+    await assert.rejects(
+      manager.start('download', closed, async () => {
+        executed = true;
+      }),
+      { name: 'AbortError' }
+    );
+    assert.equal(executed, false);
+    assert.deepEqual(manager.snapshot(), previous);
+    assert.equal(closed.listenerCount('destroyed'), 0);
+  }
+});
+
+test('destroying the source during its first notification cancels before execution', async () => {
+  const manager = new JobManager({ channel: 'update' });
+  const windowSender = sender();
+  let destroyed = false;
+  let executed = false;
+  windowSender.isDestroyed = () => destroyed;
+  windowSender.send = () => {
+    destroyed = true;
+    windowSender.emit('destroyed');
+  };
+  await assert.rejects(
+    manager.start('download', windowSender, async () => {
+      executed = true;
+    }),
+    { name: 'AbortError' }
+  );
+  assert.equal(executed, false);
+  assert.equal(manager.snapshot().state, 'cancelled');
+  assert.equal(manager.snapshot().error, null);
+  assert.equal(windowSender.listenerCount('destroyed'), 0);
+});
+
+for (const [phase, failureAt] of [
+  ['initial', 1],
+  ['progress', 2],
+  ['completion', 3]
+]) {
+  test(`a failed ${phase} notification preserves the job result and releases its lock`, async () => {
+    const manager = new JobManager({ channel: 'update' });
+    const windowSender = sender();
+    let notifications = 0;
+    windowSender.send = () => {
+      notifications += 1;
+      if (notifications === failureAt) throw new Error('Render frame was disposed');
+    };
+    const result = await manager.start('conversion', windowSender, async ({ signal, update }) => {
+      assert.equal(signal.aborted, false);
+      update({ percent: 45 });
+      assert.equal(manager.snapshot().percent, 45);
+      return { outputPath: '/completed.mp4' };
+    });
+    assert.equal(notifications, 3);
+    assert.equal(result.outputPath, '/completed.mp4');
+    assert.equal(manager.snapshot().state, 'completed');
+    assert.equal(manager.snapshot().percent, 100);
+    assert.equal(windowSender.listenerCount('destroyed'), 0);
+    await manager.start('download', sender(), async () => ({ outputPath: '/next.mp4' }));
+    assert.equal(manager.snapshot().state, 'completed');
+    assert.equal(manager.snapshot().result.outputPath, '/next.mp4');
+  });
+}
+
+test('notification errors cannot block cancellation or replace its neutral error', async () => {
+  const manager = new JobManager({ channel: 'update' });
+  const windowSender = sender();
+  windowSender.send = () => {
+    throw new Error('Render frame was disposed');
+  };
+  const task = manager.start(
+    'download',
+    windowSender,
+    ({ signal }) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => {
+          const error = new Error('Opération annulée.');
+          error.name = 'AbortError';
+          reject(error);
+        });
+      })
+  );
+  assert.equal(manager.cancel(), true);
+  await assert.rejects(task, { name: 'AbortError' });
+  assert.equal(manager.snapshot().state, 'cancelled');
+  assert.equal(manager.snapshot().error, null);
+  assert.equal(windowSender.listenerCount('destroyed'), 0);
+});
+
+test('jobs without a renderer remain supported', async () => {
+  const manager = new JobManager({ channel: 'update' });
+  const result = await manager.start('conversion', null, async ({ update }) => {
+    update({ percent: 25 });
+    return { outputPath: '/background.mp4' };
+  });
+  assert.equal(result.outputPath, '/background.mp4');
+  assert.equal(manager.snapshot().state, 'completed');
+});

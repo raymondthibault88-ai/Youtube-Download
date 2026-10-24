@@ -6,6 +6,7 @@ const conversionConfig = require('../../shared/conversion-config.json');
 const { JobManager } = require('../services/job-manager.cjs');
 const { MediaService, buildOutputOptions } = require('../services/media.cjs');
 const { YouTubeService } = require('../services/youtube.cjs');
+const { notifyRenderer } = require('../services/notify-renderer.cjs');
 const {
   requireAbsolutePath,
   validateFormatId,
@@ -150,8 +151,7 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
       const mediaInfo = await media.inspect(inputPath, signal);
       const onProgress = (progress) => {
         update(progress);
-        if (!event.sender.isDestroyed())
-          event.sender.send(ipcChannels.events.conversionProgress, progress);
+        notifyRenderer(event.sender, ipcChannels.events.conversionProgress, progress);
       };
       const outputPath = await media.convert({
         inputPath,
@@ -185,8 +185,7 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
     return jobs.start('download', event.sender, async ({ signal, update }) => {
       const result = await youtube.download(cleanPayload, signal, (progress) => {
         update(progress);
-        if (!event.sender.isDestroyed())
-          event.sender.send(ipcChannels.events.downloadProgress, progress);
+        notifyRenderer(event.sender, ipcChannels.events.downloadProgress, progress);
       });
       revealablePaths.add(result.outputPath);
       return result;

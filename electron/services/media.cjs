@@ -10,18 +10,7 @@ const {
 } = require('./media/profiles.cjs');
 const { parseFfmpegTime, inspectVideoFile } = require('./media/probe.cjs');
 const { HARDWARE_ENCODERS, conversionPipeline } = require('./media/encoding.cjs');
-function getAvailableOutputPath(inputPath, outputDir) {
-  const parsed = path.parse(inputPath);
-  const destinationDir = outputDir || parsed.dir;
-  const baseName = parsed.name;
-  let candidate = path.join(destinationDir, `${baseName}.mp4`);
-  let index = 2;
-  while (fs.existsSync(candidate)) {
-    candidate = path.join(destinationDir, `${baseName} (${index}).mp4`);
-    index += 1;
-  }
-  return candidate;
-}
+const { getAvailableOutputPath, publishOutputFile } = require('./output-files.cjs');
 
 class MediaService {
   constructor(ffmpegPath, { processRunner = runProcess } = {}) {
@@ -122,6 +111,7 @@ class MediaService {
     signal,
     onProgress,
     outputPath,
+    outputNameBase = outputPath || inputPath,
     progressRange = [0, 100],
     forceSoftware = false,
     forceSoftwareDecode = false,
@@ -241,8 +231,7 @@ class MediaService {
         }
       );
       encoded = true;
-      await fs.promises.rename(temporaryPath, destination);
-      return destination;
+      return await publishOutputFile(temporaryPath, destination, outputNameBase);
     } catch (error) {
       await fs.promises.unlink(temporaryPath).catch(() => {});
       if (!encoded && encoder && !signal?.aborted && error?.name !== 'AbortError') {
@@ -262,6 +251,7 @@ class MediaService {
           signal,
           onProgress,
           outputPath: destination,
+          outputNameBase,
           progressRange,
           forceSoftware: !pipeline.accelerated,
           forceSoftwareDecode: true,
@@ -309,9 +299,9 @@ class MediaService {
         ],
         { signal, outputLimit: 128 * 1024 }
       );
-      await fs.promises.rename(temporaryPath, destination);
-      if (destination !== inputPath) await fs.promises.unlink(inputPath).catch(() => {});
-      return destination;
+      const published = await publishOutputFile(temporaryPath, destination, inputPath);
+      if (published !== inputPath) await fs.promises.unlink(inputPath).catch(() => {});
+      return published;
     } catch (error) {
       await fs.promises.unlink(temporaryPath).catch(() => {});
       throw error;

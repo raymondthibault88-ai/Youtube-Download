@@ -5,6 +5,7 @@ const { registerHandlers } = require('./ipc/register-handlers.cjs');
 const { DependencyService } = require('./services/dependencies.cjs');
 const { createMainWindow } = require('./window.cjs');
 const { hasActiveProcesses, shutdownProcesses } = require('./services/process-runner.cjs');
+const { notifyRenderer } = require('./services/notify-renderer.cjs');
 
 let mainWindow = null;
 let jobs = null;
@@ -59,8 +60,8 @@ if (!hasSingleInstanceLock) {
       openExternal: (url) => shell.openExternal(url),
       notify: (snapshot) => {
         for (const window of BrowserWindow.getAllWindows()) {
-          if (!window.isDestroyed() && !window.webContents.isDestroyed())
-            window.webContents.send(ipcChannels.events.updateState, snapshot);
+          if (!window.isDestroyed())
+            notifyRenderer(window.webContents, ipcChannels.events.updateState, snapshot);
         }
       }
     });

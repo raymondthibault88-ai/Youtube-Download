@@ -1,6 +1,16 @@
-# YouTube Downloader V5.1.2
+# YouTube Downloader V5.1.3
 
 Application Electron 44 + React 19 pour télécharger une vidéo YouTube ou convertir un fichier local en MP4 H.264/AAC compatible QuickTime et Dartfish.
+
+## Maintenance V5.1.3
+
+Le décodage Quick Sync est étendu aux sources AV1 SDR 8 bits 4:2:0 d'au moins 2160 lignes, à résolution constante. Sur le PC Intel de validation, trois essais par moteur donnent une médiane de 37,4 à 12,7 secondes pour un extrait réel 4K à 60 images/s, et de 17,1 à 4,6 secondes pour une source synthétique 4K. Ces mesures ne prédisent pas le gain sur un autre ordinateur. Les profils, les débits et les réglages restent identiques ; les images avant encodage et l'audio sont identiques, et la qualité finale respecte les seuils VMAF/SSIM ci-dessous. Les sorties H.264 ne sont pas nécessairement identiques pixel par pixel.
+
+VP9 conserve le décodage CPU : les essais matériels n'ont pas montré de gain suffisamment régulier, et un cas 1080p dépassait le seuil SSIM. H.264/HEVC, le redimensionnement, les autres GPU et les reprises en cas d'échec conservent leurs parcours existants.
+
+L'audit corrige aussi la publication des fichiers pour préserver un homonyme apparu pendant l'export, l'analyse des métadonnées qui pouvaient être confondues avec les flux vidéo, ainsi que les notifications et le démarrage des tâches à la fermeture d'une fenêtre. Les noms simples et leur numérotation restent inchangés. La publication utilise un lien physique exclusif lorsque le volume le permet ; sur FAT ou certains partages réseau, une copie exclusive protège les fichiers présents au prix d'entrées/sorties supplémentaires.
+
+La validation comprend 122 tests unitaires, 18 parcours UI, des comparaisons de qualité sur toutes les images et un test réel Electron sous Windows avec conversions H.264 1080p/4K, VP9 4K et AV1 4K synthétique et réel. L'interface, les réglages, les profils et la sélection audio sont conservés.
 
 ## Maintenance V5.1.2
 
@@ -29,7 +39,7 @@ La conversion présente deux objectifs : « Convertir en MP4 » utilise le profi
 - estimation de la taille avant conversion ;
 - profils Rapide, Équilibré et Plus léger ;
 - accélération VideoToolbox, NVENC, Quick Sync ou AMF après vérification, avec reprise sur libx264 en cas d’échec matériel ;
-- décodage Quick Sync des sources H.264/HEVC SDR 8 bits compatibles à résolution constante, avec conservation des images sur le GPU ; le redimensionnement conserve le parcours CPU d’origine ;
+- décodage Quick Sync des sources H.264/HEVC SDR 8 bits compatibles et des sources AV1 SDR 8 bits à partir de 2160 lignes, à résolution constante, avec conservation des images sur le GPU ; le redimensionnement conserve le parcours CPU d’origine ;
 - progression, vitesse, temps restant, annulation et accès au fichier terminé ;
 - protection du fichier original et arrêt des processus au départ de l’application.
 
@@ -63,17 +73,19 @@ npm run test:desktop
 
 ### Conversion : performances et qualité
 
-Les profils, les débits, les préréglages des encodeurs, l’AAC à 160 kbit/s et le MP4 H.264 restent identiques. Pour Quick Sync, les sources H.264/HEVC SDR 8 bits en 4:2:0 peuvent être décodées par le GPU à résolution constante : les images restent en mémoire graphique jusqu’à l’encodage. En réduction de résolution, le décodage et le filtre `scale` CPU d’origine sont conservés : un filtre GPU différent peut changer la netteté et les détails, et un aller-retour GPU/CPU a ralenti les essais 4K vers 1080p. Le profil Plus léger conserve libx264. Les sources HDR, 10 bits, entrelacées, avec rotation ou d’un autre format suivent le parcours existant.
+Les profils, les débits, les préréglages des encodeurs, l’AAC à 160 kbit/s et le MP4 H.264 restent identiques. Pour Quick Sync, les sources H.264/HEVC SDR 8 bits en 4:2:0 peuvent être décodées par le GPU à résolution constante : les images restent en mémoire graphique jusqu’à l’encodage. Le même parcours sélectionne explicitement `av1_qsv` pour l'AV1 à partir de 2160 lignes. VP9 reste décodé par le CPU. En réduction de résolution, le décodage et le filtre `scale` CPU d’origine sont conservés : un filtre GPU différent peut changer la netteté et les détails, et un aller-retour GPU/CPU a ralenti les essais 4K vers 1080p. Le profil Plus léger conserve libx264. Les sources HDR, 10 bits, entrelacées, avec rotation ou d’un autre format suivent le parcours existant.
 
 Si le nouveau parcours échoue, la conversion réessaie avec le décodage CPU et le même encodeur matériel ; si celui-ci échoue aussi, elle utilise libx264. L’annulation ne déclenche aucune reprise. Les fichiers temporaires sont nettoyés et la progression ne recule pas.
 
 `npm run test:conversion` compare le moteur courant avec une copie du moteur avant modification. Définir `V5_BENCHMARK_BASELINE` avec le chemin absolu de cette copie de `electron/services/media.cjs`, en conservant tout `electron/services/` et `shared/` à la même position relative pour inclure les sous-modules du moteur. `V5_BASELINE_FFMPEG_PATH` permet d'utiliser le binaire FFmpeg de référence ; sans cette variable, les deux moteurs utilisent le binaire courant. Le rapport conserve les chemins, versions et empreintes des binaires et des modules comparés. `V5_BENCHMARK_DIR` choisit le dossier des sources, exports et rapports ; le défaut est `test-results/conversion/`.
 
-Le benchmark crée des sources synthétiques animées avec audio, de 30 secondes à 30 images/s en 1920×1080 et 3840×2160, ainsi qu’une source HEVC 4K de 8 secondes. Il compare les trois profils, la conservation de résolution et la réduction 4K vers 1080p. Les cas Rapide H.264 sont répétés trois fois avec ordre avant/après alterné ; la médiane inclut l’encodage, l’écriture et `faststart`, mais sépare la détection initiale de l’encodeur. `V5_BENCHMARK_SECONDS` et `V5_BENCHMARK_REPETITIONS` permettent d’adapter la durée et les répétitions. `node scripts/benchmark-conversion.cjs prepare` génère seulement les sources.
+Le benchmark crée des sources synthétiques animées avec audio, de 30 secondes à 30 images/s en 1920×1080 et 3840×2160, ainsi que des sources HEVC, VP9 et AV1 de 8 secondes. Il compare les trois profils, la conservation de résolution et la réduction 4K vers 1080p. Les cas Rapide sont répétés trois fois avec ordre avant/après alterné ; la médiane inclut l’encodage, l’écriture et `faststart`, mais sépare la détection initiale de l’encodeur. `V5_BENCHMARK_SECONDS` et `V5_BENCHMARK_REPETITIONS` permettent d’adapter la durée et les répétitions. `node scripts/benchmark-conversion.cjs prepare` génère seulement les sources. `V5_BENCHMARK_REAL_AV1_SOURCE` ajoute un fichier AV1 réel au cas `4K-av1-real-fast`, sans réencodage préalable ni cadence imposée.
 
 Chaque sortie est entièrement décodée. Le benchmark vérifie le nombre d’images, la résolution, le codec, les originaux, les noms simples, la progression et l’identité de l’audio décodé. Il compare également les empreintes de toutes les images avant encodage entre les décodages CPU et Quick Sync. Si les images finales décodées sont strictement identiques, cette comparaison exacte établit l’absence de changement de qualité. Sinon, les métriques VMAF, SSIM et PSNR portent sur toutes les images, avec le modèle VMAF 4K pour les sorties 4K. Le seuil de non-régression tolère uniquement de faibles variations des encodages avec contrôle de débit : au maximum 0,05 point VMAF sur 100 et 0,0001 SSIM. `V5_BENCHMARK_CASES` permet de sélectionner des cas par identifiant, séparés par des virgules. Les résultats synthétiques ne garantissent pas la même accélération sur tous les médias ou tous les ordinateurs.
 
-Pour rejouer les conversions 1080p et 4K dans la véritable interface Electron, définir `V5_LARGE_FIXTURES_DIR` avec le dossier `sources/` du benchmark avant `npm run test:desktop`. Le même test peut cibler l’application Windows empaquetée avec `V5_EXECUTABLE`.
+Le nombre d'images attendu provient d'un décodage intégral de la source, y compris pour les vidéos à 60 images/s. Couleurs, cadence et rapport de pixels sont contrôlés. Une métrique peut être réutilisée uniquement pour un MP4 entier de même SHA256, avec la même source, le même binaire de mesure, le même modèle et les mêmes paramètres ; chaque export conserve ses propres contrôles de décodage, d'images et d'audio.
+
+Pour rejouer les conversions H.264 1080p et 4K dans la véritable interface Electron, définir `V5_LARGE_FIXTURES_DIR` avec le dossier `sources/` du benchmark avant `npm run test:desktop`. `V5_CODEC_FIXTURES_DIR` ajoute les sources VP9 et AV1 4K du même dossier ; `V5_REAL_AV1_SOURCE` ajoute le chemin absolu d'un extrait AV1 réel 4K. La petite source native contient aussi des métadonnées trompeuses pour vérifier qu'elles ne remplacent pas les vrais flux. Le même test peut cibler l’application Windows empaquetée avec `V5_EXECUTABLE`.
 
 ### Téléchargement : performances et qualité
 
