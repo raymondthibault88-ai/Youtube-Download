@@ -44,13 +44,24 @@ const invocations = {
   checkForUpdates: 'updateCheck',
   downloadUpdate: 'updateDownload',
   installUpdate: 'updateInstall',
-  openUpdateRelease: 'updateOpenRelease'
+  openUpdateRelease: 'updateOpenRelease',
+  importLibrary: 'libraryImport',
+  cancelLibraryImport: 'libraryCancel',
+  startBatchDownload: 'downloadBatch',
+  getYouTubeAccount: 'accountCurrent',
+  connectYouTubeAccount: 'accountConnect',
+  cancelYouTubeAccount: 'accountCancel',
+  configureYouTubeAccount: 'accountConfigure',
+  disconnectYouTubeAccount: 'accountDisconnect',
+  getAccountPlaylists: 'accountPlaylists',
+  getAccountVideos: 'accountVideos'
 };
 const subscriptions = {
   onDownloadProgress: 'downloadProgress',
   onConversionProgress: 'conversionProgress',
   onJobUpdate: 'jobUpdate',
-  onUpdateState: 'updateState'
+  onUpdateState: 'updateState',
+  onYouTubeAccount: 'accountState'
 };
 
 test('every exposed preload method invokes its exact shared IPC channel and forwards its payload', async () => {
@@ -60,10 +71,24 @@ test('every exposed preload method invokes its exact shared IPC channel and forw
     [...Object.keys(invocations), ...Object.keys(subscriptions)].sort()
   );
   assert.deepEqual(Object.values(invocations).sort(), Object.keys(contract.invoke).sort());
-  const takesArgument = new Set(['analyzeVideo', 'startDownload', 'startConversion', 'revealPath']);
+  const takesArgument = new Set([
+    'analyzeVideo',
+    'startDownload',
+    'startConversion',
+    'revealPath',
+    'importLibrary',
+    'startBatchDownload'
+  ]);
   const payload = { inputPath: 'C:\\Vidéos\\Original é.mov', url: 'https://youtu.be/example' };
   for (const [method, key] of Object.entries(invocations)) {
-    const args = takesArgument.has(method) ? [payload] : [];
+    const args =
+      method === 'getAccountPlaylists'
+        ? ['next']
+        : method === 'getAccountVideos'
+          ? ['UUplaylist', 'next']
+          : takesArgument.has(method)
+            ? [payload]
+            : [];
     const result = await api[method](...args);
     assert.deepEqual(result, { channel: contract.invoke[key], args }, method);
   }

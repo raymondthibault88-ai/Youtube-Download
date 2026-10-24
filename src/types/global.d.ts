@@ -5,6 +5,14 @@ import type { ProgressState } from './progress';
 import type { JobSnapshot } from './job';
 import type { VideoInfo } from './video';
 import type { UpdateSnapshot } from './update';
+import type {
+  LibraryCollection,
+  YouTubeAccountSnapshot,
+  AccountPlaylistsPage,
+  AccountVideosPage,
+  StartBatchDownloadPayload,
+  BatchDownloadResult
+} from './library';
 
 interface DesktopAPI {
   getStartupInfo: () => Promise<{ downloadsPath?: string }>;
@@ -28,6 +36,17 @@ interface DesktopAPI {
   onDownloadProgress: (handler: (payload: ProgressState) => void) => () => void;
   onConversionProgress: (handler: (payload: ProgressState) => void) => () => void;
   onJobUpdate: (handler: (payload: JobSnapshot) => void) => () => void;
+  importLibrary: (source: string) => Promise<LibraryCollection>;
+  cancelLibraryImport: () => Promise<{ ok: boolean }>;
+  startBatchDownload: (payload: StartBatchDownloadPayload) => Promise<BatchDownloadResult>;
+  getYouTubeAccount: () => Promise<YouTubeAccountSnapshot>;
+  connectYouTubeAccount: () => Promise<YouTubeAccountSnapshot>;
+  cancelYouTubeAccount: () => Promise<{ ok: boolean }>;
+  configureYouTubeAccount: () => Promise<YouTubeAccountSnapshot | null>;
+  disconnectYouTubeAccount: () => Promise<YouTubeAccountSnapshot>;
+  getAccountPlaylists: (pageToken?: string) => Promise<AccountPlaylistsPage>;
+  getAccountVideos: (playlistId: string, pageToken?: string) => Promise<AccountVideosPage>;
+  onYouTubeAccount: (handler: (payload: YouTubeAccountSnapshot) => void) => () => void;
 }
 
 declare global {

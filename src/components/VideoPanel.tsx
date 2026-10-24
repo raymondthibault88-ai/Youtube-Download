@@ -10,18 +10,20 @@ export default function VideoPanel({
   formats,
   selected,
   onSelect,
-  disabled
+  disabled,
+  idPrefix = 'video'
 }: {
   formats: VideoFormat[];
   selected: VideoFormat | null;
   onSelect: (format: VideoFormat) => void;
   disabled: boolean;
+  idPrefix?: string;
 }) {
   const { choices, recommended } = getQualityChoices(formats, selected);
   return (
     <div className="video-options">
       <div className="setting-row">
-        <h3 id="quality-label">Qualité</h3>
+        <h3 id={`${idPrefix}-quality-label`}>Qualité</h3>
         <RadioGroup
           className="inline-options"
           value={selected?.id || ''}
@@ -30,7 +32,7 @@ export default function VideoPanel({
             if (format) onSelect(format);
           }}
           disabled={disabled}
-          aria-labelledby="quality-label"
+          aria-labelledby={`${idPrefix}-quality-label`}
         >
           {choices.map((format) => (
             <Radio.Root
@@ -61,6 +63,7 @@ export default function VideoPanel({
           selected={selected?.id || null}
           onSelect={onSelect}
           disabled={disabled}
+          groupName={`${idPrefix}-advanced-format`}
         />
       </Disclosure>
     </div>

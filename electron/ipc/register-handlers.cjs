@@ -6,6 +6,7 @@ const conversionConfig = require('../../shared/conversion-config.json');
 const { JobManager } = require('../services/job-manager.cjs');
 const { MediaService, buildOutputOptions } = require('../services/media.cjs');
 const { YouTubeService } = require('../services/youtube.cjs');
+const { registerLibraryHandlers } = require('./register-library-handlers.cjs');
 const {
   requireAbsolutePath,
   validateFormatId,
@@ -13,7 +14,15 @@ const {
   validateYouTubeUrl
 } = require('../services/validation.cjs');
 
-function registerHandlers({ app, ipcMain, dependencyService, updateService, devOrigin }) {
+function registerHandlers({
+  app,
+  ipcMain,
+  dependencyService,
+  updateService,
+  devOrigin,
+  accountService,
+  accountReady
+}) {
   const jobs = new JobManager({ channel: ipcChannels.events.jobUpdate });
   const selectedInputs = new Set();
   const revealablePaths = new Set();
@@ -63,6 +72,18 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
       return handler(event, ...args);
     });
   };
+
+  registerLibraryHandlers({
+    app,
+    handle,
+    jobs,
+    getYoutube,
+    dependencyService,
+    updateService,
+    revealablePaths,
+    accountService,
+    accountReady
+  });
 
   handle(ipcChannels.invoke.startupInfo, async () => ({ downloadsPath: app.getPath('downloads') }));
   handle(ipcChannels.invoke.depsCheck, async () => dependencyService.getInfo());

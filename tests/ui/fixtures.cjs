@@ -29,6 +29,46 @@ const test = base.extend({
     await page.addInitScript((options) => {
       const handlers = new Set();
       const updateHandlers = new Set();
+      const accountHandlers = new Set();
+      let account = {
+        configured: Boolean(options.accountConfigured),
+        connected: false,
+        connecting: false,
+        channel: null,
+        error: null
+      };
+      const emitAccount = (patch) => {
+        account = { ...account, ...patch };
+        for (const handler of accountHandlers) handler(account);
+        return account;
+      };
+      const libraryItems = [
+        {
+          id: 'BaW_jenozKc',
+          title: 'Balade au bord de l’eau',
+          url: 'https://www.youtube.com/watch?v=BaW_jenozKc',
+          thumbnail: null,
+          duration: 180,
+          available: true
+        },
+        {
+          id: 'jNQXAC9IVRw',
+          title: 'Montagne en été',
+          url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+          thumbnail: null,
+          duration: 240,
+          available: true
+        },
+        {
+          id: 'M7lc1UVf-VE',
+          title: 'Vidéo indisponible',
+          url: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+          thumbnail: null,
+          duration: null,
+          available: false,
+          reason: 'Vidéo privée ou supprimée'
+        }
+      ];
       let update = {
         mode: 'automatic',
         status: 'idle',
@@ -82,9 +122,20 @@ const test = base.extend({
           type,
           state: 'running',
           percent: 24,
-          speed: type === 'download' ? '2.4 MB/s' : '1.8×',
+          speed: type !== 'conversion' ? '2.4 MB/s' : '1.8×',
           eta: '00:24',
-          raw: type === 'download' ? 'Récupération de la vidéo…' : 'Préparation du MP4…',
+          raw: type !== 'conversion' ? 'Récupération de la vidéo…' : 'Préparation du MP4…',
+          ...(type === 'batch'
+            ? {
+                batch: {
+                  total: payload.items.length,
+                  index: 1,
+                  completed: 0,
+                  failed: 0,
+                  currentTitle: payload.items[0].title
+                }
+              }
+            : {}),
           startedAt: Date.now(),
           updatedAt: Date.now(),
           result: null,
@@ -125,6 +176,30 @@ const test = base.extend({
         revealError: false,
         updateCheckError: false,
         setUpdate: emitUpdate,
+        setAccount: emitAccount,
+        libraryItems,
+        finishBatch: (failedIds = []) => {
+          const request = window.__test.calls.filter((call) => call.type === 'batch').at(-1);
+          const items = request.payload.items.map((item) => ({
+            ...item,
+            state: failedIds.includes(item.id) ? 'failed' : 'completed',
+            ...(failedIds.includes(item.id)
+              ? { error: 'Cette vidéo n’est pas accessible.' }
+              : { outputPath: `C:\\Videos\\Mes exports\\${item.title}.mp4` })
+          }));
+          const result = {
+            ok: !failedIds.length,
+            items,
+            completed: items.length - failedIds.length,
+            failed: failedIds.length,
+            cancelled: 0,
+            total: items.length,
+            outputPath: items.find((item) => item.outputPath)?.outputPath
+          };
+          emit({ state: 'completed', percent: 100, speed: null, eta: null, result });
+          settle.resolve(result);
+          settle = null;
+        },
         finish: () => {
           const result = {
             ok: true,
@@ -210,6 +285,77 @@ const test = base.extend({
         },
         startDownload: (payload) => begin('download', payload),
         startConversion: (payload) => begin('conversion', payload),
+        startBatchDownload: (payload) => begin('batch', payload),
+        importLibrary: async (source) => {
+          window.__test.calls.push({ type: 'library:import', source });
+          if (window.__test.delays[source])
+            await new Promise((resolve) => setTimeout(resolve, window.__test.delays[source]));
+          return {
+            id: source,
+            title: source.includes('@')
+              ? 'Chaîne de voyage'
+              : source.includes('PL_B')
+                ? 'Playlist B'
+                : 'Mes voyages',
+            sourceUrl: source,
+            kind: source.includes('@') ? 'channel' : 'playlist',
+            items: window.__test.libraryItems,
+            total: window.__test.libraryItems.length,
+            truncated: false,
+            nextPageToken: null
+          };
+        },
+        cancelLibraryImport: async () => {
+          window.__test.calls.push({ type: 'library:cancel' });
+          return { ok: true };
+        },
+        getYouTubeAccount: async () => account,
+        onYouTubeAccount: (handler) => {
+          accountHandlers.add(handler);
+          return () => accountHandlers.delete(handler);
+        },
+        configureYouTubeAccount: async () => {
+          window.__test.calls.push({ type: 'account:configure' });
+          return emitAccount({ configured: true });
+        },
+        connectYouTubeAccount: async () => {
+          window.__test.calls.push({ type: 'account:connect' });
+          return emitAccount({
+            connected: true,
+            channel: {
+              id: 'UCtest',
+              title: 'Ma chaîne',
+              thumbnail: null,
+              uploadsPlaylistId: 'UUtest'
+            }
+          });
+        },
+        cancelYouTubeAccount: async () => {
+          emitAccount({ connecting: false });
+          return { ok: true };
+        },
+        disconnectYouTubeAccount: async () => {
+          window.__test.calls.push({ type: 'account:disconnect' });
+          return emitAccount({ connected: false, channel: null });
+        },
+        getAccountPlaylists: async (pageToken) => ({
+          items: [
+            {
+              id: pageToken ? 'PLsecond' : 'PLfirst',
+              title: pageToken ? 'Deuxième playlist' : 'Ma playlist privée',
+              thumbnail: null,
+              videoCount: 3
+            }
+          ],
+          nextPageToken: pageToken ? null : 'page2'
+        }),
+        getAccountVideos: async (playlistId, pageToken) => {
+          window.__test.calls.push({ type: 'account:videos', playlistId, pageToken });
+          return {
+            items: pageToken ? [libraryItems[1]] : [libraryItems[0]],
+            nextPageToken: pageToken ? null : 'page2'
+          };
+        },
         getCurrentJob: async () => job,
         getUpdateState: async () => initialUpdate,
         onUpdateState: (handler) => {
@@ -239,7 +385,27 @@ const test = base.extend({
           return { ok: true };
         },
         cancelJob: async () => {
-          emit({ state: 'cancelled', raw: 'Opération annulée.', error: null });
+          const batchItems =
+            job?.type === 'batch'
+              ? window.__test.calls.filter((call) => call.type === 'batch').at(-1).payload.items
+              : null;
+          emit({
+            state: 'cancelled',
+            raw: 'Opération annulée.',
+            error: null,
+            ...(batchItems
+              ? {
+                  result: {
+                    ok: false,
+                    items: batchItems.map((item) => ({ ...item, state: 'cancelled' })),
+                    completed: 0,
+                    failed: 0,
+                    cancelled: batchItems.length,
+                    total: batchItems.length
+                  }
+                }
+              : {})
+          });
           const error = new Error('Opération annulée.');
           error.name = 'AbortError';
           settle?.reject(error);

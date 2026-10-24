@@ -6,3 +6,7 @@ graphify-out
 npm-debug.log*
 test-results/
 playwright-report/
+google-oauth.json
+client_secret*.json
+.env
+.env.local

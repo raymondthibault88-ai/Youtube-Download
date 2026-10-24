@@ -1,4 +1,5 @@
 const nodeCrypto = require('node:crypto');
+const { createAbortError } = require('./process-runner.cjs');
 
 class JobManager {
   constructor({ channel }) {
@@ -34,9 +35,10 @@ class JobManager {
   }
 
   async start(type, sender, executor) {
+    if (sender?.isDestroyed?.()) throw createAbortError();
     if (this.current && ['running', 'cancelling'].includes(this.current.state)) {
       throw new Error(
-        `Une tâche ${this.current.type === 'download' ? 'de téléchargement' : 'de conversion'} est déjà en cours.`
+        `Une tâche ${this.current.type === 'conversion' ? 'de conversion' : 'de téléchargement'} est déjà en cours.`
       );
     }
 
@@ -49,7 +51,12 @@ class JobManager {
       percent: 0,
       speed: null,
       eta: null,
-      raw: type === 'download' ? 'Préparation du téléchargement…' : 'Préparation de la conversion…',
+      raw:
+        type === 'batch'
+          ? 'Préparation des téléchargements…'
+          : type === 'download'
+            ? 'Préparation du téléchargement…'
+            : 'Préparation de la conversion…',
       startedAt: Date.now(),
       updatedAt: Date.now(),
       result: null,
@@ -64,12 +71,35 @@ class JobManager {
     sender?.once?.('destroyed', onDestroyed);
     try {
       const result = await executor({ signal: controller.signal, update, jobId: id });
+      const failedBatch = type === 'batch' && result.completed === 0 && result.failed > 0;
       this.emit({
-        state: 'completed',
+        state: failedBatch ? 'failed' : 'completed',
         percent: 100,
         speed: null,
         eta: null,
-        raw: type === 'download' ? 'Téléchargement terminé.' : 'Conversion terminée.',
+        raw:
+          type === 'batch'
+            ? `${result.completed} vidéo(s) enregistrée(s).`
+            : type === 'download'
+              ? 'Téléchargement terminé.'
+              : 'Conversion terminée.',
+        ...(failedBatch
+          ? {
+              error:
+                'Aucune vidéo du lot n’a pu être téléchargée. Consultez les résultats pour réessayer.'
+            }
+          : {}),
+        ...(type === 'batch'
+          ? {
+              batch: {
+                ...this.current.batch,
+                total: result.total,
+                index: result.total,
+                completed: result.completed,
+                failed: result.failed
+              }
+            }
+          : {}),
         result
       });
       return result;
@@ -80,7 +110,8 @@ class JobManager {
         speed: null,
         eta: null,
         raw: cancelled ? 'Opération annulée.' : 'La tâche a échoué.',
-        error: cancelled ? null : String(error?.message || error)
+        error: cancelled ? null : String(error?.message || error),
+        ...(type === 'batch' && error?.partialResult ? { result: error.partialResult } : {})
       });
       throw error;
     } finally {

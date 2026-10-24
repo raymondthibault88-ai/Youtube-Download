@@ -22,7 +22,18 @@ const channels = {
   downloadProgress: 'download:progress',
   conversionProgress: 'conversion:progress',
   jobUpdate: 'job:update',
-  updateState: 'update:state'
+  updateState: 'update:state',
+  libraryImport: 'library:import',
+  libraryCancel: 'library:cancel',
+  downloadBatch: 'download:batch',
+  accountCurrent: 'youtubeAccount:current',
+  accountConnect: 'youtubeAccount:connect',
+  accountCancel: 'youtubeAccount:cancel',
+  accountConfigure: 'youtubeAccount:configure',
+  accountDisconnect: 'youtubeAccount:disconnect',
+  accountPlaylists: 'youtubeAccount:playlists',
+  accountVideos: 'youtubeAccount:videos',
+  accountState: 'youtubeAccount:state'
 };
 
 function subscribe(channel, handler) {
@@ -52,5 +63,17 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   onUpdateState: (handler) => subscribe(channels.updateState, handler),
   onDownloadProgress: (handler) => subscribe(channels.downloadProgress, handler),
   onConversionProgress: (handler) => subscribe(channels.conversionProgress, handler),
-  onJobUpdate: (handler) => subscribe(channels.jobUpdate, handler)
+  onJobUpdate: (handler) => subscribe(channels.jobUpdate, handler),
+  importLibrary: (source) => ipcRenderer.invoke(channels.libraryImport, source),
+  cancelLibraryImport: () => ipcRenderer.invoke(channels.libraryCancel),
+  startBatchDownload: (payload) => ipcRenderer.invoke(channels.downloadBatch, payload),
+  getYouTubeAccount: () => ipcRenderer.invoke(channels.accountCurrent),
+  connectYouTubeAccount: () => ipcRenderer.invoke(channels.accountConnect),
+  cancelYouTubeAccount: () => ipcRenderer.invoke(channels.accountCancel),
+  configureYouTubeAccount: () => ipcRenderer.invoke(channels.accountConfigure),
+  disconnectYouTubeAccount: () => ipcRenderer.invoke(channels.accountDisconnect),
+  getAccountPlaylists: (pageToken) => ipcRenderer.invoke(channels.accountPlaylists, pageToken),
+  getAccountVideos: (playlistId, pageToken) =>
+    ipcRenderer.invoke(channels.accountVideos, playlistId, pageToken),
+  onYouTubeAccount: (handler) => subscribe(channels.accountState, handler)
 });

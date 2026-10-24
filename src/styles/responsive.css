@@ -53,6 +53,21 @@
   }
 }
 @media (max-width: 600px) {
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 6px;
+  }
+  .mode-tab {
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: normal;
+    text-align: center;
+  }
+  .mode-tab svg {
+    display: none;
+  }
   :root {
     --export-dock-height: 184px;
   }

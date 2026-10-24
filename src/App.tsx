@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Tabs } from '@base-ui/react/tabs';
-import { ArrowDownToLine, FileVideo } from 'lucide-react';
+import { ArrowDownToLine, FileVideo, Library } from 'lucide-react';
 import { version } from '../package.json';
 import AboutDialog from './components/AboutDialog';
 import ConverterPanel from './components/ConverterPanel';
@@ -8,6 +8,7 @@ import HeroPanel from './components/HeroPanel';
 import JobStatus from './components/JobStatus';
 import OutputCard from './components/OutputCard';
 import VideoPanel from './components/VideoPanel';
+import LibraryPanel from './components/LibraryPanel';
 import BrandMark from './components/ui/BrandMark';
 import Notice from './components/ui/Notice';
 import useDependencyInfo from './hooks/useDependencyInfo';
@@ -22,9 +23,12 @@ import { getErrorMessage } from './utils/errors';
 import { qualityLabel } from './utils/media';
 
 export default function App() {
-  const [mode, setMode] = useState('download');
+  const [mode, setMode] = useState(() =>
+    window.location.hash === '#library' ? 'library' : 'download'
+  );
   const [outputDir, setOutputDir] = useState(getStoredOutputDir);
   const [error, setError] = useState('');
+  const [libraryLoading, setLibraryLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { job, pendingType, busy, run, clear, cancel } = useMediaJob();
   const analysis = useVideoAnalyze({ setError });
@@ -40,16 +44,16 @@ export default function App() {
   }, [requestDependencyInfo]);
 
   const onPickFolder = useCallback(async () => {
-    if (busy) return;
+    if (busy || libraryLoading) return;
     try {
       const folder = await pickOutputDir();
       if (folder) setOutputDir(folder);
     } catch (caught) {
       setError(getErrorMessage(caught, 'Impossible de sélectionner ce dossier.'));
     }
-  }, [busy]);
+  }, [busy, libraryLoading]);
   const onPaste = useCallback(async () => {
-    if (busy) return;
+    if (busy || libraryLoading) return;
     try {
       const text = await readClipboard();
       if (text) {
@@ -65,7 +69,7 @@ export default function App() {
         )
       );
     }
-  }, [changeUrl, busy, clear]);
+  }, [changeUrl, busy, libraryLoading, clear]);
   const onReveal = useCallback(async (filePath: string) => {
     try {
       const result = await revealPath(filePath);
@@ -81,7 +85,7 @@ export default function App() {
   }, []);
   const { downloading, download } = useDownload({
     analysis,
-    busy,
+    busy: busy || libraryLoading,
     outputDir,
     setOutputDir,
     setError,
@@ -111,7 +115,7 @@ export default function App() {
             info={dependencyInfo}
             checking={isChecking}
             onCheck={() => void requestDependencyInfo(true)}
-            busy={busy || analysis.loadingVideo}
+            busy={busy || analysis.loadingVideo || libraryLoading}
           />
         </div>
       </header>
@@ -119,7 +123,7 @@ export default function App() {
         <Tabs.Root
           value={mode}
           onValueChange={(value) => {
-            if (value === 'convert' && analysis.loadingVideo) analysis.cancelAnalysis();
+            if (value !== 'download' && analysis.loadingVideo) analysis.cancelAnalysis();
             setMode(String(value));
             setError('');
           }}
@@ -139,6 +143,10 @@ export default function App() {
                 <FileVideo size={17} aria-hidden="true" />
                 Convertir / compresser
               </Tabs.Tab>
+              <Tabs.Tab value="library" className="mode-tab">
+                <Library size={17} aria-hidden="true" />
+                Bibliothèque
+              </Tabs.Tab>
             </Tabs.List>
           </div>
           <div id="workspace">
@@ -153,13 +161,13 @@ export default function App() {
                       clear();
                     }}
                     onAnalyze={(event) => {
-                      if (!busy) void analysis.analyze(event);
+                      if (!busy && !libraryLoading) void analysis.analyze(event);
                       else event.preventDefault();
                     }}
                     onPaste={() => void onPaste()}
                     onCancelAnalyze={analysis.cancelAnalysis}
                     loading={analysis.loadingVideo}
-                    busy={busy}
+                    busy={busy || libraryLoading}
                     video={analysis.video}
                   />
                   {analysis.video && (
@@ -167,7 +175,7 @@ export default function App() {
                       formats={analysis.video.formats || []}
                       selected={analysis.selectedFormat}
                       onSelect={analysis.setSelectedFormat}
-                      disabled={busy}
+                      disabled={busy || libraryLoading}
                     />
                   )}
                 </section>
@@ -178,9 +186,13 @@ export default function App() {
                   onPickFolder={() => void onPickFolder()}
                   onStart={() => void download()}
                   disabled={
-                    !analysis.video || !analysis.selectedFormat || busy || analysis.loadingVideo
+                    !analysis.video ||
+                    !analysis.selectedFormat ||
+                    busy ||
+                    analysis.loadingVideo ||
+                    libraryLoading
                   }
-                  busy={busy}
+                  busy={busy || libraryLoading}
                   action={downloading ? 'Téléchargement en cours…' : 'Télécharger la vidéo'}
                 />
               </div>
@@ -189,10 +201,22 @@ export default function App() {
               <ConverterPanel
                 outputDir={outputDir}
                 onPickFolder={() => void onPickFolder()}
+                busy={busy || analysis.loadingVideo || libraryLoading}
+                run={run}
+                onError={setError}
+                onSourceChange={clear}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="library" keepMounted className="workflow-panel">
+              <LibraryPanel
+                outputDir={outputDir}
+                onPickFolder={() => void onPickFolder()}
                 busy={busy || analysis.loadingVideo}
                 run={run}
                 onError={setError}
                 onSourceChange={clear}
+                job={job}
+                onLoadingChange={setLibraryLoading}
               />
             </Tabs.Panel>
           </div>

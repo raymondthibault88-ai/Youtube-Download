@@ -16,12 +16,23 @@
     "updateCheck": "update:check",
     "updateDownload": "update:download",
     "updateInstall": "update:install",
-    "updateOpenRelease": "update:openRelease"
+    "updateOpenRelease": "update:openRelease",
+    "libraryImport": "library:import",
+    "libraryCancel": "library:cancel",
+    "downloadBatch": "download:batch",
+    "accountCurrent": "youtubeAccount:current",
+    "accountConnect": "youtubeAccount:connect",
+    "accountCancel": "youtubeAccount:cancel",
+    "accountConfigure": "youtubeAccount:configure",
+    "accountDisconnect": "youtubeAccount:disconnect",
+    "accountPlaylists": "youtubeAccount:playlists",
+    "accountVideos": "youtubeAccount:videos"
   },
   "events": {
     "downloadProgress": "download:progress",
     "conversionProgress": "conversion:progress",
     "jobUpdate": "job:update",
-    "updateState": "update:state"
+    "updateState": "update:state",
+    "accountState": "youtubeAccount:state"
   }
 }
