@@ -25,7 +25,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-15-intel]
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: macos-15-intel
+            arch: x64
+          - os: macos-15
+            arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -72,21 +78,20 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MAC_AUTO_UPDATE_REQUIRED: 'true'
         run: |
-          args=(--mac --x64 --publish never)
-          if [[ -n "$CSC_LINK" ]]; then
-            if [[ -z "$MAC_SIGNING_IDENTITY" ]]; then
-              echo 'Définir MAC_SIGNING_IDENTITY avec le nom Developer ID Application.' >&2
+          for name in CSC_LINK CSC_KEY_PASSWORD MAC_SIGNING_IDENTITY APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "Configuration Apple manquante : $name" >&2
               exit 1
             fi
-            args+=("--config.mac.identity=$MAC_SIGNING_IDENTITY")
-          else
-            unset CSC_LINK CSC_KEY_PASSWORD
-          fi
+          done
+          qualifier="${MAC_SIGNING_IDENTITY#Developer ID Application: }"
+          args=(--mac --${{ matrix.arch }} --publish never --config.forceCodeSigning=true "--config.mac.identity=$qualifier")
           npx electron-builder "${args[@]}"
       - uses: actions/upload-artifact@v4
         with:
-          name: release-${{ runner.os }}
+          name: release-${{ runner.os }}-${{ matrix.arch }}
           if-no-files-found: error
           path: |
             release/*.exe
@@ -101,11 +106,20 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
-          merge-multiple: true
-          path: release
+          path: release-artifacts
+      - name: Assemble verified update catalogs
+        run: node scripts/merge-release-artifacts.cjs release-artifacts release "$(node -p 'require("./package.json").version')"
       - name: Prepare GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

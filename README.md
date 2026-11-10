@@ -138,14 +138,18 @@ Pour préparer une version :
 
 1. Mettre à jour `version` dans `package.json` et `package-lock.json` (`npm version patch --no-git-tag-version`, par exemple).
 2. Commiter les changements puis pousser le commit et son tag, par exemple `v5.0.1` pour la version `5.0.1`.
-3. Le workflow `Release` vérifie l’application et construit Windows x64 (Setup et portable) et macOS Intel x64 (DMG et ZIP). Il crée ensuite un **brouillon** de release contenant tous les artefacts. Une version déjà publiée ne peut pas être remplacée par ce workflow.
+3. Le workflow `Release` vérifie l’application et construit Windows x64 (Setup et portable), macOS Intel x64 et macOS Apple Silicon arm64 (DMG et ZIP). Les paquets Mac sont signés avec Developer ID et notariés. Il vérifie les tailles et empreintes des fichiers, puis fusionne les deux catalogues Mac avant de créer un **brouillon** de release contenant tous les artefacts. Une version déjà publiée ne peut pas être remplacée par ce workflow.
 4. Vérifier les exécutables puis publier le brouillon dans GitHub Releases. Seules les versions stables publiées sont proposées aux utilisateurs.
 
 Les anciens exécutables sans ce système doivent être remplacés une première fois par une version qui l’intègre. Les prochaines versions pourront ensuite être installées depuis l’application.
 
 La construction locale (`dist`, `dist:win`, `dist:mac`) ne publie rien. Le workflow utilise uniquement le `GITHUB_TOKEN` fourni par GitHub Actions pour créer le brouillon. La signature Windows peut être configurée avec les secrets `WIN_CSC_LINK` et `WIN_CSC_KEY_PASSWORD`.
 
-Pour activer aussi l’installation automatique sur macOS, configurer les secrets `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` et `APPLE_TEAM_ID`, ainsi que la variable `MAC_SIGNING_IDENTITY` contenant l’identité `Developer ID Application: …`. Sans certificat, le workflow conserve la signature ad hoc et le téléchargement manuel. Voir la [documentation electron-builder](https://www.electron.build/v26/docs/features/auto-update/).
+Pour les versions officielles macOS, configurer les secrets `MAC_CSC_LINK` (certificat `.p12` encodé en base64 avec sa clé privée et sa chaîne Apple), `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` et `APPLE_TEAM_ID`, ainsi que la variable `MAC_SIGNING_IDENTITY` contenant le nom du titulaire et son identifiant d’équipe. Le workflow accepte aussi le préfixe `Developer ID Application: ` et le retire avant de transmettre le nom à electron-builder. Ne jamais enregistrer ces secrets dans Git.
+
+Le workflow exige ces paramètres et définit `MAC_AUTO_UPDATE_REQUIRED=true` : une signature de développement, une mauvaise équipe Apple ou une notarisation refusée bloque la livraison. Le hook `electron/notarize.cjs` effectue la notarisation une seule fois et vérifie le ticket joint à l’application ; `mac.notarize=false` désactive seulement la deuxième notarisation automatique d’electron-builder. Les builds locaux sans identifiants Apple restent disponibles avec signature ad hoc et mise à jour manuelle. Voir la [documentation electron-builder](https://www.electron.build/v26/docs/features/auto-update/).
+
+Pour passer d’une ancienne version Mac ad hoc à la distribution Developer ID, installer manuellement une première version signée depuis le DMG adapté au Mac. Les versions signées suivantes se téléchargent dans l’application puis s’installent avec « Redémarrer et installer ». La vérification de version reste automatique, le téléchargement et le redémarrage restent des actions explicites.
 
 ### Signature et notarisation macOS
 

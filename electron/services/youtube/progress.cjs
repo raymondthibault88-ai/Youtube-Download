@@ -1,7 +1,7 @@
 const { stripVTControlCharacters } = require('node:util');
 const PROGRESS_PREFIX = '__YTDLP_PROGRESS__:';
 const PROGRESS_TEMPLATE =
-  'download:__YTDLP_PROGRESS__:{"id":%(info.format_id)j,"percent":%(progress._percent_str)j,"speed":%(progress._speed_str)j,"eta":%(progress._eta_str)j}';
+  'download:__YTDLP_PROGRESS__:{"id":%(info.format_id)j,"percent":%(progress._percent_str)j,"speed":%(progress._speed_str)j,"eta":%(progress._eta_str)j,"status":%(progress.status)j,"fragmentIndex":%(progress.fragment_index|0)j,"fragmentCount":%(progress.fragment_count|0)j}';
 function parseDownloadProgress(line) {
   const percent = Number(line.match(/(\d+(?:\.\d+)?)%/)?.[1]);
   return {
@@ -23,7 +23,19 @@ function createDownloadProgressTracker({ separateAudio = false, recode = false }
     } catch {
       return null;
     }
-    const percent = Number.parseFloat(stripVTControlCharacters(String(data.percent)));
+    let percent = Number.parseFloat(stripVTControlCharacters(String(data.percent)));
+    const fragmentIndex = Number(data.fragmentIndex);
+    const fragmentCount = Number(data.fragmentCount);
+    // HLS byte estimates can report 100% after the first 1 KiB. Completed
+    // fragments have a known total and do not depend on that changing estimate.
+    if (data.status === 'finished') percent = 100;
+    else if (
+      Number.isFinite(fragmentIndex) &&
+      Number.isFinite(fragmentCount) &&
+      fragmentIndex >= 0 &&
+      fragmentCount > 0
+    )
+      percent = (fragmentIndex / fragmentCount) * 100;
     if (!Number.isFinite(percent)) return null;
     const id = String(data.id);
     streams.set(id, Math.max(streams.get(id) || 0, Math.max(0, Math.min(100, percent))));

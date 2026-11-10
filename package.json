@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader-desktop",
-  "version": "5.1.4",
+  "version": "5.1.5",
   "description": "Téléchargez et convertissez vos vidéos en MP4 simplement, sur Windows et macOS",
   "main": "electron/main.cjs",
   "author": "",
@@ -59,6 +59,7 @@
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
+    "js-yaml": "4.3.2",
     "prettier": "3.9.10",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -117,7 +118,8 @@
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
       "minimumSystemVersion": "13.0",
-      "artifactName": "YouTube-Downloader-${version}-${arch}.${ext}"
+      "artifactName": "YouTube-Downloader-${version}-${arch}.${ext}",
+      "notarize": false
     },
     "win": {
       "icon": "build/icons/icon.ico",
