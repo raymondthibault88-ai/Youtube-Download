@@ -76,7 +76,7 @@ test('official Mac builds verify, notarize once and validate the stapled ticket'
   assert.deepEqual(Array.from(harness.calls[2][1]), [
     'stapler',
     'validate',
-    '/build/YouTube Downloader.app'
+    path.join('/build', 'YouTube Downloader.app')
   ]);
 });
 test('notarization failure stops the build before ticket validation', async () => {
