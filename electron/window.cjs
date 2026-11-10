@@ -30,6 +30,22 @@ function createMainWindow({ devUrl }) {
     window.focus();
   });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  if (process.platform === 'darwin')
+    window.webContents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown' || !input.meta || input.control || input.alt) return;
+      const key = input.key.toLowerCase();
+      if (input.shift && key !== 'z') return;
+      const action = {
+        a: 'selectAll',
+        c: 'copy',
+        x: 'cut',
+        v: 'paste',
+        z: input.shift ? 'redo' : 'undo'
+      }[key];
+      if (!action) return;
+      event.preventDefault();
+      window.webContents[action]();
+    });
   window.webContents.on('will-navigate', (event, navigationUrl) => {
     if (navigationUrl !== window.webContents.getURL()) event.preventDefault();
   });

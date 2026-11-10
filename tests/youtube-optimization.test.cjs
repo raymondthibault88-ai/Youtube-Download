@@ -258,6 +258,98 @@ test('an unavailable default-client analysis never substitutes fast-client audio
   await service.download(payload);
 });
 
+for (const hasAudio of [true, false]) {
+  test(`a visible fast-only video keeps its exact streams and default audio inventory (muxed=${hasAudio})`, async (t) => {
+    const { service, payload } = setup(t, {
+      formatId: '95',
+      hasAudio,
+      mergeAudioIfNeeded: !hasAudio
+    });
+    service.mediaService.remux = async (input) => input;
+    const delegate = service.runProcess;
+    service.runProcess = async (command, args, options) => {
+      if (args.includes('-J') && args.includes('--extractor-args')) {
+        const info = metadata();
+        info.formats.push(
+          {
+            ...info.formats[0],
+            format_id: '95',
+            height: 720,
+            acodec: hasAudio ? 'mp4a.40.2' : 'none',
+            url: 'https://example.invalid/visible-720p'
+          },
+          { ...info.formats[2], format_id: '258', audio_channels: 6 }
+        );
+        return { stdout: JSON.stringify(info) };
+      }
+      if (!args.includes('-J')) {
+        const saved = JSON.parse(
+          fs.readFileSync(args[args.indexOf('--load-info-json') + 1], 'utf8')
+        );
+        assert.equal(saved.formats.find((format) => format.format_id === '95').height, 720);
+        assert.equal(
+          saved.formats.some((format) => format.format_id === '258'),
+          false
+        );
+        assert.deepEqual(
+          saved.formats.filter((format) => format.vcodec === 'none'),
+          metadata().formats.filter((format) => format.vcodec === 'none')
+        );
+        assert.equal(
+          args[args.indexOf('-f') + 1],
+          hasAudio ? '95' : '95+bestaudio[ext=m4a]/95+bestaudio/95'
+        );
+      }
+      return delegate(command, args, options);
+    };
+    assert.ok((await service.analyze(url)).formats.some((format) => format.id === '95'));
+    assert.equal((await service.download(payload)).ok, true);
+  });
+}
+
+for (const stale of [false, true]) {
+  test(`a fast-only format uses its original client when ${stale ? 'the analysis expired' : 'a cached URL is rejected'}`, async (t) => {
+    const { service, payload } = setup(t, {
+      formatId: '95',
+      hasAudio: true,
+      mergeAudioIfNeeded: false
+    });
+    service.mediaService.remux = async (input) => input;
+    const delegate = service.runProcess;
+    let cachedAttempts = 0;
+    let freshAttempts = 0;
+    service.runProcess = async (command, args, options) => {
+      if (args.includes('-J') && args.includes('--extractor-args')) {
+        const info = metadata();
+        info.formats.push({
+          ...info.formats[0],
+          format_id: '95',
+          height: 720,
+          acodec: 'mp4a.40.2'
+        });
+        return { stdout: JSON.stringify(info) };
+      }
+      if (!args.includes('-J')) {
+        assert.equal(args[args.indexOf('-f') + 1], '95');
+        if (args.includes('--load-info-json')) {
+          cachedAttempts++;
+          throw new Error('HTTP Error 403: Forbidden');
+        }
+        freshAttempts++;
+        assert.equal(args.includes('--extractor-args'), true);
+        assert.equal(args.at(-1), url);
+      }
+      return delegate(command, args, options);
+    };
+    await service.analyze(url);
+    await service.cache.get(url).preparingInfo;
+    if (stale) service.cache.get(url).at -= 600001;
+    assert.equal((await service.download(payload)).ok, true);
+    assert.equal(cachedAttempts, stale ? 0 : 1);
+    assert.equal(freshAttempts, 1);
+  });
+}
+
 test('formats display before preparation ends, and cancelling its waiting download aborts preparation', async (t) => {
   const { service, payload, directory } = setup(t);
   const delegate = service.runProcess;

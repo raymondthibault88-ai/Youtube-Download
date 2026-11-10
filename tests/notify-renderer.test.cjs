@@ -228,7 +228,7 @@ test('an unavailable window does not stop update notifications for another windo
         return {
           app,
           BrowserWindow: { getAllWindows: () => windows },
-          Menu: { setApplicationMenu() {} },
+          Menu: { setApplicationMenu() {}, buildFromTemplate() {} },
           ipcMain: {},
           shell: {},
           session: {

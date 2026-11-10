@@ -22,6 +22,9 @@ import { getErrorMessage } from './utils/errors';
 import { qualityLabel } from './utils/media';
 
 export default function App() {
+  useEffect(() => {
+    document.title = `YouTube Downloader · V${version}`;
+  }, []);
   const [mode, setMode] = useState('download');
   const [outputDir, setOutputDir] = useState(getStoredOutputDir);
   const [error, setError] = useState('');
@@ -98,7 +101,7 @@ export default function App() {
         <div className="brand">
           <BrandMark className="brand-mark" />
           <h1 className="brand-name">YouTube Downloader</h1>
-          <span className="version-tag">V{version.split('.').slice(0, 2).join('.')}</span>
+          <span className="version-tag">V{version}</span>
         </div>
         <div className="header-actions">
           {isChecking && !dependencyInfo && (

@@ -349,7 +349,7 @@ test('a queued update installation does not run after the app has already begun 
   assert.equal(calls.installs.length, 0);
 });
 
-test('the development main process loads its window and disables the menu without importing electron-updater', async () => {
+test('the development main process installs native macOS editing actions without importing electron-updater', async () => {
   const source = path.resolve(__dirname, '../electron/main.cjs');
   const localRequire = createRequire(source);
   const sequence = [];
@@ -370,9 +370,17 @@ test('the development main process loads its window and disables the menu withou
     app,
     BrowserWindow: { getAllWindows: () => [] },
     Menu: {
+      buildFromTemplate(template) {
+        assert.equal(template[0].role, 'appMenu');
+        assert.equal(template[1].role, 'editMenu');
+        return { nativeEditing: true };
+      },
       setApplicationMenu(value) {
-        assert.equal(value, null);
-        sequence.push('menu');
+        if (value === null) sequence.push('menu');
+        else {
+          assert.equal(value.nativeEditing, true);
+          sequence.push('native-editing');
+        }
       }
     },
     ipcMain: {},
@@ -412,6 +420,11 @@ test('the development main process loads its window and disables the menu withou
   vm.runInNewContext(fs.readFileSync(source, 'utf8'), sandbox, { filename: source });
   await tick();
   assert.equal(updaterImports, 0);
-  assert.deepEqual(sequence, ['menu', 'ready', 'window']);
+  assert.deepEqual(
+    sequence,
+    process.platform === 'darwin'
+      ? ['menu', 'ready', 'native-editing', 'window']
+      : ['menu', 'ready', 'window']
+  );
   app.emit('before-quit', { preventDefault() {} });
 });

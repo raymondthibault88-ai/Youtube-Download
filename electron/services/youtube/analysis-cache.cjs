@@ -47,35 +47,46 @@ function buildCachedDownloadInfo(standardInfo, fastInfo) {
   const fastFormats = new Map(
     (fastInfo.formats || []).map((format) => [String(format.format_id), format])
   );
+  const standardIds = new Set(standardInfo.formats.map((format) => String(format.format_id)));
+  const fastOnlyVideoFormats = (fastInfo.formats || []).filter(
+    (format) =>
+      format.vcodec &&
+      format.vcodec !== 'none' &&
+      format.url &&
+      !standardIds.has(String(format.format_id))
+  );
   return {
     ...standardInfo,
-    formats: standardInfo.formats.map((format) => {
-      const fast = fastFormats.get(String(format.format_id));
-      const sameStream =
-        fast &&
-        ['vcodec', 'acodec', 'height', 'fps', 'audio_channels', 'language'].every(
-          (key) => (format[key] ?? null) === (fast[key] ?? null)
-        );
-      if (!sameStream || !fast.url) return format;
-      // Keep the original client's sorting and audio inventory. Reuse only the
-      // transport of the very same stream: some default-client URLs require
-      // session state that cannot survive an info-json round trip.
-      const copy = { ...format };
-      for (const key of [
-        'url',
-        'protocol',
-        'http_headers',
-        'downloader_options',
-        'manifest_url',
-        'manifest_stream_number',
-        'fragments',
-        'fragment_base_url'
-      ]) {
-        if (fast[key] === undefined) delete copy[key];
-        else copy[key] = fast[key];
-      }
-      return copy;
-    })
+    formats: [
+      ...standardInfo.formats.map((format) => {
+        const fast = fastFormats.get(String(format.format_id));
+        const sameStream =
+          fast &&
+          ['vcodec', 'acodec', 'height', 'fps', 'audio_channels', 'language'].every(
+            (key) => (format[key] ?? null) === (fast[key] ?? null)
+          );
+        if (!sameStream || !fast.url) return format;
+        // Keep the original client's sorting and audio inventory. Reuse only the
+        // transport of the very same stream: some default-client URLs require
+        // session state that cannot survive an info-json round trip.
+        const copy = { ...format };
+        for (const key of [
+          'url',
+          'protocol',
+          'http_headers',
+          'downloader_options',
+          'manifest_url',
+          'manifest_stream_number',
+          'fragments',
+          'fragment_base_url'
+        ]) {
+          if (fast[key] === undefined) delete copy[key];
+          else copy[key] = fast[key];
+        }
+        return copy;
+      }),
+      ...fastOnlyVideoFormats
+    ]
   };
 }
 module.exports = {

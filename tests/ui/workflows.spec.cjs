@@ -1,10 +1,13 @@
 const { test, expect, analyze, selectFile, capture } = require('./fixtures.cjs');
 const AxeBuilder = require('@axe-core/playwright').default;
+const { version } = require('../../package.json');
 
 test('the first screen has a clear action, real tabs and no idle progress', async ({
   page
 }, testInfo) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('YouTube Downloader');
+  await expect(page.locator('.version-tag')).toHaveText(`V${version}`);
+  await expect(page).toHaveTitle(`YouTube Downloader · V${version}`);
   await expect(page.locator('body')).toHaveCSS('font-family', /"Manrope Variable"/);
   expect(
     await page.evaluate(() =>

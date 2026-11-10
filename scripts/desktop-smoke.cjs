@@ -5,6 +5,7 @@ const path = require('node:path');
 const nodeCrypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { _electron } = require('playwright');
+const { expect } = require('@playwright/test');
 const { buildDownloadArgs } = require('../electron/services/youtube.cjs');
 
 async function main() {
@@ -121,6 +122,66 @@ async function main() {
       async () => typeof (await window.desktopAPI.readClipboard()) === 'string'
     );
     assert.equal(canReadClipboard, true);
+    if (process.platform === 'darwin') {
+      await electronApp.evaluate(async ({ clipboard, ClipboardItem }) => {
+        globalThis.smokeClipboardBefore = await Promise.all(
+          (await clipboard.read()).map(
+            async (item) =>
+              new ClipboardItem(
+                Object.fromEntries(
+                  await Promise.all(
+                    item.types.map(async (type) => [type, await item.getType(type)])
+                  )
+                )
+              )
+          )
+        );
+      });
+      try {
+        const input = page.getByLabel('Lien YouTube');
+        const testUrl = 'https://youtu.be/Keyboard123';
+        await electronApp.evaluate(({ app, BrowserWindow }) => {
+          app.focus({ steal: true });
+          BrowserWindow.getAllWindows()[0].focus();
+        });
+        const shortcut = (keyCode, shift = false) =>
+          electronApp.evaluate(
+            ({ BrowserWindow }, { keyCode, shift }) => {
+              const contents = BrowserWindow.getAllWindows()[0].webContents;
+              const modifiers = ['meta', ...(shift ? ['shift'] : [])];
+              contents.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
+              contents.sendInputEvent({ type: 'keyUp', keyCode, modifiers });
+            },
+            { keyCode, shift }
+          );
+        await input.fill(testUrl);
+        await shortcut('a');
+        await shortcut('c');
+        await expect
+          .poll(() => electronApp.evaluate(({ clipboard }) => clipboard.readText()))
+          .toBe(testUrl);
+        await shortcut('x');
+        await expect(input).toHaveValue('');
+        await shortcut('v');
+        await expect(input).toHaveValue(testUrl);
+        await shortcut('z');
+        await expect(input).toHaveValue('');
+        await shortcut('z', true);
+        await expect(input).toHaveValue(testUrl);
+        await input.fill('');
+        console.log(
+          'Raccourcis macOS : sélectionner, copier, couper, coller, annuler et rétablir OK.'
+        );
+      } catch (error) {
+        console.error('Échec du test des raccourcis :', error.message);
+        throw error;
+      } finally {
+        await electronApp.evaluate(async ({ clipboard }) => {
+          await clipboard.write(globalThis.smokeClipboardBefore);
+          delete globalThis.smokeClipboardBefore;
+        });
+      }
+    }
     // Exercise the real download arguments without a network request. Windows
     // otherwise emits ANSI filenames that Node's UTF-8 decoder cannot preserve.
     const dependencies = await page.evaluate(() => window.desktopAPI.checkDependencies());

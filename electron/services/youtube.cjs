@@ -72,6 +72,10 @@ class YouTubeService {
     entry.preparingInfo = preparation.result.then((result) => {
       if (result.info && entry.preparation === preparation) {
         entry.info = buildCachedDownloadInfo(result.info, entry.visibleInfo);
+        const standardIds = new Set(result.info.formats.map((format) => String(format.format_id)));
+        entry.fastOnlyFormatIds = entry.info.formats
+          .filter((format) => !standardIds.has(String(format.format_id)))
+          .map((format) => String(format.format_id));
         // Only unsuccessful preparation needs the fast transport for a later retry.
         delete entry.visibleInfo;
       }
@@ -156,6 +160,8 @@ class YouTubeService {
       if (signal?.aborted) throw createAbortError();
     }
     const reuseAnalysis = canReuseAnalysis(cached, payload);
+    const fastExtraction =
+      cached?.fastExtraction || cached?.fastOnlyFormatIds?.includes(String(payload.formatId));
     let lastPercent = 0;
     const reportProgress = (progress) => {
       lastPercent = Math.max(lastPercent, progress.percent || 0);
@@ -184,7 +190,7 @@ class YouTubeService {
           url: payload.url,
           shouldRecodeToMp4: recode,
           infoPath: storedInfoPath,
-          fastExtraction: cached?.fastExtraction,
+          fastExtraction,
           concurrentFragments: this.concurrentFragments
         });
         let buffer = '';

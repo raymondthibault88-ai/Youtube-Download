@@ -44,6 +44,10 @@ if (!hasSingleInstanceLock) {
 } else {
   app.on('second-instance', focusMainWindow);
   app.whenReady().then(() => {
+    if (process.platform === 'darwin')
+      Menu.setApplicationMenu(
+        Menu.buildFromTemplate([{ role: 'appMenu' }, { label: 'Édition', role: 'editMenu' }])
+      );
     const devUrl = getDevUrl();
     const devOrigin = devUrl ? new URL(devUrl).origin : null;
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) =>
