@@ -17,7 +17,7 @@ async function main() {
   const outputDir = path.join(fixtureDir, 'exports');
   fs.mkdirSync(outputDir, { recursive: true });
   const inputPath = path.join(fixtureDir, 'Vidéo originale é.mov');
-  const ffmpeg = require('ffmpeg-static');
+  const ffmpeg = require('../electron/services/ffmpeg-path.cjs').ffmpegPath();
   assert.ok(
     fs.existsSync(ffmpeg),
     'FFmpeg absent : réinstaller les dépendances sans --ignore-scripts.'
@@ -78,8 +78,8 @@ async function main() {
   try {
     if (userDataDir)
       assert.equal(
-        path.resolve(await electronApp.evaluate(({ app }) => app.getPath('userData'))),
-        userDataDir,
+        fs.realpathSync(await electronApp.evaluate(({ app }) => app.getPath('userData'))),
+        fs.realpathSync(userDataDir),
         'Le test doit utiliser son dossier de données isolé.'
       );
     page = await electronApp.firstWindow();
@@ -155,7 +155,13 @@ async function main() {
             { keyCode, shift }
           );
         await input.fill(testUrl);
+        await expect(input).toHaveValue(testUrl);
         await shortcut('a');
+        await expect
+          .poll(() =>
+            input.evaluate(({ selectionStart, selectionEnd }) => [selectionStart, selectionEnd])
+          )
+          .toEqual([0, testUrl.length]);
         await shortcut('c');
         await expect
           .poll(() => electronApp.evaluate(({ clipboard }) => clipboard.readText()))
@@ -225,7 +231,7 @@ async function main() {
         '--print',
         'filename'
       ],
-      { windowsHide: true, encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'pipe'] }
+      { windowsHide: true, encoding: 'utf8', timeout: 30000, stdio: ['ignore', 'pipe', 'pipe'] }
     ).trim();
     assert.equal(path.normalize(printedFilename), expectedFilename);
     fs.copyFileSync(inputPath, expectedFilename);

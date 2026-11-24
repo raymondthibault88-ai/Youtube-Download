@@ -1,5 +1,5 @@
 import type { FormEvent, RefObject } from 'react';
-import { Clipboard, Link, Search, X } from 'lucide-react';
+import { Clipboard, Link, Play, Search, X } from 'lucide-react';
 import { formatDuration } from '../../shared/formatters.js';
 import type { VideoInfo } from '../types';
 
@@ -91,7 +91,7 @@ export default function HeroPanel({
                 }}
               />
             ) : (
-              <span aria-hidden="true">▶</span>
+              <Play size={20} aria-hidden="true" />
             )}
           </div>
           <div>

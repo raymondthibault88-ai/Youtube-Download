@@ -47,6 +47,7 @@ const test = base.extend({
       let settle = null;
       const outputPath = 'C:\\Videos\\Mes exports\\Ma vidéo.mp4';
       const formats = [
+        ...(options.include8k ? [['402', '7680x4320', 'mp4', 'av01.0.16M.08', false, false]] : []),
         ['401', '3840x2160', 'mp4', 'av01.0.12M.08', false, false],
         ['313', '3840x2160', 'webm', 'vp9', false, false],
         ['271', '2560x1440', 'webm', 'vp9', false, false],
@@ -125,7 +126,7 @@ const test = base.extend({
         : Promise.resolve(update);
       window.__test = {
         completeDependencyCheck: () => resolveDependencies?.(dependencies),
-        completeVideoFormats: () => finishFormats?.(formats),
+        completeVideoFormats: (available = true) => finishFormats?.(available ? formats : null),
         failInitialUpdate: () => rejectInitialUpdate?.(new Error('Initial IPC failed')),
         calls: [],
         delays: {},
@@ -182,7 +183,9 @@ const test = base.extend({
             uploader: 'Carnets de voyage',
             thumbnail,
             duration: 723,
-            formats: options.deferCompleteVideoFormats ? formats.slice(3) : formats
+            formats: options.deferCompleteVideoFormats
+              ? formats.slice(formats.findIndex((format) => format.id === '137'))
+              : formats
           };
         },
         getCompleteVideoFormats: () => completeFormats,

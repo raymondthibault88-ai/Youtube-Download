@@ -25,13 +25,13 @@
   gap: 9px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   padding: 5px 6px 5px 12px;
   color: var(--muted);
 }
 .url-control:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px #d9002b12;
+  box-shadow: 0 0 0 3px var(--focus-halo);
 }
 .url-control input {
   flex: 1;
@@ -49,7 +49,7 @@
   outline: 0;
 }
 .url-control input::placeholder {
-  color: #62636a;
+  color: var(--muted);
 }
 .paste-button {
   display: flex;
@@ -63,8 +63,8 @@
   font-size: 12px;
   font-weight: 700;
 }
-.paste-button:hover {
-  background: #ffe1e8;
+.paste-button:hover:not(:disabled) {
+  background: var(--accent-soft-hover);
 }
 .source-entry .analyze-button {
   min-width: 112px;
@@ -85,7 +85,7 @@
   font-weight: 700;
 }
 .button-secondary {
-  background: #fff;
+  background: var(--surface);
   color: var(--accent);
   border-color: var(--line-strong);
 }
@@ -95,12 +95,18 @@
 }
 .button-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-solid);
   min-height: 40px;
 }
 .button-primary:hover:not(:disabled) {
   background: var(--accent-hover);
-  box-shadow: 0 3px 8px #d9002b1a;
+  box-shadow: 0 3px 8px var(--accent-shadow);
+}
+.button:disabled,
+.paste-button:disabled {
+  background: var(--surface-soft);
+  border-color: var(--line);
+  box-shadow: none;
 }
 .text-button {
   background: none;
@@ -128,7 +134,7 @@
   flex-shrink: 0;
 }
 .icon-button:hover {
-  background: #eeeef1;
+  background: var(--icon-hover);
   color: var(--ink);
 }
 .source-note {
@@ -137,7 +143,7 @@
   align-items: center;
   padding: 10px 20px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--detail-size);
 }
 .source-note svg:last-child:not(:first-child) {
   margin-left: auto;

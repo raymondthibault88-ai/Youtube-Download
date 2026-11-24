@@ -165,6 +165,12 @@ export default function App() {
                     busy={busy}
                     video={analysis.video}
                   />
+                  <p className="formats-status" role="status">
+                    {analysis.formatsStatus === 'searching' &&
+                      'Recherche de qualités supplémentaires…'}
+                    {analysis.formatsStatus === 'unavailable' &&
+                      'Analyse complémentaire indisponible. Actualisez pour réessayer.'}
+                  </p>
                   {analysis.video && (
                     <VideoPanel
                       formats={analysis.video.formats || []}

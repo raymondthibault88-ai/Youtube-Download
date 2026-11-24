@@ -1,0 +1,30 @@
+{
+  "release": "https://github.com/mrkbac/portable-ffmpeg/releases/download/ffmpeg-9.0.2-1",
+  "builds": {
+    "darwin-arm64": {
+      "archive": "ffmpeg-9.0.2-osx-arm64.tar.xz",
+      "archiveSha256": "38436f085276ba1325d82481aaa5d9818645fbfb3e4078c8938c06cdb8160512",
+      "binarySha256": "2e11c6f90993cdb79fff84d3f90044d28316b310e75b3e030cfc9a54f2c9d384"
+    },
+    "darwin-x64": {
+      "archive": "ffmpeg-9.0.2-osx-amd64.tar.xz",
+      "archiveSha256": "8b28cf14b576fa4485fe50d9f2fbc5d8fdafa14ca4d2adff85a6e52af84f4597",
+      "binarySha256": "b25689cf2211c0582d317e849912769a1f1c93904fe102c485b5364a425633d1"
+    },
+    "win32-x64": {
+      "archive": "ffmpeg-9.0.2-windows-amd64.tar.xz",
+      "archiveSha256": "0e9e40b1e0305c84904163de7215b9c879f9a6aa74196045a5060cd1ca093e73",
+      "binarySha256": "c930b63cb1ee8b7e2eaf9c15161160edd5c9acad34f0303b5855c8eb142a7e8d"
+    },
+    "linux-x64": {
+      "archive": "ffmpeg-9.0.2-linux-amd64.tar.xz",
+      "archiveSha256": "f78d9e9833dc773cd45ef03f20368b8cd67fd353fd8e85bb61c6aabb69ef0148",
+      "binarySha256": "384742b75419584d065bbf372613f9f7e8ccf22525b421c16a2ee679a78ee748"
+    },
+    "linux-arm64": {
+      "archive": "ffmpeg-9.0.2-linux-arm64.tar.xz",
+      "archiveSha256": "3caedf22f31b4fbd53e394ec0127d3ba7cae6b891ee5fe7b1c511015dd123077",
+      "binarySha256": "091fe4df4902fedd20f4d5accab14d02947a531d14d789cc7e8f18b0a808e6d1"
+    }
+  }
+}

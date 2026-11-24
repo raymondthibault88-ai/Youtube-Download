@@ -57,6 +57,15 @@ test('clipboard, recommended quality and output payload preserve the download be
     shouldRecodeToMp4: false
   });
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '24');
+  const indicator = page.locator('.progress-indicator');
+  await expect(indicator).toHaveCSS('transition-property', 'transform');
+  expect(await indicator.evaluate((el) => el.offsetWidth)).toBe(
+    await page.locator('.progress-track').evaluate((el) => el.clientWidth)
+  );
+  await expect(indicator).toHaveCSS('transform', 'matrix(0.24, 0, 0, 1, 0, 0)');
+  await page.evaluate(() => window.__test.progress(61));
+  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '61');
+  await expect(indicator).toHaveCSS('transform', 'matrix(0.61, 0, 0, 1, 0, 0)');
   await page.evaluate(() => window.__test.finish());
   await expect(page.getByRole('heading', { name: 'Fichier enregistré' })).toBeVisible();
   await expect
@@ -132,12 +141,17 @@ test.describe('progressive format analysis', () => {
     const fullHd = quality.getByRole('radio', { name: '1080p, recommandée, format 137' });
     const hd = quality.getByRole('radio', { name: '720p, format 136' });
     const ultraHd = quality.getByRole('radio', { name: '4K, format 401', exact: true });
+    const pending = page
+      .getByRole('status')
+      .filter({ hasText: 'Recherche de qualités supplémentaires…' });
     await expect(fullHd).toBeChecked();
     await expect(ultraHd).toHaveCount(0);
+    await expect(pending).toBeVisible();
     await hd.check();
 
     await page.evaluate(() => window.__test.completeVideoFormats());
     await expect(ultraHd).toBeVisible();
+    await expect(pending).toHaveCount(0);
     await expect(hd).toBeChecked();
     await ultraHd.check();
     await page.getByRole('button', { name: 'Télécharger la vidéo', exact: true }).click();
@@ -145,6 +159,36 @@ test.describe('progressive format analysis', () => {
       () => window.__test.calls.find((entry) => entry.type === 'download').payload
     );
     expect(payload.formatId).toBe('401');
+    await page.evaluate(() => window.__test.finish());
+  });
+
+  test('an unavailable complete analysis leaves the first qualities usable', async ({ page }) => {
+    await analyze(page);
+    await page.evaluate(() => window.__test.completeVideoFormats(false));
+    const notice = page
+      .getByRole('status')
+      .filter({ hasText: 'Analyse complémentaire indisponible' });
+    await expect(notice).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Télécharger la vidéo' })).toBeEnabled();
+
+    await page.getByLabel('Lien YouTube').fill('https://youtu.be/VideoB');
+    await expect(notice).toHaveCount(0);
+  });
+});
+
+test.describe('8K sources', () => {
+  test.use({ bridgeOptions: { include8k: true } });
+
+  test('8K and 4K have distinct choices and 4K downloads the 2160p stream', async ({ page }) => {
+    await analyze(page);
+    const quality = page.getByRole('radiogroup', { name: 'Qualité' });
+    await expect(quality.getByRole('radio', { name: '8K, format 402', exact: true })).toBeVisible();
+    await quality.getByRole('radio', { name: '4K, format 401', exact: true }).check();
+    await page.getByRole('button', { name: 'Télécharger la vidéo' }).click();
+    const formatId = await page.evaluate(
+      () => window.__test.calls.find((entry) => entry.type === 'download').payload.formatId
+    );
+    expect(formatId).toBe('401');
     await page.evaluate(() => window.__test.finish());
   });
 });
@@ -157,6 +201,12 @@ test('all source formats remain available, with descriptive labels and original 
   const region = page.getByRole('region', { name: 'Tous les formats source' });
   await expect(region.getByRole('radio')).toHaveCount(10);
   await region.getByRole('radio', { name: /format 248$/ }).check();
+  const selected = page.getByRole('radiogroup', { name: 'Qualité' }).getByRole('radio', {
+    name: /^1080p,/
+  });
+  await expect(selected).toHaveCount(1);
+  await expect(selected).toHaveAttribute('aria-label', '1080p, format 248');
+  await expect(selected).toBeChecked();
   await page.getByRole('button', { name: 'Télécharger la vidéo', exact: true }).click();
   const payload = await page.evaluate(
     () => window.__test.calls.find((entry) => entry.type === 'download').payload
@@ -305,6 +355,7 @@ test('key states pass automated accessibility checks', async ({ page }) => {
   };
   await check();
   await analyze(page);
+  await page.getByRole('button', { name: 'Voir tous les formats' }).click();
   await check();
   await selectFile(page);
   await page.getByRole('radio', { name: 'Compresser', exact: true }).click();
@@ -340,8 +391,19 @@ test('the action fits desktop windows and the layout reflows without page overfl
     }
     await capture(page, `v5-responsive-${width}`, testInfo);
   }
-  await page.setViewportSize({ width: 1024, height: 680 });
   await page.getByRole('button', { name: 'Voir tous les formats' }).click();
+  const formats = page.getByRole('region', { name: 'Tous les formats source' });
+  await expect(formats.getByRole('columnheader', { name: 'Taille source' })).toBeVisible();
+  for (const [width, height] of [
+    [760, 580],
+    [390, 844]
+  ]) {
+    await page.setViewportSize({ width, height });
+    expect(await formats.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true
+    );
+  }
+  await page.setViewportSize({ width: 1024, height: 680 });
   await page.getByRole('button', { name: 'Télécharger la vidéo', exact: true }).click();
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(page.getByRole('progressbar')).toBeInViewport();

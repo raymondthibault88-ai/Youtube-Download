@@ -70,7 +70,14 @@ export default function JobStatus({
             }
           >
             <Progress.Track className="progress-track">
-              <Progress.Indicator className="progress-indicator" />
+              <Progress.Indicator
+                className="progress-indicator"
+                style={
+                  percent === null
+                    ? undefined
+                    : { width: '100%', transform: `scaleX(${percent / 100})` }
+                }
+              />
             </Progress.Track>
           </Progress.Root>
         )}

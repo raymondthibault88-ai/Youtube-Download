@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const { runProcess } = require('./process-runner.cjs');
+const { ffmpegPath } = require('./ffmpeg-path.cjs');
 
 class DependencyService {
   constructor(app) {
@@ -13,8 +14,7 @@ class DependencyService {
   }
 
   resolveFfmpegPath() {
-    const binary = require('ffmpeg-static');
-    return binary?.includes('app.asar') ? binary.replace('app.asar', 'app.asar.unpacked') : binary;
+    return ffmpegPath(this.app.isPackaged ? process.resourcesPath : undefined);
   }
 
   async getInfo() {

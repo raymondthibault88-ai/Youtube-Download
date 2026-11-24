@@ -15,17 +15,13 @@ export default function FormatsTable({
   return (
     <div className="formats-scroll" role="region" aria-label="Tous les formats source" tabIndex={0}>
       <table className="formats-table">
-        <caption>Formats source · le fichier final est préparé en MP4 compatible.</caption>
+        <caption>Formats source. Export en MP4 compatible.</caption>
         <thead>
           <tr>
-            <th scope="col">Choix</th>
             <th scope="col">Définition</th>
-            <th scope="col">Source</th>
-            <th scope="col">Conteneur</th>
             <th scope="col">Codec vidéo</th>
-            <th scope="col">Traitement</th>
-            <th scope="col">Images/s</th>
             <th scope="col">Taille source</th>
+            <th scope="col">Traitement</th>
           </tr>
         </thead>
         <tbody>
@@ -33,27 +29,39 @@ export default function FormatsTable({
             <tr
               key={format.id}
               className={selected === format.id ? 'is-selected' : ''}
+              data-disabled={disabled ? '' : undefined}
               onClick={() => {
                 if (!disabled) onSelect(format);
               }}
             >
               <td>
-                <input
-                  type="radio"
-                  name="advanced-format"
-                  checked={selected === format.id}
-                  disabled={disabled}
-                  onChange={() => onSelect(format)}
-                  aria-label={`Choisir ${format.resolution}, ${format.ext}, ${getCodecLabel(format.videoCodec)}, ${format.fps || '?'} images par seconde, format ${format.id}`}
-                />
+                <div className="format-definition">
+                  <input
+                    type="radio"
+                    name="advanced-format"
+                    checked={selected === format.id}
+                    disabled={disabled}
+                    onClick={(event) => event.stopPropagation()}
+                    onChange={() => onSelect(format)}
+                    aria-label={`Choisir ${format.resolution}, ${format.ext}, ${getCodecLabel(format.videoCodec)}, ${format.fps || '?'} images par seconde, format ${format.id}`}
+                  />
+                  <div>
+                    <strong>{format.resolution}</strong>
+                    {format.fps && <span className="format-detail">{format.fps} i/s</span>}
+                  </div>
+                </div>
               </td>
-              <td>{format.resolution}</td>
-              <td>{format.hasAudio ? 'Image et son' : 'Image, son ajouté si disponible'}</td>
-              <td>{format.ext?.toUpperCase()}</td>
-              <td>{getCodecLabel(format.videoCodec) || '—'}</td>
-              <td>{format.quickTimeCompatible ? 'Assemblage compatible' : 'Conversion MP4'}</td>
-              <td>{format.fps || '—'}</td>
+              <td>
+                {getCodecLabel(format.videoCodec) || '—'}
+                {format.ext && <span className="format-detail">{format.ext.toUpperCase()}</span>}
+              </td>
               <td>{format.fileSizeText || 'Non connue'}</td>
+              <td>
+                {format.quickTimeCompatible ? 'Assemblage compatible' : 'Conversion MP4'}
+                <span className="format-detail">
+                  {format.hasAudio ? 'Image et son' : 'Image seule'}
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>

@@ -7,3 +7,4 @@ playwright-report/
 licenses/
 package-lock.json
 THIRD_PARTY_NOTICES.md
+build/ffmpeg-bundles/

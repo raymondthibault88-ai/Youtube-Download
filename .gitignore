@@ -6,3 +6,4 @@ graphify-out
 npm-debug.log*
 test-results/
 playwright-report/
+build/ffmpeg-bundles/

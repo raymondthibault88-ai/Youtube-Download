@@ -1,11 +1,16 @@
 :root {
   color-scheme: light;
+  --canvas: #f7f7f8;
+  --ink: #202124;
+  --line: #e2e2e6;
+  --brand: #ff0033;
+  --startup-font: 'Segoe UI', Arial, sans-serif;
 }
 body {
   margin: 0;
-  background: #f7f7f8;
-  color: #202124;
-  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--startup-font);
 }
 body.app-ready #splash {
   opacity: 0;
@@ -17,7 +22,7 @@ body.app-ready #splash {
   inset: 0;
   display: grid;
   place-items: center;
-  background: #f7f7f8;
+  background: var(--canvas);
   transition: opacity 180ms ease;
 }
 .splash-card {
@@ -31,8 +36,8 @@ body.app-ready #splash {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid #e2e2e6;
-  border-top-color: #ff0033;
+  border: 2px solid var(--line);
+  border-top-color: var(--brand);
   animation: splash-spin 0.9s linear infinite;
 }
 .splash-title {

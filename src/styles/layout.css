@@ -20,7 +20,7 @@
   z-index: 5;
   padding: 12px 18px;
   background: var(--accent);
-  color: white;
+  color: var(--on-solid);
   border-radius: 8px;
 }
 .skip-link:focus {
@@ -55,9 +55,9 @@
 }
 .version-tag {
   align-self: center;
-  background: #f0f0f2;
+  background: var(--surface-soft);
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--detail-size);
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 5px;
@@ -89,7 +89,7 @@
   border-radius: 8px;
   background: var(--surface);
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--detail-size);
   font-weight: 700;
 }
 .update-trigger:hover {

@@ -12,7 +12,7 @@
   padding: 15px var(--dock-inline);
   border-top: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: 0 -6px 24px #20212406;
+  box-shadow: 0 -6px 24px var(--dock-shadow);
 }
 .card :global(.output-info) {
   display: flex;
@@ -42,13 +42,13 @@
   font-weight: 750;
 }
 .card :global(.output-summary h2 > span) {
-  font-size: 11px;
+  font-size: var(--detail-size);
   font-weight: 600;
   color: var(--muted);
 }
 .card :global(.output-summary p) {
   margin-top: 2px;
-  font-size: 11px;
+  font-size: var(--detail-size);
   line-height: 1.6;
   color: var(--muted);
 }
@@ -57,7 +57,7 @@
 }
 .card :global(.destination-label) {
   display: block;
-  font-size: 11px;
+  font-size: var(--detail-size);
   color: var(--muted);
   margin-bottom: 4px;
 }
@@ -68,7 +68,7 @@
   align-items: center;
   gap: 8px;
   border: 1px solid var(--line-strong);
-  background: #fff;
+  background: var(--surface);
   border-radius: 7px;
   padding: 7px 10px;
   color: var(--ink);
@@ -83,7 +83,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: var(--detail-size);
 }
 .card :global(.output-action) {
   min-height: 40px;

@@ -20,7 +20,7 @@ function setup({ ensure, run, exists = true } = {}) {
     module: { exports: {} },
     require(name) {
       if (name === 'node:fs') return { existsSync: () => exists };
-      if (name === 'ffmpeg-static') return ffmpegPath;
+      if (name === './ffmpeg-path.cjs') return { ffmpegPath: () => ffmpegPath };
       if (name === '../ytDlp.cjs')
         return {
           RELEASE_VERSION: pinnedVersion,

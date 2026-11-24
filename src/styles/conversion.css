@@ -23,7 +23,7 @@
   justify-self: start;
 }
 .supported-formats {
-  font-size: 11px;
+  font-size: var(--detail-size);
   color: var(--muted);
 }
 .local-file {
@@ -56,7 +56,7 @@
 .local-file p {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--detail-size);
 }
 .conversion-settings {
   display: grid;
@@ -92,11 +92,11 @@
 .intent-option[data-checked] {
   color: var(--accent);
   background: var(--surface);
-  box-shadow: 0 1px 3px #20212414;
+  box-shadow: 0 1px 3px var(--control-shadow);
 }
 .setting-help {
   grid-column: 2;
-  font-size: 11px;
+  font-size: var(--detail-size);
   color: var(--muted);
 }
 .size-preview {
@@ -113,7 +113,7 @@
   gap: 1px;
 }
 .size-preview > div > span {
-  font-size: 11px;
+  font-size: var(--detail-size);
   color: var(--muted);
 }
 .size-preview strong {
@@ -126,12 +126,12 @@
   color: var(--muted);
 }
 .size-change {
-  font-size: 11px;
+  font-size: var(--detail-size);
   font-weight: 700;
   color: var(--muted);
 }
 .compression-no-gain {
   margin: 8px 20px 0;
-  font-size: 11px;
+  font-size: var(--detail-size);
   color: var(--muted);
 }

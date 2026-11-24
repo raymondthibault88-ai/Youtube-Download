@@ -1,59 +1,30 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const https = require('node:https');
 const nodeCrypto = require('node:crypto');
-const { pipeline } = require('node:stream');
-const { Transform } = require('node:stream');
-const { promisify } = require('node:util');
+const { downloadGitHubAsset, verifyFileHash } = require('./services/verified-download.cjs');
 
-const streamPipeline = promisify(pipeline);
 const ensureBinaryPromises = new Map();
 
-const RELEASE_VERSION = '2026.10.21';
+const RELEASE_VERSION = '2026.11.23';
 const RELEASE_BASE = `https://github.com/yt-dlp/yt-dlp/releases/download/${RELEASE_VERSION}`;
-const DOWNLOAD_TIMEOUT_MS = 30_000;
-const MAX_REDIRECTS = 5;
-const MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024;
 const BINARIES_BY_PLATFORM = {
   win32: {
     name: 'yt-dlp.exe',
-    sha256: '33121d192d706e62f684a06f80918e3f3a8ba52ac3a65213b6951c39c7d9f555'
+    sha256: '622ed48023cac1daa52a3bf3a6ac38f03514de214b5f0fa069389fd0f6d17e5c'
   },
   darwin: {
     name: 'yt-dlp_macos',
-    sha256: '7a6fe71d7d680f1fb0ac18d4949873d77db2859e90017c0f44bd94b23be4ee40'
+    sha256: '57654854886d0398a798895aadf5173e2749fbb5e249b9f3728022ab376e11fb'
   },
   linux: {
     name: 'yt-dlp',
-    sha256: 'b7af77f686e95f7845ce8d09d21957718febb8b48b30555adb9dd2292ad7bf14'
+    sha256: 'e8665ed64d6b9172773e812f891fb707a0cb1ee8d9ef4fc1acb00cabee4c5256'
   }
 };
 
 const BINARY_INFO = BINARIES_BY_PLATFORM[process.platform];
 if (!BINARY_INFO) {
   throw new Error(`Plateforme non supportée pour yt-dlp: ${process.platform}`);
-}
-
-function getDownloadUrl(binaryName) {
-  return `${RELEASE_BASE}/${binaryName}`;
-}
-
-async function hashFileSha256(filePath) {
-  return new Promise((resolve, reject) => {
-    const hash = nodeCrypto.createHash('sha256');
-    const stream = fs.createReadStream(filePath);
-
-    stream.on('error', reject);
-    stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
-}
-
-async function verifyFileHash(filePath, expectedSha256) {
-  const actualSha256 = await hashFileSha256(filePath);
-  if (actualSha256 !== expectedSha256) {
-    throw new Error('Intégrité yt-dlp invalide (SHA256 mismatch).');
-  }
 }
 
 async function removeIfExists(filePath) {
@@ -66,73 +37,12 @@ async function removeIfExists(filePath) {
   }
 }
 
-async function downloadFile(url, destination, redirectCount = 0) {
-  if (redirectCount > MAX_REDIRECTS) {
-    throw new Error(`Téléchargement yt-dlp interrompu: trop de redirections (${MAX_REDIRECTS}).`);
-  }
-
-  const parsedUrl = new URL(url);
-  const trustedHost =
-    parsedUrl.hostname === 'github.com' || parsedUrl.hostname.endsWith('.githubusercontent.com');
-  if (parsedUrl.protocol !== 'https:' || !trustedHost) {
-    throw new Error('Téléchargement yt-dlp bloqué: hôte non autorisé.');
-  }
-
-  await fs.promises.mkdir(path.dirname(destination), { recursive: true });
-
-  return new Promise((resolve, reject) => {
-    const request = https.get(url, { timeout: DOWNLOAD_TIMEOUT_MS }, (response) => {
-      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        response.destroy();
-        const nextUrl = new URL(response.headers.location, url).toString();
-        downloadFile(nextUrl, destination, redirectCount + 1)
-          .then(resolve)
-          .catch(reject);
-        return;
-      }
-
-      if (response.statusCode !== 200) {
-        response.resume();
-        reject(new Error(`Téléchargement yt-dlp impossible (HTTP ${response.statusCode})`));
-        return;
-      }
-
-      const announcedSize = Number(response.headers['content-length'] || 0);
-      if (announcedSize > MAX_DOWNLOAD_BYTES) {
-        response.destroy();
-        reject(new Error('Téléchargement yt-dlp trop volumineux.'));
-        return;
-      }
-
-      const fileStream = fs.createWriteStream(destination);
-      let receivedBytes = 0;
-      const sizeGuard = new Transform({
-        transform(chunk, _encoding, callback) {
-          receivedBytes += chunk.length;
-          callback(
-            receivedBytes > MAX_DOWNLOAD_BYTES
-              ? new Error('Téléchargement yt-dlp trop volumineux.')
-              : null,
-            chunk
-          );
-        }
-      });
-      streamPipeline(response, sizeGuard, fileStream).then(resolve).catch(reject);
-    });
-
-    request.setTimeout(DOWNLOAD_TIMEOUT_MS, () => {
-      request.destroy(new Error(`Téléchargement yt-dlp timeout après ${DOWNLOAD_TIMEOUT_MS}ms.`));
-    });
-    request.on('error', reject);
-  });
-}
-
 async function downloadAndVerifyBinary(binaryInfo, targetPath) {
   const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${nodeCrypto.randomBytes(6).toString('hex')}.download`;
 
   try {
-    await downloadFile(getDownloadUrl(binaryInfo.name), tempPath);
-    await verifyFileHash(tempPath, binaryInfo.sha256);
+    await downloadGitHubAsset(`${RELEASE_BASE}/${binaryInfo.name}`, tempPath, 'yt-dlp');
+    await verifyFileHash(tempPath, binaryInfo.sha256, 'yt-dlp');
     await fs.promises.rename(tempPath, targetPath);
 
     if (process.platform !== 'win32') {
@@ -153,7 +63,7 @@ async function ensureYtDlp(userDataPath) {
   const ensurePromise = (async () => {
     if (fs.existsSync(targetPath)) {
       try {
-        await verifyFileHash(targetPath, BINARY_INFO.sha256);
+        await verifyFileHash(targetPath, BINARY_INFO.sha256, 'yt-dlp');
         return targetPath;
       } catch {
         await removeIfExists(targetPath);

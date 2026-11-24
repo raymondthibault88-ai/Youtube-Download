@@ -14,6 +14,7 @@ export default function useVideoAnalyze({
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<VideoFormat | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
+  const [formatsStatus, setFormatsStatus] = useState<'searching' | 'unavailable' | null>(null);
   const request = useRef(0);
   const pending = useRef(false);
   const currentUrl = useRef('');
@@ -21,6 +22,7 @@ export default function useVideoAnalyze({
   const cancelAnalysis = useCallback(() => {
     request.current += 1;
     setLoadingVideo(false);
+    setFormatsStatus(null);
     if (pending.current) {
       pending.current = false;
       void cancelVideoAnalysis().catch(() => {});
@@ -62,6 +64,7 @@ export default function useVideoAnalyze({
       const token = ++request.current;
       pending.current = true;
       setLoadingVideo(true);
+      setFormatsStatus(null);
       setVideo(null);
       setSelectedFormat(null);
       setError('');
@@ -79,9 +82,12 @@ export default function useVideoAnalyze({
         setSelectedFormat(formats.find((format) => format.quickTimeCompatible) || formats[0]);
         if (!reusable) {
           const at = Date.now();
+          setFormatsStatus('searching');
           void getCompleteVideoFormats(source)
             .then((completeFormats) => {
-              if (request.current !== token || !completeFormats?.length) return;
+              if (request.current !== token) return;
+              setFormatsStatus(completeFormats?.length ? null : 'unavailable');
+              if (!completeFormats?.length) return;
               const complete = { ...data, formats: completeFormats };
               cache.current = { url: source, at, data: complete };
               setVideo(complete);
@@ -92,7 +98,9 @@ export default function useVideoAnalyze({
                   completeFormats[0]
               );
             })
-            .catch(() => {});
+            .catch(() => {
+              if (request.current === token) setFormatsStatus('unavailable');
+            });
         }
       } catch (error) {
         if (request.current === token && !isCancellationError(error))
@@ -113,6 +121,7 @@ export default function useVideoAnalyze({
     selectedFormat,
     setSelectedFormat,
     loadingVideo,
+    formatsStatus,
     analyze,
     cancelAnalysis
   };

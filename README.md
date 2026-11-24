@@ -57,7 +57,7 @@ npm run setup:desktop
 npm run dev
 ```
 
-`setup:desktop` installe le runtime d’Electron 44. FFmpeg est installé par `npm ci` ; ne pas désactiver les scripts d’installation pour une application exécutable.
+`setup:desktop` installe le runtime d’Electron 44. `npm ci` prépare FFmpeg 9.0.2 avec la commande `tar` du système. Les scripts d’installation sont nécessaires pour exécuter l’application.
 
 ## Vérification
 
@@ -176,8 +176,8 @@ Sans ces identifiants, un DMG local non notarisé peut être produit sur macOS. 
 
 ## Dépendances binaires
 
-- yt-dlp 2026.10.21 est téléchargé au premier lancement, limité à des hôtes GitHub HTTPS et vérifié par SHA256. La version affichée provient de cette publication vérifiée, sans lancer un processus supplémentaire pour la relire.
-- FFmpeg est fourni par `ffmpeg-static`. L’application teste l’encodeur matériel avant la conversion et repasse automatiquement sur libx264 si nécessaire.
+- yt-dlp 2026.11.23 est téléchargé au premier lancement sur des hôtes GitHub HTTPS. L’application vérifie son empreinte SHA-256 et affiche la version épinglée.
+- FFmpeg 9.0.2 est intégré au paquet pour l’architecture cible. Le script de préparation vérifie les empreintes SHA-256 de l’archive et de l’exécutable. L’application teste l’encodeur matériel avant la conversion et utilise libx264 en secours.
 
 ## Légal
 

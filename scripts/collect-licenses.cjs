@@ -55,13 +55,4 @@ fs.writeFileSync(
   `${JSON.stringify(packages, null, 2)}\n`
 );
 
-// Keep the provider's build configuration next to the binary's full licence.
-const ffmpeg = require('ffmpeg-static');
-for (const [extension, target] of [
-  ['LICENSE', 'FFmpeg-binary-LICENSE.txt'],
-  ['README', `FFmpeg-${process.platform}-${process.arch}-BUILD.txt`]
-]) {
-  const source = `${ffmpeg}.${extension}`;
-  if (fs.existsSync(source)) fs.copyFileSync(source, path.join(root, 'licenses', target));
-}
-console.log(`Avis de licence collectés pour ${packages.length} paquets et le binaire FFmpeg.`);
+console.log(`Avis de licence collectés pour ${packages.length} paquets npm.`);

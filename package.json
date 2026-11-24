@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader-desktop",
-  "version": "5.1.6",
+  "version": "5.1.7",
   "description": "Téléchargez et convertissez vos vidéos en MP4 simplement, sur Windows et macOS",
   "main": "electron/main.cjs",
   "author": "",
@@ -13,6 +13,7 @@
     "node": "^22.13.0 || >=24.0.0"
   },
   "scripts": {
+    "postinstall": "node scripts/prepare-ffmpeg.cjs",
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:5173 && node electron/dev-runner.cjs",
@@ -41,7 +42,6 @@
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/manrope": "^5.3.0",
     "electron-updater": "^6.8.11",
-    "ffmpeg-static": "^5.3.0",
     "lucide-react": "^1.61.0"
   },
   "devDependencies": {
@@ -59,8 +59,8 @@
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
-    "js-yaml": "4.3.2",
-    "prettier": "3.9.10",
+    "js-yaml": "5.5.0",
+    "prettier": "3.10.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "typescript": "^6.0.3",
@@ -104,9 +104,17 @@
       "en-US"
     ],
     "npmRebuild": false,
+    "beforePack": "scripts/prepare-ffmpeg.cjs",
     "afterSign": "electron/notarize.cjs",
-    "asarUnpack": [
-      "**/node_modules/ffmpeg-static/**"
+    "extraResources": [
+      {
+        "from": "build/ffmpeg-bundles/${os}-${arch}",
+        "to": "ffmpeg",
+        "filter": [
+          "**/*",
+          "!THIRD_PARTY_NOTICES.txt"
+        ]
+      }
     ],
     "mac": {
       "icon": "build/icons/icon.icns",

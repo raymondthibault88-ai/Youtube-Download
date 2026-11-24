@@ -6,7 +6,7 @@ const path = require('node:path');
 const { MediaService } = require('../electron/services/media.cjs');
 const { runProcess } = require('../electron/services/process-runner.cjs');
 
-const ffmpeg = require('ffmpeg-static');
+const ffmpeg = require('../electron/services/ffmpeg-path.cjs').ffmpegPath();
 const baselineFfmpeg = process.env.V5_BASELINE_FFMPEG_PATH
   ? path.resolve(process.env.V5_BASELINE_FFMPEG_PATH)
   : ffmpeg;

@@ -143,6 +143,10 @@
     width: 62px;
     height: 47px;
   }
+  .formats-table th,
+  .formats-table td {
+    padding-inline: 6px;
+  }
   .job-status {
     gap: 10px;
   }
@@ -158,6 +162,9 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .job-progress[data-status='indeterminate'] .progress-indicator {
+    animation: none;
   }
 }
 
