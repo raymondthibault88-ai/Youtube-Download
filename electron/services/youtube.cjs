@@ -72,6 +72,8 @@ class YouTubeService {
     entry.preparingInfo = preparation.result.then((result) => {
       if (result.info && entry.preparation === preparation) {
         entry.info = buildCachedDownloadInfo(result.info, entry.visibleInfo);
+        const formats = toFormats(entry.info);
+        if (formats.length) entry.data = { ...entry.data, formats };
         const standardIds = new Set(result.info.formats.map((format) => String(format.format_id)));
         entry.fastOnlyFormatIds = entry.info.formats
           .filter((format) => !standardIds.has(String(format.format_id)))
@@ -100,10 +102,8 @@ class YouTubeService {
     }
     let info;
     let fastExtraction = true;
-    // Keep the current fast-client format list, but cache the default client's
-    // download metadata too: its best audio can differ (e.g. stereo vs 5.1).
-    // Prepare download metadata while the user chooses a format and folder;
-    // returning the visible analysis does not wait for this preparation.
+    // The two clients can return different streams. Show the fast results first,
+    // then use the merged inventory for both the menu and the download.
     const isYouTube = /^https?:\/\/(?:[\w-]+\.)?(?:youtube\.com|youtu\.be)\//i.test(url);
     const preparation = isYouTube ? this.startPreparation(url, signal) : null;
     try {
@@ -126,7 +126,6 @@ class YouTubeService {
       uploader: info.uploader,
       formats: toFormats(info)
     };
-    if (!data.formats.length) throw new Error('Aucune qualité vidéo disponible pour ce lien.');
     const entry = {
       at: Date.now(),
       data,
@@ -135,9 +134,22 @@ class YouTubeService {
       ...(preparation ? { visibleInfo: info } : {})
     };
     if (preparation) this.attachPreparation(entry, preparation);
+    if (!data.formats.length && entry.preparingInfo) {
+      await entry.preparingInfo;
+      if (signal?.aborted) throw createAbortError();
+    }
+    if (!entry.data.formats.length)
+      throw new Error('Aucune qualité vidéo disponible pour ce lien.');
     this.cache.set(url, entry);
     if (this.cache.size > 20) this.cache.delete(this.cache.keys().next().value);
-    return data;
+    return entry.data;
+  }
+
+  async getCompleteFormats(url) {
+    const entry = this.cache.get(url);
+    if (!entry || Date.now() - entry.at >= ANALYSIS_TTL_MS) return null;
+    await entry.preparingInfo;
+    return entry.info ? entry.data.formats : null;
   }
 
   async download(payload, signal, onProgress) {

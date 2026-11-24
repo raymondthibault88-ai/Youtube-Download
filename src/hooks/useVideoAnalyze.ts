@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
-import { analyzeVideo, cancelVideoAnalysis } from '../services/desktopApi';
+import { analyzeVideo, cancelVideoAnalysis, getCompleteVideoFormats } from '../services/desktopApi';
 import type { VideoFormat, VideoInfo } from '../types';
 import { getErrorMessage, isCancellationError } from '../utils/errors';
 import youtubeConfig from '../../shared/youtube-config.json';
@@ -73,12 +73,27 @@ export default function useVideoAnalyze({
             : null;
         const data = reusable ? reusable.data : await analyzeVideo(source);
         if (request.current !== token || currentUrl.current.trim() !== source) return;
-        if (!data.formats?.length) throw new Error('Aucune qualité vidéo disponible pour ce lien.');
-        cache.current = reusable || { url: source, at: Date.now(), data };
+        const formats = data.formats;
+        if (!formats?.length) throw new Error('Aucune qualité vidéo disponible pour ce lien.');
         setVideo(data);
-        setSelectedFormat(
-          data.formats.find((format) => format.quickTimeCompatible) || data.formats[0]
-        );
+        setSelectedFormat(formats.find((format) => format.quickTimeCompatible) || formats[0]);
+        if (!reusable) {
+          const at = Date.now();
+          void getCompleteVideoFormats(source)
+            .then((completeFormats) => {
+              if (request.current !== token || !completeFormats?.length) return;
+              const complete = { ...data, formats: completeFormats };
+              cache.current = { url: source, at, data: complete };
+              setVideo(complete);
+              setSelectedFormat(
+                (selected) =>
+                  completeFormats.find((format) => format.id === selected?.id) ||
+                  completeFormats.find((format) => format.quickTimeCompatible) ||
+                  completeFormats[0]
+              );
+            })
+            .catch(() => {});
+        }
       } catch (error) {
         if (request.current === token && !isCancellationError(error))
           setError(getErrorMessage(error, 'Impossible de lire les informations de cette vidéo.'));

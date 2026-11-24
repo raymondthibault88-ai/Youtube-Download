@@ -96,6 +96,12 @@ function registerHandlers({ app, ipcMain, dependencyService, updateService, devO
     }
   });
 
+  handle(ipcChannels.invoke.videoCompleteFormats, async (_, rawUrl) => {
+    const url = validateYouTubeUrl(rawUrl);
+    const youtube = await getYoutube();
+    return youtube.getCompleteFormats(url);
+  });
+
   handle(ipcChannels.invoke.dialogSelectOutput, async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory']

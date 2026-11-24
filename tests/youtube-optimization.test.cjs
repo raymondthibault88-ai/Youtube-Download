@@ -241,6 +241,42 @@ test('parallel analysis preserves the visible format list and the previous defau
   await service.download(payload);
 });
 
+test('a 4K stream found by standard analysis becomes selectable and downloadable', async (t) => {
+  const { service, calls, payload } = setup(t, { formatId: '401' });
+  const standard = Promise.withResolvers();
+  const delegate = service.runProcess;
+  service.runProcess = async (command, args, options) => {
+    if (!args.includes('-J')) return delegate(command, args, options);
+    if (!args.includes('--extractor-args')) return standard.promise;
+    const info = metadata();
+    info.formats = info.formats.filter((format) => format.format_id !== payload.formatId);
+    return { stdout: JSON.stringify(info) };
+  };
+
+  const initial = await service.analyze(url);
+  assert.deepEqual(
+    initial.formats.map((format) => format.id),
+    ['137']
+  );
+  const completion = service.getCompleteFormats(url);
+  standard.resolve({ stdout: JSON.stringify(metadata()) });
+  assert.deepEqual(
+    (await completion).map((format) => format.id),
+    ['401', '137']
+  );
+  const complete = await service.analyze(url);
+  assert.deepEqual(
+    complete.formats.map((format) => format.id),
+    ['401', '137']
+  );
+
+  assert.equal((await service.download(payload)).ok, true);
+  const transfer = calls.at(-1);
+  assert.ok(transfer.includes('--load-info-json'));
+  assert.equal(transfer.includes('--extractor-args'), false);
+  assert.equal(transfer[transfer.indexOf('-f') + 1], '401+bestaudio[ext=m4a]/401+bestaudio/401');
+});
+
 test('an unavailable default-client analysis never substitutes fast-client audio', async (t) => {
   const { service, payload } = setup(t);
   const delegate = service.runProcess;

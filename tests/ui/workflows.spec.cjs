@@ -123,6 +123,32 @@ test('reusing visible formats does not postpone the original analysis expiry', a
   ).toBeChecked();
 });
 
+test.describe('progressive format analysis', () => {
+  test.use({ bridgeOptions: { deferCompleteVideoFormats: true } });
+
+  test('4K becomes selectable while an existing quality selection is kept', async ({ page }) => {
+    await analyze(page);
+    const quality = page.getByRole('radiogroup', { name: 'Qualité' });
+    const fullHd = quality.getByRole('radio', { name: '1080p, recommandée, format 137' });
+    const hd = quality.getByRole('radio', { name: '720p, format 136' });
+    const ultraHd = quality.getByRole('radio', { name: '4K, format 401', exact: true });
+    await expect(fullHd).toBeChecked();
+    await expect(ultraHd).toHaveCount(0);
+    await hd.check();
+
+    await page.evaluate(() => window.__test.completeVideoFormats());
+    await expect(ultraHd).toBeVisible();
+    await expect(hd).toBeChecked();
+    await ultraHd.check();
+    await page.getByRole('button', { name: 'Télécharger la vidéo', exact: true }).click();
+    const payload = await page.evaluate(
+      () => window.__test.calls.find((entry) => entry.type === 'download').payload
+    );
+    expect(payload.formatId).toBe('401');
+    await page.evaluate(() => window.__test.finish());
+  });
+});
+
 test('all source formats remain available, with descriptive labels and original recode rules', async ({
   page
 }) => {

@@ -3,13 +3,14 @@ import type { DownloadResult, StartDownloadPayload } from './download';
 import type { ConversionResult, SelectedVideoFile, StartConversionPayload } from './conversion';
 import type { ProgressState } from './progress';
 import type { JobSnapshot } from './job';
-import type { VideoInfo } from './video';
+import type { VideoFormat, VideoInfo } from './video';
 import type { UpdateSnapshot } from './update';
 
 interface DesktopAPI {
   getStartupInfo: () => Promise<{ downloadsPath?: string }>;
   checkDependencies: () => Promise<DependencyInfo>;
   analyzeVideo: (url: string) => Promise<VideoInfo>;
+  getCompleteVideoFormats: (url: string) => Promise<VideoFormat[] | null>;
   cancelVideoAnalysis: () => Promise<{ ok: boolean }>;
   readClipboard: () => Promise<string>;
   selectVideoFile: () => Promise<SelectedVideoFile | null>;

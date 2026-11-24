@@ -5,7 +5,7 @@ import type {
   SelectedVideoFile,
   StartConversionPayload
 } from '../types/conversion';
-import type { VideoInfo } from '../types/video';
+import type { VideoFormat, VideoInfo } from '../types/video';
 import type { JobSnapshot } from '../types/job';
 import type { UpdateSnapshot } from '../types/update';
 
@@ -27,6 +27,10 @@ export function checkDependencies(): Promise<DependencyInfo> {
 
 export function analyzeVideo(url: string): Promise<VideoInfo> {
   return getApi().analyzeVideo(url);
+}
+
+export function getCompleteVideoFormats(url: string): Promise<VideoFormat[] | null> {
+  return getApi().getCompleteVideoFormats(url);
 }
 
 export function cancelVideoAnalysis(): Promise<{ ok: boolean }> {

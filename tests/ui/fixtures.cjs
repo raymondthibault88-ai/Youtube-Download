@@ -69,6 +69,12 @@ const test = base.extend({
         audioCodec: hasAudio ? 'mp4a.40.2' : null,
         fileSizeText: `${Math.round(680 / (index + 1))} MB`
       }));
+      let finishFormats;
+      const completeFormats = options.deferCompleteVideoFormats
+        ? new Promise((resolve) => {
+            finishFormats = resolve;
+          })
+        : Promise.resolve(formats);
       const emit = (patch) => {
         job = { ...job, ...patch };
         for (const handler of handlers) handler(job);
@@ -119,6 +125,7 @@ const test = base.extend({
         : Promise.resolve(update);
       window.__test = {
         completeDependencyCheck: () => resolveDependencies?.(dependencies),
+        completeVideoFormats: () => finishFormats?.(formats),
         failInitialUpdate: () => rejectInitialUpdate?.(new Error('Initial IPC failed')),
         calls: [],
         delays: {},
@@ -175,9 +182,10 @@ const test = base.extend({
             uploader: 'Carnets de voyage',
             thumbnail,
             duration: 723,
-            formats
+            formats: options.deferCompleteVideoFormats ? formats.slice(3) : formats
           };
         },
+        getCompleteVideoFormats: () => completeFormats,
         selectVideoFile: async () => ({
           path: 'C:\\Videos\\Vacances en Bretagne.mov',
           name: 'Vacances en Bretagne.mov',

@@ -31,6 +31,7 @@ const invocations = {
   getStartupInfo: 'startupInfo',
   checkDependencies: 'depsCheck',
   analyzeVideo: 'videoAnalyze',
+  getCompleteVideoFormats: 'videoCompleteFormats',
   cancelVideoAnalysis: 'videoCancelAnalyze',
   readClipboard: 'clipboardRead',
   selectVideoFile: 'dialogSelectVideo',
@@ -60,7 +61,13 @@ test('every exposed preload method invokes its exact shared IPC channel and forw
     [...Object.keys(invocations), ...Object.keys(subscriptions)].sort()
   );
   assert.deepEqual(Object.values(invocations).sort(), Object.keys(contract.invoke).sort());
-  const takesArgument = new Set(['analyzeVideo', 'startDownload', 'startConversion', 'revealPath']);
+  const takesArgument = new Set([
+    'analyzeVideo',
+    'getCompleteVideoFormats',
+    'startDownload',
+    'startConversion',
+    'revealPath'
+  ]);
   const payload = { inputPath: 'C:\\Vidéos\\Original é.mov', url: 'https://youtu.be/example' };
   for (const [method, key] of Object.entries(invocations)) {
     const args = takesArgument.has(method) ? [payload] : [];

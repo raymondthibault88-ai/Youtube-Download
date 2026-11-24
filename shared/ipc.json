@@ -3,6 +3,7 @@
     "startupInfo": "app:startupInfo",
     "depsCheck": "deps:check",
     "videoAnalyze": "video:analyze",
+    "videoCompleteFormats": "video:completeFormats",
     "videoCancelAnalyze": "video:cancelAnalyze",
     "clipboardRead": "clipboard:readText",
     "dialogSelectVideo": "dialog:selectVideo",
